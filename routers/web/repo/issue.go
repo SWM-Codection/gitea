@@ -314,8 +314,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 			LabelIDs:          labelIDs,
 			SortType:          sortType,
 		})
-
-		log.Info("issueIdFromSearch result: %v", ids)
 		if err != nil {
 			if issue_indexer.IsAvailable(ctx) {
 				ctx.ServerError("issueIDsFromSearch", err)
