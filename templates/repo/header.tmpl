@@ -152,6 +152,11 @@
 							{{svg "octicon-link-external"}} {{ctx.Locale.Tr "repo.issues"}}
 						</a>
 					{{end}}
+					
+					<!-- discussions -->
+					<a class="{{if .PageIsDiscussionList}}active {{end}}item" href="{{.RepoLink}}/discussions" >
+						{{ svg "octicon-comment-discussion" }} {{ctx.Locale.Tr "repo.discussions"}}
+					</a>
 
 					{{if and .Repository.CanEnablePulls (.Permission.CanRead ctx.Consts.RepoUnitTypePullRequests)}}
 						<a class="{{if .PageIsPullList}}active {{end}}item" href="{{.RepoLink}}/pulls">
