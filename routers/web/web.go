@@ -1162,7 +1162,7 @@ func registerRoutes(m *web.Route) {
 	// end "/{username}/{reponame}": view milestone, label, issue, pull, etc
 
 	m.Group("/{username}/{reponame}", func() {
-		m.Group("/{type:issues|pulls}", func() {
+		m.Group("/{type:issues|pulls|discussions}", func() {
 			m.Get("", repo.Issues)
 			m.Group("/{index}", func() {
 				m.Get("", repo.ViewIssue)

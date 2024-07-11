@@ -10,12 +10,14 @@ import (
 )
 
 func ToSearchOptions(keyword string, opts *issues_model.IssuesOptions) *SearchOptions {
+
 	searchOpt := &SearchOptions{
-		Keyword:   keyword,
-		RepoIDs:   opts.RepoIDs,
-		AllPublic: opts.AllPublic,
-		IsPull:    opts.IsPull,
-		IsClosed:  opts.IsClosed,
+		Keyword:      keyword,
+		RepoIDs:      opts.RepoIDs,
+		AllPublic:    opts.AllPublic,
+		IsPull:       opts.IsPull,
+		IsDiscussion: opts.IsDiscussion,
+		IsClosed:     opts.IsClosed,
 	}
 
 	if len(opts.LabelIDs) == 1 && opts.LabelIDs[0] == 0 {
