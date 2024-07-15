@@ -13,7 +13,7 @@ import (
 	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/repository"
 )
-
+// notification을 보내는 주체 
 // Notifier defines an interface to notify receiver
 type Notifier interface {
 	Run()
@@ -74,4 +74,13 @@ type Notifier interface {
 	PackageDelete(ctx context.Context, doer *user_model.User, pd *packages_model.PackageDescriptor)
 
 	ChangeDefaultBranch(ctx context.Context, repo *repo_model.Repository)
+	CreateDisscusionComment(ctx context.Context, doer *user_model.User, repo *repo_model.Repository,
+		issue *issues_model.Issue, comment *issues_model.Comment, mentions []*user_model.User) 
+	CreateDiscussion(ctx context.Context, doer *user_model.User, issue *issues_model.Issue, repo *repo_model.Repository, mentions []*user_model.User) 
+
+	// TODOC discussion 생성 알림
+	// TODOC discussion 코멘트 알림
+	// TODOC discussion 마감 임박 알림
+	// TODOC discussion 마감 알림
+	// TODOC 
 }

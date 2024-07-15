@@ -21,11 +21,19 @@ import (
 type (
 	notificationService struct {
 		notify_service.NullNotifier
-		issueQueue *queue.WorkerPoolQueue[issueNotificationOpts]
+		issueQueue       *queue.WorkerPoolQueue[issueNotificationOpts]
+		disscussionQueue *queue.WorkerPoolQueue[discussionNotificationOpts]
 	}
 
 	issueNotificationOpts struct {
 		IssueID              int64
+		CommentID            int64
+		NotificationAuthorID int64
+		ReceiverID           int64 // 0 -- ALL Watcher
+	}
+
+	discussionNotificationOpts struct {
+		DiscussionID         int64
 		CommentID            int64
 		NotificationAuthorID int64
 		ReceiverID           int64 // 0 -- ALL Watcher
@@ -43,17 +51,28 @@ var _ notify_service.Notifier = &notificationService{}
 // NewNotifier create a new notificationService notifier
 func NewNotifier() notify_service.Notifier {
 	ns := &notificationService{}
-	ns.issueQueue = queue.CreateSimpleQueue(graceful.GetManager().ShutdownContext(), "notification-service", handler)
+	ns.issueQueue = queue.CreateSimpleQueue(graceful.GetManager().ShutdownContext(), "notification-service", Issuehandler)
+	ns.disscussionQueue = queue.CreateSimpleQueue(graceful.GetManager().ShutdownContext(), "discussion-event", DisscussionHandler)
 	if ns.issueQueue == nil {
 		log.Fatal("Unable to create notification-service queue")
 	}
 	return ns
 }
 
-func handler(items ...issueNotificationOpts) []issueNotificationOpts {
+// Issuehandler
+func Issuehandler(items ...issueNotificationOpts) []issueNotificationOpts {
 	for _, opts := range items {
 		if err := activities_model.CreateOrUpdateIssueNotifications(db.DefaultContext, opts.IssueID, opts.CommentID, opts.NotificationAuthorID, opts.ReceiverID); err != nil {
 			log.Error("Was unable to create issue notification: %v", err)
+		}
+	}
+	return nil
+}
+
+func DisscussionHandler(items ...discussionNotificationOpts) []discussionNotificationOpts {
+	for _, opts := range items {
+		if err := activities_model.CreateOrUpdateDiscussionNotifications(db.DefaultContext, opts.DiscussionID, opts.CommentID, opts.NotificationAuthorID, opts.ReceiverID); err != nil {
+			log.Error("Was unable to create discussion notification: %v", err)
 		}
 	}
 	return nil
@@ -259,3 +278,45 @@ func (ns *notificationService) RepoPendingTransfer(ctx context.Context, doer, ne
 		log.Error("CreateRepoTransferNotification: %v", err)
 	}
 }
+
+// TODOC issue_model을 Disscussion_model로 변경
+func (ns *notificationService) CreateDiscussion(ctx context.Context, doer *user_model.User, issue *issues_model.Issue, repo *repo_model.Repository, mentions []*user_model.User) {
+
+	for _, mention := range mentions {
+		opts := discussionNotificationOpts{
+			DiscussionID:         issue.ID,
+			NotificationAuthorID: doer.ID,
+			ReceiverID:           mention.ID,
+		}
+		_ = ns.disscussionQueue.Push(opts)
+	}
+
+}
+
+// TODOC issue_model을 Disscussion_model로 변경
+func (ns *notificationService) CreateDisscusionComment(ctx context.Context, doer *user_model.User, repo *repo_model.Repository,
+	issue *issues_model.Issue, comment *issues_model.Comment, mentions []*user_model.User) {
+	opts := discussionNotificationOpts{
+		DiscussionID:         issue.ID,
+		NotificationAuthorID: doer.ID,
+	}
+	if comment != nil {
+		opts.CommentID = comment.ID
+	}
+	_ = ns.disscussionQueue.Push(opts)
+
+	for _, mention := range mentions {
+		opts := discussionNotificationOpts{
+			DiscussionID:         issue.ID,
+			NotificationAuthorID: doer.ID,
+			ReceiverID:           mention.ID,
+		}
+		if comment != nil {
+			opts.CommentID = comment.ID
+		}
+		_ = ns.disscussionQueue.Push(opts)
+	}
+}
+
+// TODOC discussion 마감 임박 알림
+// TODOC discussion 마감 알림

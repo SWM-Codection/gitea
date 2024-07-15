@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+// 체크 외부 api 담당 
+
 // NotificationThread expose Notification on API
 type NotificationThread struct {
 	ID         int64                `json:"id"`

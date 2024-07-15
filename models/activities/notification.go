@@ -45,8 +45,11 @@ const (
 	NotificationSourceCommit
 	// NotificationSourceRepository is a notification for a repository
 	NotificationSourceRepository
+	// notification for a discussion
+	NotificationSourceDiscussion
 )
 
+// TODOC notification에 discussionID를 추가해야 할 지 아니면 다른 곳에 넣어야 할지 고민해보기
 // Notification represents a notification
 type Notification struct {
 	ID     int64 `xorm:"pk autoincr"`
@@ -56,9 +59,10 @@ type Notification struct {
 	Status NotificationStatus `xorm:"SMALLINT INDEX NOT NULL"`
 	Source NotificationSource `xorm:"SMALLINT INDEX NOT NULL"`
 
-	IssueID   int64  `xorm:"INDEX NOT NULL"`
-	CommitID  string `xorm:"INDEX"`
-	CommentID int64
+	IssueID      int64  `xorm:"INDEX NOT NULL"`
+	DiscussionID int64  `xorm:"INDEX"`
+	CommitID     string `xorm:"INDEX"`
+	CommentID    int64
 
 	UpdatedBy int64 `xorm:"INDEX NOT NULL"`
 
@@ -106,6 +110,48 @@ func CreateRepoTransferNotification(ctx context.Context, doer, newOwner *user_mo
 
 		return db.Insert(ctx, notify)
 	})
+}
+
+func createDisscusionNotification(ctx context.Context, userID int64, issue *issues_model.Issue, commentID, updatedByID int64) error {
+
+	notification := &Notification{
+		UserID:       userID,
+		RepoID:       issue.RepoID,
+		Status:       NotificationStatusUnread,
+		DiscussionID: issue.ID,
+		CommentID:    commentID,
+		UpdatedBy:    updatedByID,
+	}
+	notification.Source = NotificationSourceDiscussion
+
+	return db.Insert(ctx, notification)
+
+}
+
+func updateDiscussionNotification(ctx context.Context, userID, DiscussionID, CommentID, UpdatedByID int64) error {
+	notification, err := GetIssueNotification(ctx, userID, DiscussionID)
+
+	if err != nil {
+		return err
+	}
+	var updatedCols []string
+
+	if notification.Status == NotificationStatusRead {
+		notification.Status = NotificationStatusUnread
+		notification.CommentID = CommentID
+		updatedCols = []string{"updated_by", "status", "comment_id"}
+
+	}
+
+	if notification.Status == NotificationStatusUnread {
+		notification.Status = NotificationStatusUnread
+		updatedCols = []string{"updated_by"}
+	}
+
+	notification.UpdatedBy = UpdatedByID 
+
+	_, err = db.GetEngine(ctx).ID(notification.ID).Cols(updatedCols...).Update(notification)
+	return err
 }
 
 func createIssueNotification(ctx context.Context, userID int64, issue *issues_model.Issue, commentID, updatedByID int64) error {
@@ -158,6 +204,8 @@ func GetIssueNotification(ctx context.Context, userID, issueID int64) (*Notifica
 		Get(notification)
 	return notification, err
 }
+
+// TODOC discussion Notification CRUD로 만들기
 
 // LoadAttributes load Repo Issue User and Comment if not loaded
 func (n *Notification) LoadAttributes(ctx context.Context) (err error) {
@@ -223,6 +271,8 @@ func (n *Notification) loadUser(ctx context.Context) (err error) {
 	return nil
 }
 
+// TODOC loadDiscussion 만들기
+
 // GetRepo returns the repo of the notification
 func (n *Notification) GetRepo(ctx context.Context) (*repo_model.Repository, error) {
 	return n.Repository, n.loadRepo(ctx)
@@ -233,6 +283,9 @@ func (n *Notification) GetIssue(ctx context.Context) (*issues_model.Issue, error
 	return n.Issue, n.loadIssue(ctx)
 }
 
+// TODOC GetDiscussion 만들기
+
+// TODOC 여기에 추가
 // HTMLURL formats a URL-string to the notification
 func (n *Notification) HTMLURL(ctx context.Context) string {
 	switch n.Source {
@@ -249,6 +302,7 @@ func (n *Notification) HTMLURL(ctx context.Context) string {
 	return ""
 }
 
+// TODOC 여기에 추가
 // Link formats a relative URL-string to the notification
 func (n *Notification) Link(ctx context.Context) string {
 	switch n.Source {

@@ -25,6 +25,7 @@ type FindNotificationOptions struct {
 	UserID            int64
 	RepoID            int64
 	IssueID           int64
+	DiscussionID      int64
 	Status            []NotificationStatus
 	Source            []NotificationSource
 	UpdatedAfterUnix  int64
@@ -168,6 +169,74 @@ func createOrUpdateIssueNotifications(ctx context.Context, issueID, commentID, n
 	}
 	return nil
 }
+
+func CreateOrUpdateDiscussionNotifications(ctx context.Context, DisscusionID, commentID, notificationAuthorID, receiverID int64) error {
+	ctx, committer, err := db.TxContext(ctx)
+	if err != nil {
+		return err
+	}
+	defer committer.Close()
+
+	if err := createOrUpdateDiscussionNotification(ctx, DisscusionID, commentID, notificationAuthorID, receiverID); err != nil {
+		return err
+	}
+
+	return committer.Commit()
+}
+
+// TODOC discussion Notification을 저장하는 로직으로 바꾸기 
+func createOrUpdateDiscussionNotification(ctx context.Context, DisscussionID, commentID, notificationAuthorID, receiverID int64) error {
+    // init
+	var toNotify container.Set[int64]
+	notifications, err := db.Find[Notification](ctx, FindNotificationOptions{
+		DiscussionID: DisscussionID,
+	})
+	if err != nil {
+		return err
+	}
+
+	issue, err := issues_model.GetIssueByID(ctx, DisscussionID)
+	if err != nil {
+		return err
+	}
+
+	// receiver가 존재하지 않는 경우에 대해서도 고려해보기
+	toNotify = make(container.Set[int64], 1)
+	toNotify.Add(receiverID)
+	
+
+
+    	// notify
+	for userID := range toNotify {
+
+		issue.Repo.Units = nil
+		// user, err := user_model.GetUserByID(ctx, userID)
+		// if err != nil {
+		// 	if user_model.IsErrUserNotExist(err) {
+		// 		continue
+		// 	}
+
+		// 	return err
+		// }
+
+        // TODOC 유저가 repo의 discussion 탭에 접근 가능한지 체크하는 로직 작성
+
+		if notificationExists(notifications, issue.ID, userID) {
+			if err = updateDiscussionNotification(ctx, userID, issue.ID, commentID, notificationAuthorID); err != nil {
+				return err
+			}
+			continue
+		}
+		if err = createDisscusionNotification(ctx, userID, issue, commentID, notificationAuthorID); err != nil {
+			
+			return err
+			
+		}
+
+	}
+	return nil
+}
+
 
 // NotificationList contains a list of notifications
 type NotificationList []*Notification

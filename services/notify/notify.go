@@ -367,3 +367,5 @@ func ChangeDefaultBranch(ctx context.Context, repo *repo_model.Repository) {
 		notifier.ChangeDefaultBranch(ctx, repo)
 	}
 }
+
+

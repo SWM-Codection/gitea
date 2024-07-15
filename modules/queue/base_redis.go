@@ -15,6 +15,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// 체크 baseQueue에 대한 redis 인터페이스 구현체
 type baseRedis struct {
 	client   redis.UniversalClient
 	isUnique bool
