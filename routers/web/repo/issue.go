@@ -141,17 +141,7 @@ func MustAllowPulls(ctx *context.Context) {
 	}
 }
 
-func MustAllowDiscussions(ctx *context.Context) {
-	// var repositoryId = ctx.Repo.Repository.ID
-	// TODO: check enable discussions && check enable Read
-	var check = true
-	if !check {
-		ctx.NotFound("MustAllowDiscussions", nil)
-		return
-	}
-}
-
-func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption optional.Option[bool], isDiscussionOption optional.Option[bool]) {
+func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption optional.Option[bool]) {
 	var err error
 	viewType := ctx.FormString("type")
 	sortType := ctx.FormString("sort")
@@ -223,7 +213,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 		ReviewRequestedID: reviewRequestedID,
 		ReviewedID:        reviewedID,
 		IsPull:            isPullOption,
-		IsDiscussion:      isDiscussionOption,
 		IssueIDs:          nil,
 	}
 	if keyword != "" {
@@ -310,7 +299,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 			ProjectID:         projectID,
 			IsClosed:          isShowClosed,
 			IsPull:            isPullOption,
-			IsDiscussion:      isDiscussionOption,
 			LabelIDs:          labelIDs,
 			SortType:          sortType,
 		})
@@ -322,8 +310,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 			ctx.Data["IssueIndexerUnavailable"] = true
 			return
 		}
-
-		// TODO: GetIssuesByIDs를 디스커션도 조회하도록 만들기
 		issues, err = issues_model.GetIssuesByIDs(ctx, ids, true)
 		if err != nil {
 			ctx.ServerError("GetIssuesByIDs", err)
@@ -500,19 +486,9 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 }
 
 func issueIDsFromSearch(ctx *context.Context, keyword string, opts *issues_model.IssuesOptions) ([]int64, error) {
-
-	var searchOptions = issue_indexer.ToSearchOptions(keyword, opts)
-	var ids []int64
-	var err error
-
-	if !searchOptions.IsDiscussion.ValueOrDefault(false) {
-		ids, _, err = issue_indexer.SearchIssues(ctx, searchOptions)
-		if err != nil {
-			return nil, fmt.Errorf("SearchIssues: %w", err)
-		}
-	} else {
-		ids = []int64{1, 2}
-		// TODO: 특정 레포지토리의 디스커션의 아이디들을 반환할수 있도록 로직 작성
+	ids, _, err := issue_indexer.SearchIssues(ctx, issue_indexer.ToSearchOptions(keyword, opts))
+	if err != nil {
+		return nil, fmt.Errorf("SearchIssues: %w", err)
 	}
 	return ids, nil
 }
@@ -520,26 +496,14 @@ func issueIDsFromSearch(ctx *context.Context, keyword string, opts *issues_model
 // Issues render issues page
 func Issues(ctx *context.Context) {
 	isPullList := ctx.Params(":type") == "pulls"
-	isDiscussion := ctx.Params(":type") == "discussions"
-
 	if isPullList {
-		// handle pull requests
 		MustAllowPulls(ctx)
 		if ctx.Written() {
 			return
 		}
 		ctx.Data["Title"] = ctx.Tr("repo.pulls")
 		ctx.Data["PageIsPullList"] = true
-	} else if isDiscussion {
-		// handle discussions
-		MustAllowDiscussions(ctx)
-		if ctx.Written() {
-			return
-		}
-		ctx.Data["Title"] = ctx.Tr("repo.discussions")
-		ctx.Data["PageIsDiscussionList"] = true
 	} else {
-		// handle issuses
 		MustEnableIssues(ctx)
 		if ctx.Written() {
 			return
@@ -549,7 +513,7 @@ func Issues(ctx *context.Context) {
 		ctx.Data["NewIssueChooseTemplate"] = issue_service.HasTemplatesOrContactLinks(ctx.Repo.Repository, ctx.Repo.GitRepo)
 	}
 
-	issues(ctx, ctx.FormInt64("milestone"), ctx.FormInt64("project"), optional.Some(isPullList), optional.Some(isDiscussion))
+	issues(ctx, ctx.FormInt64("milestone"), ctx.FormInt64("project"), optional.Some(isPullList))
 	if ctx.Written() {
 		return
 	}

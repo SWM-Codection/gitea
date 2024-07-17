@@ -36,7 +36,6 @@ type IssuesOptions struct { //nolint
 	ProjectBoardID     int64
 	IsClosed           optional.Option[bool]
 	IsPull             optional.Option[bool]
-	IsDiscussion       optional.Option[bool]
 	LabelIDs           []int64
 	IncludedLabelNames []string
 	ExcludedLabelNames []string

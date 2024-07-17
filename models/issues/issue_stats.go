@@ -117,13 +117,7 @@ func GetIssueStats(ctx context.Context, opts *IssuesOptions) (*IssueStats, error
 
 func getIssueStatsChunk(ctx context.Context, opts *IssuesOptions, issueIDs []int64) (*IssueStats, error) {
 	stats := &IssueStats{}
-	if opts.IsDiscussion.Has() && opts.IsDiscussion.Value() {
-		// dummy data for open/closed
-		// TODO: 백엔드 연동시 수정 필요
-		stats.OpenCount = 2
-		stats.ClosedCount = 0
-		return stats, nil
-	}
+
 	sess := db.GetEngine(ctx).
 		Join("INNER", "repository", "`issue`.repo_id = `repository`.id")
 
