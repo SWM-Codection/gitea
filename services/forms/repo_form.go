@@ -621,12 +621,12 @@ func (f *MergePullRequestForm) Validate(req *http.Request, errs binding.Errors) 
 
 // CodeCommentForm form for adding code comments for PRs
 type CodeCommentForm struct {
-	Origin         string `binding:"Required;In(timeline,diff)"`
-	Content        string `binding:"Required"`
-	Side           string `binding:"Required;In(previous,proposed)"`
-	Line           int64
-	TreePath       string `form:"path" binding:"Required"`
-	SingleReview   bool   `form:"single_review"`
+	Origin         string `binding:"Required;In(timeline,diff)"`     // diff인지 timeline인지
+	Content        string `binding:"Required"`                       // 리뷰 내용 들어갈
+	Side           string `binding:"Required;In(previous,proposed)"` //
+	Line           int64  // 줄 수
+	TreePath       string `form:"path" binding:"Required"` // 해당 파일의 경로 같은 거
+	SingleReview   bool   `form:"single_review"`           //
 	Reply          int64  `form:"reply"`
 	LatestCommitID string
 	Files          []string
@@ -901,4 +901,11 @@ type DeadlineForm struct {
 func (f *DeadlineForm) Validate(req *http.Request, errs binding.Errors) binding.Errors {
 	ctx := context.GetValidateContext(req)
 	return middleware.Validate(errs, ctx.Data, f, ctx.Locale)
+}
+
+type AiReviewRequestForm struct {
+		
+	TreePath       []string `form:"path" binding:"Required"` // 해당 파일의 경로 같은 거          
+	LatestCommitID string
+	Files          []string
 }
