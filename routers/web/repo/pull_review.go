@@ -58,6 +58,7 @@ func RenderNewCodeCommentForm(ctx *context.Context) {
 	ctx.HTML(http.StatusOK, tplNewComment)
 }
 
+// 체크 코드 코멘트를 만드는 곳
 // CreateCodeComment will create a code comment including an pending review if required
 func CreateCodeComment(ctx *context.Context) {
 	form := web.GetForm(ctx).(*forms.CodeCommentForm)

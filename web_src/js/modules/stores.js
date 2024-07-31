@@ -8,3 +8,12 @@ export function diffTreeStore() {
   }
   return diffTreeStoreReactive;
 }
+
+let repositoryFileStoreReactive; 
+export function repositoryFileStore() {
+  if (!repositoryFileStoreReactive) {
+    repositoryFileStoreReactive = reactive(window.config.pageData.repositoryFileInfo);
+    window.config.pageData.repositoryFileInfo = repositoryFileStoreReactive;
+  }
+  return repositoryFileStoreReactive; 
+}

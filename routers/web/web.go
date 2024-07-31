@@ -5,6 +5,7 @@ package web
 
 import (
 	gocontext "context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -23,6 +24,7 @@ import (
 	"code.gitea.io/gitea/modules/web"
 	"code.gitea.io/gitea/modules/web/middleware"
 	"code.gitea.io/gitea/modules/web/routing"
+	api_repo_router "code.gitea.io/gitea/routers/api/v1/repo"
 	"code.gitea.io/gitea/routers/common"
 	"code.gitea.io/gitea/routers/web/admin"
 	"code.gitea.io/gitea/routers/web/auth"
@@ -47,7 +49,7 @@ import (
 	"code.gitea.io/gitea/services/lfs"
 
 	_ "code.gitea.io/gitea/modules/session" // to registers all internal adapters
-
+	"gitea.com/go-chi/binding"
 	"gitea.com/go-chi/captcha"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -288,6 +290,19 @@ func Routes() *web.Route {
 	registerRoutes(others)
 	routes.Mount("", others)
 	return routes
+}
+
+// bind binding an obj to a func(ctx *context.APIContext)
+func bind[T any](_ T) any {
+	return func(ctx *context.Context) {
+		theObj := new(T) // create a new form obj for every request but not use obj directly
+		errs := binding.Bind(ctx.Req, theObj)
+		if len(errs) > 0 {
+			ctx.Error(http.StatusUnprocessableEntity, "validationError", fmt.Sprintf("%s: %s", errs[0].FieldNames, errs[0].Error()))
+			return
+		}
+		web.SetForm(ctx, theObj)
+	}
 }
 
 var ignSignInAndCsrf = verifyAuthWithOptions(&common.VerifyOptions{DisableCSRF: true})
@@ -841,6 +856,10 @@ func registerRoutes(m *web.Route) {
 		}
 	}
 
+	m.Group("/ai/pull/review", func() {
+		m.Post("", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
+	})
+
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
 			m.Get("/members", org.Members)
@@ -1181,6 +1200,14 @@ func registerRoutes(m *web.Route) {
 			m.Get("/search", repo.ListIssues)
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
+		m.Group("/discussions", func() {
+			m.Group("/new", func() {
+				m.Combo("").
+					Get(context.RepoRef(), repo.NewDiscussion).
+					Post(web.Bind(forms.CreateDiscussionForm{}), repo.NewDiscussionPost)
+			})
+		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
+
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.
 		// So they can apply their own enable/disable logic on routers.
 		m.Group("/{type:issues|pulls}", func() {
@@ -1499,6 +1526,7 @@ func registerRoutes(m *web.Route) {
 				m.Get("/{shaFrom:[a-f0-9]{7,40}}..{shaTo:[a-f0-9]{7,40}}", context.RepoRef(), repo.SetEditorconfigIfExists, repo.SetDiffViewStyle, repo.SetWhitespaceBehavior, repo.SetShowOutdatedComments, repo.ViewPullFilesForRange)
 				m.Group("/reviews", func() {
 					m.Get("/new_comment", repo.RenderNewCodeCommentForm)
+					// 체크 = CreateCodeComment를 호출
 					m.Post("/comments", web.Bind(forms.CodeCommentForm{}), repo.SetShowOutdatedComments, repo.CreateCodeComment)
 					m.Post("/submit", web.Bind(forms.SubmitReviewForm{}), repo.SubmitReview)
 				}, context.RepoMustNotBeArchived())

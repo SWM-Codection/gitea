@@ -626,6 +626,9 @@ func PrepareCompareDiff(
 		ctx.ServerError("GetDiffRangeWithWhitespaceBehavior", err)
 		return false
 	}
+	for _, f := range diff.Files {
+		log.Info("Diff file: %s", f.Name)
+	}
 	ctx.Data["Diff"] = diff
 	ctx.Data["DiffNotAvailable"] = diff.NumFiles == 0
 
