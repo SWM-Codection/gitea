@@ -141,7 +141,7 @@ func saveResults(ctx *context.Context, reviewResults *[]AiReviewResponse, pullID
 
 type DbAdapter interface {
 	GetIssueByID(ctx *context.Context, id int64) (*issues_model.Issue, error)
-	CreateAiPullComment(ctx *context.Context, opts *issues_model.CreateAiPullCommentOption) (*int64, error)
+	CreateAiPullComment(ctx *context.Context, opts *issues_model.CreateAiPullCommentOption) (*issues_model.AiPullComment, error)
 	DeleteAiPullCommentByID(ctx *context.Context, id int64) error
 }
 
@@ -151,7 +151,7 @@ func (is *DbAdapterImpl) GetIssueByID(ctx *context.Context, id int64) (*issues_m
 	return issues_model.GetIssueByID(ctx, id)
 }
 
-func (is *DbAdapterImpl) CreateAiPullComment(ctx *context.Context, opts *issues_model.CreateAiPullCommentOption) (*int64, error) {
+func (is *DbAdapterImpl) CreateAiPullComment(ctx *context.Context, opts *issues_model.CreateAiPullCommentOption) (*issues_model.AiPullComment, error) {
 	return issues_model.CreateAiPullComment(ctx, opts)
 }
 

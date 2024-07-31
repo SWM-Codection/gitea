@@ -30,12 +30,12 @@ func (m *MockDbAdapter) GetIssueByID(ctx *context.Context, id int64) (*issues.Is
 	return args.Get(0).(*issues.Issue), args.Error(1)
 }
 
-func (m *MockDbAdapter) CreateAiPullComment(ctx *context.Context, opts *issues.CreateAiPullCommentOption) (*int64, error) {
+func (m *MockDbAdapter) CreateAiPullComment(ctx *context.Context, opts *issues.CreateAiPullCommentOption) (*issues.AiPullComment, error) {
 	args := m.Called(ctx, opts)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	commentID := args.Get(0).(*int64)
+	commentID := args.Get(0).(*issues.AiPullComment)
 	return commentID, args.Error(1)
 }
 

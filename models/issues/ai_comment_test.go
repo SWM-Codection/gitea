@@ -23,7 +23,7 @@ func TestCreateAiPullComment(t *testing.T) {
 	repo := unittest.AssertExistsAndLoadBean(t, &repo_model.Repository{ID: pull.RepoID})
 	content := "this code is sh**"
 	treePath := "/src/ddd"
-	newAiCommentID, err := ai_comment.CreateAiPullComment(db.DefaultContext, &ai_comment.CreateAiPullCommentOption{
+	newAiComment, err := ai_comment.CreateAiPullComment(db.DefaultContext, &ai_comment.CreateAiPullCommentOption{
 		Doer:     doer,
 		Pull:     pull,
 		Repo:     repo,
@@ -31,11 +31,6 @@ func TestCreateAiPullComment(t *testing.T) {
 		TreePath: treePath,
 	})
 	assert.NoError(err)
-	newAiComment, err := ai_comment.GetAIPullCommentByID(db.DefaultContext, *newAiCommentID)
-	if err != nil {
-		return
-	}
-
 	assert.EqualValues(newAiComment.Content, content)
 	assert.EqualValues(newAiComment.TreePath, treePath)
 	assert.EqualValues(newAiComment.PosterID, doer.ID)

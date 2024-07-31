@@ -61,7 +61,7 @@ func (err ErrAiPullCommentNotExist) Error() string {
 	return fmt.Sprintf("AiPullComment does not exist [id: %d, repo_id: %d]", err.ID, err.RepoID)
 }
 
-func CreateAiPullComment(ctx context.Context, opts *CreateAiPullCommentOption) (*int64, error) {
+func CreateAiPullComment(ctx context.Context, opts *CreateAiPullCommentOption) (*AiPullComment, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 	if err != nil {
@@ -78,7 +78,7 @@ func CreateAiPullComment(ctx context.Context, opts *CreateAiPullCommentOption) (
 	}
 
 	e := db.GetEngine(ctx)
-	newComment, err := e.Insert(aiPullComment)
+	_, err = e.Insert(aiPullComment)
 	if err != nil {
 		fmt.Errorf("new Comment insert is invalid")
 		return nil, err
@@ -88,7 +88,7 @@ func CreateAiPullComment(ctx context.Context, opts *CreateAiPullCommentOption) (
 		return nil, err
 	}
 
-	return &newComment, nil
+	return aiPullComment, nil
 
 }
 
