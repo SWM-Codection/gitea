@@ -96,8 +96,8 @@ func TestCreateAiPullComment(t *testing.T) {
 	mockDbAdapter.On("GetIssueByID", ctx, int64(123)).Return(issue, nil)
 
 	// Mock CreateAiPullComment
-	commentID := int64(1)
-	mockDbAdapter.On("CreateAiPullComment", ctx, mock.Anything).Return(&commentID, nil)
+	comment := issues.AiPullComment{ID: 10}
+	mockDbAdapter.On("CreateAiPullComment", ctx, mock.Anything).Return(&comment, nil)
 
 	// Call the method under test
 	err := aiService.CreateAiPullComment(ctx, form, mockRequester, mockDbAdapter)
