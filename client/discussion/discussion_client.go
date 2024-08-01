@@ -65,6 +65,13 @@ func GetDiscussionCount(repoId int64, isClosed bool) (*resty.Response, error) {
 		Get(fmt.Sprintf("/discussion/%d/count", repoId))
 }
 
+func GetDiscussionList(repoId int64, isClosed bool) (*resty.Response, error) {
+	var isClosedAsInt = map[bool]int{false: 0, true: 1}[isClosed]
+	return client.Request().
+		SetQueryParam("isClosed", string(isClosedAsInt)).
+		Get(fmt.Sprintf("/discussion/%d/list", repoId))
+}
+
 func HandleDiscussionAvailable() (*resty.Response, error) {
 	return client.Request().Post("/discussion/available")
 }
