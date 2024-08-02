@@ -10,6 +10,7 @@ import (
 
 	issues_model "code.gitea.io/gitea/models/issues"
 	"code.gitea.io/gitea/modules/json"
+	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
 )
@@ -42,7 +43,7 @@ type AiRequester interface {
 var _ AiService = &AiServiceImpl{}
 var _ AiRequester = &AiRequesterImpl{}
 
-var apiURL = "http://localhost:8000/api/pulls"
+var apiURL = setting.AiServer.Url
 
 type AiReviewCommentResult struct {
 	PullID   string
@@ -79,37 +80,39 @@ func (aiRequest *AiRequesterImpl) RequestReviewToAI(ctx *context.Context, reques
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
 func (aiController *AiServiceImpl) CreateAiPullComment(ctx *context.Context, form *api.CreateAiPullCommentForm, aiRequester AiRequester, adapter DbAdapter) error {
 	branch := form.Branch
-	wg := new(sync.WaitGroup)
-	mu := new(sync.Mutex)
-	wg.Add(len(*form.FileContents))
+	var wg *sync.WaitGroup = new(sync.WaitGroup)
 
-	var reviewResults []AiReviewResponse
+	requestCnt := len(*form.FileContents)
+	wg.Add(requestCnt)
+
+	resultQueue := make(chan *AiReviewResponse, requestCnt)
+
 	for _, fileContent := range *form.FileContents {
 		go func(fileContent *api.PathContentMap) {
 			defer wg.Done()
-
 			result, err := aiRequester.RequestReviewToAI(ctx, &AiReviewRequest{
 				Branch:   branch,
 				TreePath: fileContent.TreePath,
 				Content:  fileContent.Content,
 			})
 			if err != nil {
+				fmt.Errorf("request to ai server fail %s", result.TreePath)
+				resultQueue <- nil
 				return
 			}
-			mu.Lock()
-			reviewResults = append(reviewResults, *result)
-			mu.Unlock()
+			resultQueue <- result
 		}(&fileContent)
 	}
 
 	wg.Wait()
+	close(resultQueue)
 
 	pullID, err := strconv.ParseInt(form.PullID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("pullID is invalid")
 	}
 
-	return saveResults(ctx, &reviewResults, pullID, adapter)
+	return saveResults(ctx, resultQueue, pullID, adapter)
 }
 
 func (aiService *AiServiceImpl) DeleteAiPullComment(ctx *context.Context, id int64, adapter DbAdapter) error {
@@ -117,13 +120,13 @@ func (aiService *AiServiceImpl) DeleteAiPullComment(ctx *context.Context, id int
 	return adapter.DeleteAiPullCommentByID(ctx, id)
 }
 
-func saveResults(ctx *context.Context, reviewResults *[]AiReviewResponse, pullID int64, adapter DbAdapter) error {
+func saveResults(ctx *context.Context, reviewResults chan *AiReviewResponse, pullID int64, adapter DbAdapter) error {
 	pull, err := adapter.GetIssueByID(ctx, pullID)
 	if err != nil {
 		return fmt.Errorf("pr not found by id")
 	}
 
-	for _, result := range *reviewResults {
+	for result := range reviewResults {
 		_, err := adapter.CreateAiPullComment(ctx, &issues_model.CreateAiPullCommentOption{
 			Doer:     ctx.Doer,
 			Repo:     pull.Repo,

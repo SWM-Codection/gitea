@@ -1,13 +1,16 @@
 package ai
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"code.gitea.io/gitea/models/issues"
 	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
 )
 
 // MockAiRequester is a mock implementation of AiRequester
@@ -16,6 +19,7 @@ type MockAiRequester struct {
 }
 
 func (m *MockAiRequester) RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error) {
+	time.Sleep(1000 * time.Millisecond)
 	args := m.Called(ctx, request)
 	return args.Get(0).(*AiReviewResponse), args.Error(1)
 }
@@ -53,43 +57,39 @@ func TestCreateAiPullComment(t *testing.T) {
 	// Set up the mock DbAdapter
 	mockDbAdapter := new(MockDbAdapter)
 
+	
 	// Mock context and form
 	ctx := &context.Context{}
+
+	var fileContent *[]structs.PathContentMap = new([]structs.PathContentMap)
+	for i := 0; i < 100; i++ {
+		*fileContent = append(*fileContent, structs.PathContentMap{
+			TreePath: fmt.Sprintf("file%d.go", i),
+			Content:  fmt.Sprintf("code content %d", i),
+			
+			
+		})
+
+		mockRequester.On("RequestReviewToAI", ctx, &AiReviewRequest{
+			Branch:   "main",
+			TreePath: fmt.Sprintf("file%d.go", i),
+			Content:  fmt.Sprintf("code content %d", i),
+		}).Return(&AiReviewResponse{
+			Branch:   "main",
+			TreePath: fmt.Sprintf("file%d.go", i+100),
+			Content:  fmt.Sprintf("code content %d", i+100),
+		}, nil)
+
+	}
+
 	form := &structs.CreateAiPullCommentForm{
-		PullID: "123",
-		Branch: "main",
-		FileContents: &[]structs.PathContentMap{
-			{
-				TreePath: "file1.go",
-				Content:  "code content 1",
-			},
-			{
-				TreePath: "file2.go",
-				Content:  "code content 2",
-			},
-		},
+		PullID:       "123",
+		Branch:       "main",
+		FileContents: fileContent,
 	}
 
 	// Mock response from AI
-	mockRequester.On("RequestReviewToAI", ctx, &AiReviewRequest{
-		Branch:   "main",
-		TreePath: "file1.go",
-		Content:  "code content 1",
-	}).Return(&AiReviewResponse{
-		Branch:   "main",
-		TreePath: "file1.go",
-		Content:  "reviewed content 1",
-	}, nil)
 
-	mockRequester.On("RequestReviewToAI", ctx, &AiReviewRequest{
-		Branch:   "main",
-		TreePath: "file2.go",
-		Content:  "code content 2",
-	}).Return(&AiReviewResponse{
-		Branch:   "main",
-		TreePath: "file2.go",
-		Content:  "reviewed content 2",
-	}, nil)
 
 	// Mock GetIssueByID
 	issue := &issues.Issue{}

@@ -402,6 +402,8 @@ func SubmitInstall(ctx *context.Context) {
 	// TODO: hardcoded for now, make it configurable later
 	cfg.Section("discussion_server").Key("HOST").SetValue("localhost")
 	cfg.Section("discussion_server").Key("PORT").SetValue("8081")
+	cfg.Section("ai_server").Key("HOST").SetValue("localhost")
+	cfg.Section("ai_server").Key("PORT").SetValue("8000")
 
 	if form.SSHPort == 0 {
 		cfg.Section("server").Key("DISABLE_SSH").SetValue("true")
