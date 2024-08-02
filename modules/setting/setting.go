@@ -119,6 +119,7 @@ func loadCommonSettingsFrom(cfg ConfigProvider) error {
 	loadServerFrom(cfg)
 	loadSSHFrom(cfg)
 	loadDiscussionServerFrom(cfg)
+	loadAiServerFrom(cfg)
 
 	mustCurrentRunUserMatch(cfg) // it depends on the SSH config, only non-builtin SSH server requires this check
 
