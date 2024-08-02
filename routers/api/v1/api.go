@@ -920,6 +920,8 @@ func Routes() *web.Route {
 				Patch(reqToken(), notify.ReadThread)
 		}, tokenRequiresScopes(auth_model.AccessTokenScopeCategoryNotification))
 
+
+
 		// Users (requires user scope)
 		m.Group("/users", func() {
 			m.Get("/search", reqExploreSignIn(), user.Search)
