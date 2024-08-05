@@ -76,15 +76,7 @@ export default {
                     endLine: lines + 1, 
                 };
             }));
-
-
-            // const formData = new FormData();
-            // formData.append('name', name);
-            // formData.append('content', content);
-            // formData.append('branchName', branchName);
-            // formData.append('codes', JSON.stringify(codes));            
-
-            // i'm working on here! 
+            
             const resp = await POST(`${this.store.repoLink}/discussions/new`, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -96,8 +88,8 @@ export default {
                     codes
                 }),
             });
-            const result = await resp.text(); 
-            console.log(result);
+            const {discussionId} = await resp.json(); 
+            window.location.href = `${this.store.repoLink}/discussions/${discussionId}`
         }
     },
     computed: {
@@ -105,18 +97,6 @@ export default {
             const filtered = this.store.files.filter(file => '#discussion-' + file.NameHash === this.store.selectedItem)
             if (filtered.length <= 0) return '파일을 선택해주세요'; 
             return filtered[0].Name;
-        },
-        contents() {
-            return [
-                {
-                    line: 1, 
-                    content: 'hello'
-                },
-                {
-                    line: 2, 
-                    content: 'world'
-                },
-            ]
         },
     },
     watch: {

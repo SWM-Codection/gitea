@@ -12,19 +12,20 @@ import (
 )
 
 type DiscussionCode struct {
-	Id        sql.NullInt64 `json:"id"`
-	FilePath  string        `json:"filePath"`
-	StartLine int           `json:"startLine"`
-	EndLine   int           `json:"endLine"`
+	Id        int64  `json:"id"`
+	FilePath  string `json:"filePath"`
+	StartLine int    `json:"startLine"`
+	EndLine   int    `json:"endLine"`
 }
 
 type PostDiscussionRequest struct {
-	RepoId   int64            `json:"repoId"`
-	Poster   *user_model.User `json:"-"`
-	PosterId int64            `json:"posterId"`
-	Name     string           `json:"name"`
-	Content  string           `json:"content"`
-	Codes    []DiscussionCode `json:"codes"`
+	RepoId     int64            `json:"repoId"`
+	Poster     *user_model.User `json:"-"`
+	PosterId   int64            `json:"posterId"`
+	Name       string           `json:"name"`
+	Content    string           `json:"content"`
+	BranchName string           `json:"branchName"`
+	Codes      []DiscussionCode `json:"codes"`
 }
 
 type DiscussionAvailableRequest struct {

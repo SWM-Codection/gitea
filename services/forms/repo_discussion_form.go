@@ -10,9 +10,10 @@ import (
 )
 
 type CreateDiscussionForm struct {
-	Name    string
-	Content string
-	Codes   []discussion_client.DiscussionCode
+	Name       string
+	Content    string
+	BranchName string
+	Codes      []discussion_client.DiscussionCode
 }
 
 func (d *CreateDiscussionForm) Validate(req *http.Request, errs binding.Errors) binding.Errors {

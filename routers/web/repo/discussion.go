@@ -33,12 +33,13 @@ func NewDiscussionPost(ctx *context.Context) {
 		return
 	}
 	req := &discussion_client.PostDiscussionRequest{
-		RepoId:   repo.ID,
-		Poster:   ctx.Doer,
-		PosterId: ctx.Doer.ID,
-		Name:     form.Name,
-		Content:  form.Content,
-		Codes:    form.Codes,
+		RepoId:     repo.ID,
+		Poster:     ctx.Doer,
+		PosterId:   ctx.Doer.ID,
+		Name:       form.Name,
+		Content:    form.Content,
+		BranchName: form.BranchName,
+		Codes:      form.Codes,
 	}
 	discussionId, err := discussion_service.NewDiscussion(ctx, repo, req)
 	log.Info("New Discussion Post : %v", discussionId)
