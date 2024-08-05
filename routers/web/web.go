@@ -856,8 +856,9 @@ func registerRoutes(m *web.Route) {
 		}
 	}
 
-	m.Group("/ai/pull/review", func() {
-		m.Post("", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
+	m.Group("/ai", func() {
+		m.Post("/pull/review", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
+		m.Post("/discussion/sample", bind(structs.CreateSampleAiCommentForm{}), api_repo_router.GenerateAiSampleCodes)
 	})
 
 	m.Group("/org", func() {

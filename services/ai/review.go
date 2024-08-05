@@ -1,15 +1,13 @@
 package ai
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 	"sync"
 
+	"code.gitea.io/gitea/client"
 	issues_model "code.gitea.io/gitea/models/issues"
-	"code.gitea.io/gitea/modules/json"
 	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
@@ -53,26 +51,15 @@ type AiReviewCommentResult struct {
 }
 
 func (aiRequest *AiRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error) {
-	requestBytes, _ := json.Marshal(request)
-	buffer := bytes.NewBuffer(requestBytes)
-	response, err := http.Post(apiURL, "application/json", buffer)
+
+	response, err := client.Request().SetBody(request).Post(fmt.Sprintf(apiURL + "/api/sample"))
 
 	if err != nil {
 		return nil, err
 	}
-
-	defer response.Body.Close()
-
-	bodyJson, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	result := &AiReviewResponse{}
-	err = json.Unmarshal(bodyJson, result)
-	if err != nil {
-		return nil, err
-	}
+
+	json.Unmarshal(response.Body(), result)
 
 	return result, nil
 }
