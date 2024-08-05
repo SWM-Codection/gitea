@@ -151,7 +151,7 @@ func MustAllowDiscussions(ctx *context.Context) {
 	}
 }
 
-func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption optional.Option[bool], isDiscussionOption optional.Option[bool]) {
+func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption optional.Option[bool]) {
 	var err error
 	viewType := ctx.FormString("type")
 	sortType := ctx.FormString("sort")
@@ -223,7 +223,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 		ReviewRequestedID: reviewRequestedID,
 		ReviewedID:        reviewedID,
 		IsPull:            isPullOption,
-		IsDiscussion:      isDiscussionOption,
 		IssueIDs:          nil,
 	}
 	if keyword != "" {
@@ -310,7 +309,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 			ProjectID:         projectID,
 			IsClosed:          isShowClosed,
 			IsPull:            isPullOption,
-			IsDiscussion:      isDiscussionOption,
 			LabelIDs:          labelIDs,
 			SortType:          sortType,
 		})
@@ -520,8 +518,6 @@ func issueIDsFromSearch(ctx *context.Context, keyword string, opts *issues_model
 // Issues render issues page
 func Issues(ctx *context.Context) {
 	isPullList := ctx.Params(":type") == "pulls"
-	isDiscussion := ctx.Params(":type") == "discussions"
-
 	if isPullList {
 		// handle pull requests
 		MustAllowPulls(ctx)
@@ -530,14 +526,6 @@ func Issues(ctx *context.Context) {
 		}
 		ctx.Data["Title"] = ctx.Tr("repo.pulls")
 		ctx.Data["PageIsPullList"] = true
-	} else if isDiscussion {
-		// handle discussions
-		MustAllowDiscussions(ctx)
-		if ctx.Written() {
-			return
-		}
-		ctx.Data["Title"] = ctx.Tr("repo.discussions")
-		ctx.Data["PageIsDiscussionList"] = true
 	} else {
 		// handle issuses
 		MustEnableIssues(ctx)
@@ -549,7 +537,7 @@ func Issues(ctx *context.Context) {
 		ctx.Data["NewIssueChooseTemplate"] = issue_service.HasTemplatesOrContactLinks(ctx.Repo.Repository, ctx.Repo.GitRepo)
 	}
 
-	issues(ctx, ctx.FormInt64("milestone"), ctx.FormInt64("project"), optional.Some(isPullList), optional.Some(isDiscussion))
+	issues(ctx, ctx.FormInt64("milestone"), ctx.FormInt64("project"), optional.Some(isPullList))
 	if ctx.Written() {
 		return
 	}
