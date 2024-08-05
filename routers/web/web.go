@@ -1146,6 +1146,9 @@ func registerRoutes(m *web.Route) {
 
 	m.Group("/{username}/{reponame}", func() {
 		m.Get("/find/*", repo.FindFiles)
+		m.Group("/all-tree-list", func() {
+			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.AllTreeList)
+		})
 		m.Group("/tree-list", func() {
 			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.TreeList)
 			m.Get("/tag/*", context.RepoRefByType(context.RepoRefTag), repo.TreeList)
@@ -1198,6 +1201,13 @@ func registerRoutes(m *web.Route) {
 				m.Get("/choose", context.RepoRef(), repo.NewIssueChooseTemplate)
 			})
 			m.Get("/search", repo.ListIssues)
+		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
+
+		m.Group("/discussions", func() {
+			m.Group("/new", func() {
+				m.Combo("").Get(context.RepoRef(), repo.NewDiscussion).
+					Post(web.Bind(forms.CreateDiscussionForm{}), repo.NewDiscussionPost)
+			})
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.
