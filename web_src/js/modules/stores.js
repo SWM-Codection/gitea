@@ -8,3 +8,18 @@ export function diffTreeStore() {
   }
   return diffTreeStoreReactive;
 }
+
+let discussionTreeStoreReactive;
+export function discussionTreeStore() {
+  if (!discussionTreeStoreReactive) {
+    discussionTreeStoreReactive = reactive({
+      repoLink: window.config.pageData.repoLink,
+      files: [], 
+      selectedItem: null, 
+      contents: [], 
+      checkedItems: [], 
+    });
+    window.config.pageData.discussionTreeInfo = discussionTreeStoreReactive;
+  }
+  return discussionTreeStoreReactive;
+}

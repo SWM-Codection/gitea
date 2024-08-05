@@ -3,8 +3,11 @@
 {{end}}
 <form class="issue-content ui comment form form-fetch-action" id="new-discussion" action="{{.Link}}" method="post">
 	{{.CsrfTokenHtml}}
-	<div class="issue-content-left">
+	<div class="issue-content-left ui segment">
         <div id="discussion-form"></div>
+        <script>
+            window.config.pageData.repoLink = "{{.RepoLink}}";
+        </script>
 	</div>
 
 	<div class="issue-content-right ui segment">

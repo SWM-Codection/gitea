@@ -3,9 +3,11 @@ package discussion
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"code.gitea.io/gitea/client"
 	user_model "code.gitea.io/gitea/models/user"
+	"code.gitea.io/gitea/modules/log"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -56,8 +58,18 @@ type ModifyDiscussionRequest struct {
 	Codes        []DiscussionCode `json:"codes"`
 }
 
-func PostDiscussion(request PostDiscussionRequest) (*resty.Response, error) {
-	return client.Request().SetBody(request).Post("/discussion")
+func PostDiscussion(request *PostDiscussionRequest) (int, error) {
+	log.Info("PostDiscussion request : %v", request)
+	resp, err := client.Request().SetBody(request).Post("/discussion")
+	if err != nil {
+		return -1, err
+	}
+	log.Info("resp.string() : %v", resp.String())
+	result, err := strconv.Atoi(resp.String())
+	if err != nil {
+		return -1, err
+	}
+	return result, err
 }
 
 func GetDiscussionCount(repoId int64, isClosed bool) (*resty.Response, error) {
@@ -82,10 +94,10 @@ func GetDiscussionContents(discussionId int64) (*resty.Response, error) {
 	return client.Request().Get(fmt.Sprintf("/discussion/%d/codes", discussionId))
 }
 
-func PostComment(request PostCommentRequest) (*resty.Response, error) {
+func PostComment(request *PostCommentRequest) (*resty.Response, error) {
 	return client.Request().SetBody(request).Post("/discussion/comment")
 }
 
-func ModifyDiscussion(request ModifyDiscussionRequest) (*resty.Response, error) {
+func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error) {
 	return client.Request().SetBody(request).Put("/discussion")
 }
