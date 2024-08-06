@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"sync"
 
-	"code.gitea.io/gitea/client"
+	ai_client "code.gitea.io/gitea/client/ai"
 	issues_model "code.gitea.io/gitea/models/issues"
 	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
@@ -52,7 +52,7 @@ type AiReviewCommentResult struct {
 
 func (aiRequest *AiRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error) {
 
-	response, err := client.Request().SetBody(request).Post(fmt.Sprintf(apiURL + "/api/sample"))
+	response, err := ai_client.Request().SetBody(request).Post(fmt.Sprintf("/api/sample"))
 
 	if err != nil {
 		return nil, err

@@ -74,7 +74,6 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 			},
 			mockError:      errors.New("partial failure"),
 			expectedLength: 3,
-			expectedError:  false,
 		},
 	}
 
@@ -94,13 +93,8 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 			// 테스트 대상 함수를 실행
 			results, err := service.GenerateAiSampleCodes(ctx, tc.form, mockRequester, mockAdapter)
 
-			// 결과를 검증
-			if tc.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Len(t, results, tc.expectedLength)
-			}
+			assert.NoError(t, err)
+			assert.Len(t, results, tc.expectedLength)
 
 			// 모의 객체가 호출 확인
 			mockRequester.AssertExpectations(t)

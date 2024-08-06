@@ -9,11 +9,6 @@ import (
 
 // TODOC 재시도 횟수 저장
 
-type AiSampleCodeRetryCount struct {
-	TargetCommentId int64 `xorm: "target_comment_id"`
-	count           int64 `xorm: "count"`
-}
-
 type DiscussionAiComment struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
 	TargetCommentId int64 `xorm:"'discussion_id' notnull"`
@@ -24,22 +19,16 @@ type DiscussionAiComment struct {
 type CreateDiscussionAiCommentOpt struct {
 	TargetCommentId int64
 	GenearaterId    int64
-	// Scope        string `xorm:"'scope'"`
+
 	Content string
 }
 
 type DeleteDiscussionAiCommentOpt struct {
 	TargetCommentId int64
 	GenearaterId    int64
-	// Scope        string `xorm:"'scope'"`
 }
 
-type CommentScopeEnum string
 
-const (
-	GLOBAL CommentScopeEnum = "GLOBAL"
-	LOCAL  CommentScopeEnum = "LOCAL"
-)
 
 func init() {
 	db.RegisterModel(new(DiscussionAiComment))

@@ -2,10 +2,9 @@ package ai
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
-	"code.gitea.io/gitea/client"
+	ai_client "code.gitea.io/gitea/client/ai"
 	discussion_model "code.gitea.io/gitea/models/discussion"
 	"code.gitea.io/gitea/modules/json"
 	api "code.gitea.io/gitea/modules/structs"
@@ -45,7 +44,7 @@ type AiSampleCodeResult struct {
 
 func (aiRequest *AiSampleCodeRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiSampleCodeRequest) (*AiSampleCodeResponse, error) {
 
-	response, err := client.Request().SetBody(request).Post(apiURL + "/api/sample")
+	response, err := ai_client.Request().SetBody(request).Post("/api/sample")
 
 	if err != nil {
 		fmt.Errorf("%s", err.Error())
@@ -61,56 +60,6 @@ func (aiRequest *AiSampleCodeRequesterImpl) RequestReviewToAI(ctx *context.Conte
 	}
 
 	return result, nil
-}
-
-// TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
-// TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
-func (aiController *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.CreateSampleAiCommentForm, aiRequester AiSampleCodeRequester, adapter DiscussionDbAdapter) ([]*AiSampleCodeResponse, error) {
-	var wg *sync.WaitGroup = new(sync.WaitGroup)
-
-	requestCnt := AI_SAMPLE_CODE_UNIT
-	wg.Add(requestCnt)
-
-	resultQueue := make(chan *AiSampleCodeResponse, requestCnt)
-
-	for i := 0; i < 3; i++ {
-		go func(form *api.CreateSampleAiCommentForm) {
-			defer wg.Done()
-			result, err := aiRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
-				CodeContent:    form.CodeContent,
-				CommentContent: form.CommentContent,
-			})
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("Recovered in GenerateAiSampleCodes: %v", r)
-					resultQueue <- nil
-				}
-			}()
-
-			if err != nil {
-				// TODOC 실패 시 재시도 로직 추가
-				fmt.Errorf("request sample to ai server fail")
-				resultQueue <- nil
-				return
-			}
-			resultQueue <- result
-		}(form)
-	}
-
-	wg.Wait()
-	close(resultQueue)
-	sampleCodes := make([]*AiSampleCodeResponse, 0, 3)
-	for result := range resultQueue {
-		sampleCodes = append(sampleCodes, result)
-
-	}
-
-	return sampleCodes, nil
-}
-
-func (aiService *DiscussionAiServiceImpl) DeleteAiPullComment(ctx *context.Context, id int64, adapter DiscussionDbAdapter) error {
-
-	return adapter.DeleteDiscussionAiCommentByID(ctx, id)
 }
 
 func saveAiSampleCode(ctx *context.Context, reviewResults chan *AiSampleCodeResponse, pullID int64, adapter DiscussionDbAdapter) error {
@@ -136,4 +85,47 @@ func (is *DiscussionDbAdapterImpl) DeleteDiscussionAiCommentByID(ctx *context.Co
 
 	return discussion_model.DeleteDiscussionAiCommentByID(ctx, id)
 
+}
+
+// TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
+// TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
+func (aiController *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.CreateSampleAiCommentForm, aiRequester AiSampleCodeRequester, adapter DiscussionDbAdapter) ([]*AiSampleCodeResponse, error) {
+	var wg *sync.WaitGroup = new(sync.WaitGroup)
+
+	wg.Add(AI_SAMPLE_CODE_UNIT)
+
+	resultQueue := make(chan *AiSampleCodeResponse, AI_SAMPLE_CODE_UNIT)
+
+	for i := 0; i < AI_SAMPLE_CODE_UNIT; i++ {
+		go func(form *api.CreateSampleAiCommentForm) {
+			defer wg.Done()
+			result, err := aiRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
+				CodeContent:    form.CodeContent,
+				CommentContent: form.CommentContent,
+			})
+
+			if err != nil {
+				// TODOC 실패 시 재시도 로직 추가
+				fmt.Errorf("request sample to ai server fail")
+				resultQueue <- nil
+				return
+			}
+			resultQueue <- result
+		}(form)
+	}
+
+	wg.Wait()
+	close(resultQueue)
+	sampleCodes := make([]*AiSampleCodeResponse, 0, AI_SAMPLE_CODE_UNIT)
+	for result := range resultQueue {
+		sampleCodes = append(sampleCodes, result)
+
+	}
+
+	return sampleCodes, nil
+}
+
+func (aiService *DiscussionAiServiceImpl) DeleteAiPullComment(ctx *context.Context, id int64, adapter DiscussionDbAdapter) error {
+
+	return adapter.DeleteDiscussionAiCommentByID(ctx, id)
 }
