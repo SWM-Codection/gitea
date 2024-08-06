@@ -1,4 +1,4 @@
-package client
+package ai
 
 import (
 	"sync"
@@ -14,7 +14,7 @@ var (
 
 func Request() *resty.Request {
 	once.Do(func() {
-		client = resty.New().SetBaseURL(setting.DiscussionServer.Url)
+		client = resty.New().SetBaseURL(setting.AiServer.Url)
 	})
 	return client.R()
 }

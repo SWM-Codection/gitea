@@ -10,7 +10,6 @@ import (
 	"code.gitea.io/gitea/services/context"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
 )
 
 // MockAiRequester is a mock implementation of AiRequester
@@ -57,7 +56,6 @@ func TestCreateAiPullComment(t *testing.T) {
 	// Set up the mock DbAdapter
 	mockDbAdapter := new(MockDbAdapter)
 
-	
 	// Mock context and form
 	ctx := &context.Context{}
 
@@ -66,8 +64,6 @@ func TestCreateAiPullComment(t *testing.T) {
 		*fileContent = append(*fileContent, structs.PathContentMap{
 			TreePath: fmt.Sprintf("file%d.go", i),
 			Content:  fmt.Sprintf("code content %d", i),
-			
-			
 		})
 
 		mockRequester.On("RequestReviewToAI", ctx, &AiReviewRequest{
@@ -89,7 +85,6 @@ func TestCreateAiPullComment(t *testing.T) {
 	}
 
 	// Mock response from AI
-
 
 	// Mock GetIssueByID
 	issue := &issues.Issue{}
