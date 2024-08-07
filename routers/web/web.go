@@ -1185,7 +1185,16 @@ func registerRoutes(m *web.Route) {
 	// end "/{username}/{reponame}": view milestone, label, issue, pull, etc
 
 	m.Group("/{username}/{reponame}", func() {
-		m.Group("/{type:issues|pulls|discussions}", func() {
+		m.Group("/discussions", func() {
+			m.Get("", repo.Discussions)
+			m.Group("/{index}", func() {
+				m.Get("", repo.ViewDiscussion)
+			})
+		})
+	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
+
+	m.Group("/{username}/{reponame}", func() {
+		m.Group("/{type:issues|pulls}", func() {
 			m.Get("", repo.Issues)
 			m.Group("/{index}", func() {
 				m.Get("", repo.ViewIssue)

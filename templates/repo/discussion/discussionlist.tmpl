@@ -1,0 +1,66 @@
+<div id="issue-list" class="flex-list">
+	{{$approvalCounts := .ApprovalCounts}}
+	{{range .Discussions}}
+		<div class="flex-item">
+			<div class="flex-item-icon">
+				{{if $.CanWriteIssuesOrPulls}}
+				<input type="checkbox" autocomplete="off" class="issue-checkbox tw-mr-4" data-issue-id={{.ID}} aria-label="{{ctx.Locale.Tr "repo.issues.action_check"}} &quot;{{.Title}}&quot;">
+				{{end}}
+				{{template "repo/discussion/icon" .}}
+			</div>
+
+			<div class="flex-item-main">
+				<div class="flex-item-header">
+					<div class="flex-item-title">
+						<a class="tw-no-underline issue-title" href="{{$.RepoLink}}/discussions/{{.Id}}">{{RenderEmoji $.Context .Name | RenderCodeBlock}}</a>
+				
+						<span class="labels-list tw-ml-1">
+							<!-- labels here, but i removed that -->
+						</span>
+					</div>
+					{{if or .NumComments}}
+					<div class="flex-item-trailing">
+						{{if .NumComments}}
+						<div class="text grey">
+							<a class="tw-no-underline muted flex-text-block" href="{{$.RepoLink}}/discussions/{{.Id}}">
+								{{svg "octicon-comment" 16}}{{.NumComments}}
+							</a>
+						</div>
+						{{end}}
+					</div>
+					{{end}}
+				</div>
+				<div class="flex-item-body">
+					<a class="index" href="{{$.Link}}/{{.Id}}">
+						{{if eq $.listType "dashboard"}}
+							{{.Repo.FullName}}#{{.Index}}
+						{{else}}
+							#{{.Index}}
+						{{end}}
+					</a>
+					{{$timeStr := TimeSinceUnix .GetLastEventTimestamp ctx.Locale}}
+					{{if gt .Poster.ID 0}}
+						{{ctx.Locale.Tr .GetLastEventLabel $timeStr .Poster.HomeLink .Poster.GetDisplayName}}
+					{{else}}
+						{{ctx.Locale.Tr .GetLastEventLabelFake $timeStr .Poster.GetDisplayName}}
+					{{end}}
+
+					{{if ne .DeadlineUnix 0}}
+						<span class="due-date flex-text-inline" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date"}}">
+							<span{{if .IsOverdue}} class="text red"{{end}}>
+								{{svg "octicon-calendar" 14}}
+								{{DateTime "short" (.DeadlineUnix.FormatDate)}}
+							</span>
+						</span>
+					{{end}}
+				</div>
+			</div>
+		</div>
+	{{end}}
+	{{if .IssueIndexerUnavailable}}
+		<div class="ui error message">
+			<p>{{ctx.Locale.Tr "search.keyword_search_unavailable"}}</p>
+		</div>
+	{{end}}
+</div>
+{{template "base/paginate" .}}
