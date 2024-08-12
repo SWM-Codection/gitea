@@ -904,8 +904,7 @@ func (f *DeadlineForm) Validate(req *http.Request, errs binding.Errors) binding.
 }
 
 type AiReviewRequestForm struct {
-		
-	TreePath       []string `form:"path" binding:"Required"` // 해당 파일의 경로 같은 거          
+	TreePath       []string `form:"path" binding:"Required"` // 해당 파일의 경로 같은 거
 	LatestCommitID string
 	Files          []string
 }

@@ -1,14 +1,11 @@
 package ai
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"sync"
 
-	ai_client "code.gitea.io/gitea/client/ai"
 	issues_model "code.gitea.io/gitea/models/issues"
-	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
 )
@@ -16,52 +13,6 @@ import (
 type AiService interface {
 	CreateAiPullComment(ctx *context.Context, form *api.CreateAiPullCommentForm, aiRequester AiRequester, adapter DbAdapter) error
 	DeleteAiPullComment(ctx *context.Context, id int64, adapter DbAdapter) error
-}
-
-type AiReviewRequest struct {
-	Branch   string `json:"branch"`
-	TreePath string `json:"file_path"`
-	Content  string `json:"code"`
-}
-
-type AiReviewResponse struct {
-	Branch   string `json:"branch"`
-	TreePath string `json:"file_path"`
-	Content  string `json:"code"`
-}
-
-type AiServiceImpl struct{}
-
-type AiRequesterImpl struct{}
-
-type AiRequester interface {
-	RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error)
-}
-
-var _ AiService = &AiServiceImpl{}
-var _ AiRequester = &AiRequesterImpl{}
-
-var apiURL = setting.AiServer.Url
-
-type AiReviewCommentResult struct {
-	PullID   string
-	RepoID   string
-	TreePath string
-	Content  string
-}
-
-func (aiRequest *AiRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error) {
-
-	response, err := ai_client.Request().SetBody(request).Post(fmt.Sprintf("/api/sample"))
-
-	if err != nil {
-		return nil, err
-	}
-	result := &AiReviewResponse{}
-
-	json.Unmarshal(response.Body(), result)
-
-	return result, nil
 }
 
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)

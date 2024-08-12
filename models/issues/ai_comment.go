@@ -137,4 +137,3 @@ func DeleteAiPullCommentByID(ctx context.Context, id int64) error {
 }
 
 // TODOC repo가 삭제되면 Ai Comment도 삭제하는 로직
-// TODOC 

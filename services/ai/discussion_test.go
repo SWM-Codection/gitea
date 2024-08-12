@@ -1,13 +1,13 @@
 package ai
 
 import (
-	"errors"
-	"testing"
-
+	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
 
 	discussion_model "code.gitea.io/gitea/models/discussion"
 )
@@ -27,12 +27,12 @@ type MockDiscussionDbAdapter struct {
 	mock.Mock
 }
 
-func (m *MockDiscussionDbAdapter) CreateDiscussionAiComment(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.DiscussionAiComment, error) {
+func (m *MockDiscussionDbAdapter) InsertDiscussionAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.DiscussionAiSampleCode, error) {
 	args := m.Called(ctx, opts)
-	return args.Get(0).(*discussion_model.DiscussionAiComment), args.Error(1)
+	return args.Get(0).(*discussion_model.DiscussionAiSampleCode), args.Error(1)
 }
 
-func (m *MockDiscussionDbAdapter) DeleteDiscussionAiCommentByID(ctx *context.Context, id int64) error {
+func (m *MockDiscussionDbAdapter) DeleteDiscussionAiSampleCodeByID(ctx *context.Context, id int64) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
@@ -40,7 +40,7 @@ func (m *MockDiscussionDbAdapter) DeleteDiscussionAiCommentByID(ctx *context.Con
 func TestGenerateAiSampleCodes(t *testing.T) {
 	testCases := []struct {
 		name           string
-		form           *structs.CreateSampleAiCommentForm
+		form           *structs.GenerateAiSampleCodesForm
 		mockResponses  []*AiSampleCodeResponse
 		mockError      error
 		expectedLength int
@@ -48,7 +48,7 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 	}{
 		{
 			name: "Successful generation",
-			form: &structs.CreateSampleAiCommentForm{
+			form: &structs.GenerateAiSampleCodesForm{
 				CodeContent:    "code",
 				CommentContent: "comment",
 			},
@@ -63,7 +63,7 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 		},
 		{
 			name: "Partial failure",
-			form: &structs.CreateSampleAiCommentForm{
+			form: &structs.GenerateAiSampleCodesForm{
 				CodeContent:    "code",
 				CommentContent: "comment",
 			},
@@ -98,6 +98,88 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 
 			// 모의 객체가 호출 확인
 			mockRequester.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCreateAiSampleCode(t *testing.T) {
+	tests := []struct {
+		name          string
+		form          *structs.CreateAiSampleCodesForm
+		mockSetup     func(*MockDiscussionDbAdapter)
+		expectedCode  *discussion_model.DiscussionAiSampleCode
+		expectedError error
+	}{
+		{
+			name: "Successful creation",
+			form: &structs.CreateAiSampleCodesForm{
+				TargetCommentId:   "123",
+				SampleCodeContent: "Sample code",
+			},
+			mockSetup: func(m *MockDiscussionDbAdapter) {
+				m.On("InsertDiscussionAiSampleCode", mock.Anything, mock.Anything).Return(&discussion_model.DiscussionAiSampleCode{Id: 1}, nil)
+			},
+			expectedCode:  &discussion_model.DiscussionAiSampleCode{Id: 1},
+			expectedError: nil,
+		},
+		// Add more test cases here
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockAdapter := new(MockDiscussionDbAdapter)
+			tt.mockSetup(mockAdapter)
+
+			service := &DiscussionAiServiceImpl{}
+			ctx := &context.Context{Doer: &user_model.User{ID: 1}}
+
+			code, err := service.CreateAiSampleCode(ctx, tt.form, mockAdapter)
+
+			assert.Equal(t, tt.expectedCode, code)
+			assert.Equal(t, tt.expectedError, err)
+			mockAdapter.AssertExpectations(t)
+		})
+	}
+}
+
+func TestDeleteAiSampleCode(t *testing.T) {
+	tests := []struct {
+		name          string
+		id            int64
+		mockSetup     func(*MockDiscussionDbAdapter)
+		expectedError error
+	}{
+		{
+			name: "Successful deletion",
+			id:   1,
+			mockSetup: func(m *MockDiscussionDbAdapter) {
+				m.On("DeleteDiscussionAiSampleCodeByID", mock.Anything, int64(1)).Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Not Successful deletion",
+			id:   1,
+			mockSetup: func(m *MockDiscussionDbAdapter) {
+				m.On("DeleteDiscussionAiSampleCodeByID", mock.Anything, int64(1)).Return(errors.New("error"))
+			},
+			expectedError: errors.New("error"),
+		},
+		// Add more test cases here
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockAdapter := new(MockDiscussionDbAdapter)
+			tt.mockSetup(mockAdapter)
+
+			service := &DiscussionAiServiceImpl{}
+			ctx := &context.Context{}
+
+			err := service.DeleteAiSampleCode(ctx, tt.id, mockAdapter)
+
+			assert.Equal(t, tt.expectedError, err)
+			mockAdapter.AssertExpectations(t)
 		})
 	}
 }

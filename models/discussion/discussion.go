@@ -9,7 +9,7 @@ import (
 
 // TODOC 재시도 횟수 저장
 
-type DiscussionAiComment struct {
+type DiscussionAiSampleCode struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
 	TargetCommentId int64 `xorm:"'discussion_id' notnull"`
 	GenearaterId    int64
@@ -20,7 +20,7 @@ type CreateDiscussionAiCommentOpt struct {
 	TargetCommentId int64
 	GenearaterId    int64
 
-	Content string
+	Content *string
 }
 
 type DeleteDiscussionAiCommentOpt struct {
@@ -28,13 +28,11 @@ type DeleteDiscussionAiCommentOpt struct {
 	GenearaterId    int64
 }
 
-
-
 func init() {
-	db.RegisterModel(new(DiscussionAiComment))
+	db.RegisterModel(new(DiscussionAiSampleCode))
 }
 
-func CreateDiscussionAiComment(ctx context.Context, opts *CreateDiscussionAiCommentOpt) (*DiscussionAiComment, error) {
+func CreateDiscussionAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt) (*DiscussionAiSampleCode, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 	if err != nil {
@@ -42,10 +40,10 @@ func CreateDiscussionAiComment(ctx context.Context, opts *CreateDiscussionAiComm
 	}
 	defer committer.Close()
 
-	DiscussionAiComment := &DiscussionAiComment{
+	DiscussionAiComment := &DiscussionAiSampleCode{
 		GenearaterId:    opts.GenearaterId,
 		TargetCommentId: opts.TargetCommentId,
-		Content:         opts.Content,
+		Content:         *opts.Content,
 	}
 
 	e := db.GetEngine(ctx)
@@ -63,7 +61,7 @@ func CreateDiscussionAiComment(ctx context.Context, opts *CreateDiscussionAiComm
 
 }
 
-func DeleteDiscussionAiCommentByID(ctx context.Context, id int64) error {
+func DeleteDiscussionAiSampleCodeByID(ctx context.Context, id int64) error {
 
 	ctx, committer, err := db.TxContext(ctx)
 	if err != nil {
@@ -71,7 +69,7 @@ func DeleteDiscussionAiCommentByID(ctx context.Context, id int64) error {
 	}
 	defer committer.Close()
 
-	_, err = db.DeleteByID[DiscussionAiComment](ctx, id)
+	_, err = db.DeleteByID[DiscussionAiSampleCode](ctx, id)
 	if err != nil {
 		fmt.Errorf("new Comment insert is invalid")
 		return err
