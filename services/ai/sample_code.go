@@ -10,16 +10,31 @@ import (
 )
 
 type DiscussionAiService interface {
-	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm, aiRequester AiSampleCodeRequester, adapter DiscussionDbAdapter) ([]*AiSampleCodeResponse, error)
-	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm, adapter DiscussionDbAdapter) (*discussion_model.DiscussionAiSampleCode, error)
-	DeleteAiSampleCode(ctx *context.Context, id int64, adapter DiscussionDbAdapter) error
+	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, adapter AiSampleCodeDbAdapter) (*api.AiSampleCodeResponse, error)
+	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm, aiRequester AiSampleCodeRequester, adapter AiSampleCodeDbAdapter) ([]*AiSampleCodeResponse, error)
+	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm, adapter AiSampleCodeDbAdapter) (*discussion_model.AiSampleCode, error)
+	DeleteAiSampleCode(ctx *context.Context, id int64, adapter AiSampleCodeDbAdapter) error
 }
+
+var DEFAULT_CAPACITY int64 = 10
 
 type DiscussionAiServiceImpl struct{}
 
 var _ DiscussionAiService = &DiscussionAiServiceImpl{}
 
-func (is *DiscussionAiServiceImpl) CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm, adapter DiscussionDbAdapter) (*discussion_model.DiscussionAiSampleCode, error) {
+func (is *DiscussionAiServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, adapter AiSampleCodeDbAdapter) (*api.AiSampleCodeResponse, error) {
+
+	response, err := adapter.GetAiSampleCodesByCommentID(ctx, commentID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+
+}
+
+func (is *DiscussionAiServiceImpl) CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm, adapter AiSampleCodeDbAdapter) (*discussion_model.AiSampleCode, error) {
 	// TODOC Discussion Comment 무결성 검사
 
 	aiSampleCode, err := adapter.InsertDiscussionAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
@@ -38,7 +53,7 @@ func (is *DiscussionAiServiceImpl) CreateAiSampleCode(ctx *context.Context, form
 
 // TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
-func (is *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm, aiRequester AiSampleCodeRequester, adapter DiscussionDbAdapter) ([]*AiSampleCodeResponse, error) {
+func (is *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm, aiRequester AiSampleCodeRequester, adapter AiSampleCodeDbAdapter) ([]*AiSampleCodeResponse, error) {
 	wg := new(sync.WaitGroup)
 
 	wg.Add(AI_SAMPLE_CODE_UNIT)
@@ -80,7 +95,7 @@ func (is *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, f
 
 // TODOC a
 
-func (aiService *DiscussionAiServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64, adapter DiscussionDbAdapter) error {
+func (aiService *DiscussionAiServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64, adapter AiSampleCodeDbAdapter) error {
 
 	return adapter.DeleteDiscussionAiSampleCodeByID(ctx, id)
 }

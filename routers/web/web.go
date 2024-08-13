@@ -860,7 +860,8 @@ func registerRoutes(m *web.Route) {
 		m.Post("/pull/review", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
 		m.Post("/discussion/samples", bind(structs.GenerateAiSampleCodesForm{}), api_repo_router.GenerateAiSampleCodes)
 		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), api_repo_router.CreateAiSampleCode)
-		m.Put("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
+		m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
+		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
 
 	})
 

@@ -88,7 +88,7 @@ func GenerateAiSampleCodes(ctx *context.Context) {
 
 	aiService := new(ai_service.DiscussionAiServiceImpl)
 	aiRequester := new(ai_service.AiSampleCodeRequesterImpl)
-	adapter := new(ai_service.DiscussionDbAdapterImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
 	sampleCodes, err := ai_service.DiscussionAiService.GenerateAiSampleCodes(aiService, ctx, form, aiRequester, adapter)
 
 	if err != nil {
@@ -108,7 +108,7 @@ func CreateAiSampleCode(ctx *context.Context) {
 	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
 
 	aiService := new(ai_service.DiscussionAiServiceImpl)
-	adapter := new(ai_service.DiscussionDbAdapterImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
 	sampleCode, err := ai_service.DiscussionAiService.CreateAiSampleCode(aiService, ctx, form, adapter)
 
 	if err != nil {
@@ -126,7 +126,7 @@ func DeleteAiSampleCode(ctx *context.Context) {
 	form := web.GetForm(ctx).(*api.DeleteSampleCodesForm)
 
 	aiService := new(ai_service.DiscussionAiServiceImpl)
-	adapter := new(ai_service.DiscussionDbAdapterImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
 
 	err := ai_service.DiscussionAiService.DeleteAiSampleCode(aiService, ctx, cast.ToInt64(form.TargetCommentId), adapter)
 
@@ -136,5 +136,27 @@ func DeleteAiSampleCode(ctx *context.Context) {
 		})
 	}
 
-	ctx.JSON(http.StatusAccepted, map[string]any{})
+	ctx.JSON(http.StatusAccepted, map[string]any{
+		"message": "sampleCode has deleted",
+	})
+}
+
+func GetAiSampleCode(ctx *context.Context) {
+
+	commentID := ctx.Req.URL.Query().Get("comment_id")
+
+	aiService := new(ai_service.DiscussionAiServiceImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
+
+	response, err := ai_service.DiscussionAiService.GetAiSampleCodeByCommentID(aiService, ctx, cast.ToInt64(commentID), adapter)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": err.Error(),
+		})
+
+	}
+
+	ctx.JSON(http.StatusOK, response)
+
 }

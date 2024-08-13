@@ -9,9 +9,9 @@ import (
 
 // TODOC 재시도 횟수 저장
 
-type DiscussionAiSampleCode struct {
+type AiSampleCode struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
-	TargetCommentId int64 `xorm:"'discussion_id' notnull"`
+	TargetCommentId int64 `xorm:"'target_comment_id' index notnull"`
 	GenearaterId    int64
 	Content         string `xorm:"'content'"`
 }
@@ -28,11 +28,13 @@ type DeleteDiscussionAiCommentOpt struct {
 	GenearaterId    int64
 }
 
+var DEFAULT_CAPACITY = 10
+
 func init() {
-	db.RegisterModel(new(DiscussionAiSampleCode))
+	db.RegisterModel(new(AiSampleCode))
 }
 
-func CreateDiscussionAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt) (*DiscussionAiSampleCode, error) {
+func CreateDiscussionAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt) (*AiSampleCode, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 	if err != nil {
@@ -40,7 +42,7 @@ func CreateDiscussionAiSampleCode(ctx context.Context, opts *CreateDiscussionAiC
 	}
 	defer committer.Close()
 
-	DiscussionAiComment := &DiscussionAiSampleCode{
+	DiscussionAiComment := &AiSampleCode{
 		GenearaterId:    opts.GenearaterId,
 		TargetCommentId: opts.TargetCommentId,
 		Content:         *opts.Content,
@@ -69,7 +71,7 @@ func DeleteDiscussionAiSampleCodeByID(ctx context.Context, id int64) error {
 	}
 	defer committer.Close()
 
-	_, err = db.DeleteByID[DiscussionAiSampleCode](ctx, id)
+	_, err = db.DeleteByID[AiSampleCode](ctx, id)
 	if err != nil {
 		fmt.Errorf("new Comment insert is invalid")
 		return err
@@ -80,5 +82,29 @@ func DeleteDiscussionAiSampleCodeByID(ctx context.Context, id int64) error {
 	}
 
 	return nil
+
+}
+
+func GetAiSampleCodeByCommentID(ctx context.Context, id int64) ([]*AiSampleCode, error) {
+
+	ctx, committer, err := db.TxContext(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer committer.Close()
+
+	e := db.GetEngine(ctx)
+
+	sampleCodes := make([]*AiSampleCode, 0, DEFAULT_CAPACITY)
+
+	err = e.Table("ai_sample_code").Where("comment_id=?", id).Find(&sampleCodes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return sampleCodes, nil
 
 }

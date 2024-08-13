@@ -25,3 +25,17 @@ type CreateAiSampleCodesForm struct {
 type DeleteSampleCodesForm struct {
 	TargetCommentId string `json:"target_comment_id"`
 }
+
+type AiSampleCodeRequest struct {
+	CommentID string `json:"comment_id"`
+}
+
+type AiSampleCodeContent struct {
+	ID      string  `json:"id"`
+	Content *string `json:"content"`
+}
+
+type AiSampleCodeResponse struct {
+	CommentID          string                 `json:"comment_id"`
+	SampleCodeContents []*AiSampleCodeContent `json:"contents"`
+}
