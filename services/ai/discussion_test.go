@@ -172,7 +172,7 @@ func TestDeleteAiSampleCode(t *testing.T) {
 			name: "Successful deletion",
 			id:   1,
 			mockSetup: func(m *MockDiscussionDbAdapter) {
-				m.On("DeleteDiscussionAiSampleCodeByID", mock.Anything, int64(1)).Return(nil)
+				m.On("DeleteAiSampleCodeByID", mock.Anything, int64(1)).Return(nil)
 			},
 			expectedError: nil,
 		},
@@ -180,7 +180,7 @@ func TestDeleteAiSampleCode(t *testing.T) {
 			name: "Not Successful deletion",
 			id:   1,
 			mockSetup: func(m *MockDiscussionDbAdapter) {
-				m.On("DeleteDiscussionAiSampleCodeByID", mock.Anything, int64(1)).Return(errors.New("error"))
+				m.On("DeleteAiSampleCodeByID", mock.Anything, int64(1)).Return(errors.New("error"))
 			},
 			expectedError: errors.New("error"),
 		},

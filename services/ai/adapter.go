@@ -42,11 +42,11 @@ func (is *AiSampleCodeDbAdapterImpl) GetAiSampleCodesByCommentID(ctx *context.Co
 }
 
 func (is *AiSampleCodeDbAdapterImpl) InsertDiscussionAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error) {
-	return discussion_model.CreateDiscussionAiSampleCode(ctx, opts)
+	return discussion_model.CreateAiSampleCode(ctx, opts)
 }
 
 func (is *AiSampleCodeDbAdapterImpl) DeleteDiscussionAiSampleCodeByID(ctx *context.Context, id int64) error {
 
-	return discussion_model.DeleteDiscussionAiSampleCodeByID(ctx, id)
+	return discussion_model.DeleteAiSampleCodeByID(ctx, id)
 
 }

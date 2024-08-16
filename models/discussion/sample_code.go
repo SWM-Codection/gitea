@@ -1,19 +1,28 @@
-package model
+package discussion
 
 import (
+	"code.gitea.io/gitea/modules/timeutil"
 	"context"
 	"fmt"
 
 	"code.gitea.io/gitea/models/db"
 )
 
+func init() {
+	db.RegisterModel(new(AiSampleCode))
+}
+
 // TODOC 재시도 횟수 저장
 
 type AiSampleCode struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
-	TargetCommentId int64 `xorm:"'target_comment_id' index notnull"`
+	TargetCommentId int64 `xorm:"'target_comment_id' INDEX NOT NULL"`
 	GenearaterId    int64
-	Content         string `xorm:"'content'"`
+	Content         string             `xorm:"'content'"`
+	CreatedUnix     timeutil.TimeStamp `xorm:"INDEX created"`
+	UpdatedUnix     timeutil.TimeStamp `xorm:"INDEX updated"`
+	Status          string             `xorm:"status"` //
+	DeletedUnix     timeutil.TimeStamp `xorm:"deleted"`
 }
 
 type CreateDiscussionAiCommentOpt struct {
@@ -30,11 +39,7 @@ type DeleteDiscussionAiCommentOpt struct {
 
 var DEFAULT_CAPACITY = 10
 
-func init() {
-	db.RegisterModel(new(AiSampleCode))
-}
-
-func CreateDiscussionAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt) (*AiSampleCode, error) {
+func CreateAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt) (*AiSampleCode, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 	if err != nil {
@@ -63,7 +68,7 @@ func CreateDiscussionAiSampleCode(ctx context.Context, opts *CreateDiscussionAiC
 
 }
 
-func DeleteDiscussionAiSampleCodeByID(ctx context.Context, id int64) error {
+func DeleteAiSampleCodeByID(ctx context.Context, id int64) error {
 
 	ctx, committer, err := db.TxContext(ctx)
 	if err != nil {
@@ -73,7 +78,7 @@ func DeleteDiscussionAiSampleCodeByID(ctx context.Context, id int64) error {
 
 	_, err = db.DeleteByID[AiSampleCode](ctx, id)
 	if err != nil {
-		fmt.Errorf("new Comment insert is invalid")
+		fmt.Errorf("sample code not exists")
 		return err
 	}
 
@@ -102,6 +107,7 @@ func GetAiSampleCodeByCommentID(ctx context.Context, id int64) ([]*AiSampleCode,
 	err = e.Table("ai_sample_code").Where("comment_id=?", id).Find(&sampleCodes)
 
 	if err != nil {
+		fmt.Errorf(err.Error())
 		return nil, err
 	}
 
