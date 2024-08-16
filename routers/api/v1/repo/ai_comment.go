@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"github.com/spf13/cast"
 	"net/http"
 
 	api "code.gitea.io/gitea/modules/structs"
@@ -55,6 +56,8 @@ func CreateAiPullComment(ctx *context.Context) {
 	})
 }
 
+// TODOC Delete 엔드포인트 작성
+
 func GenerateAiSampleCodes(ctx *context.Context) {
 	// swagger:operation POST /ai/pull/review repository repoCreateAiPullComment
 	// ---
@@ -78,21 +81,82 @@ func GenerateAiSampleCodes(ctx *context.Context) {
 
 	// Check if attachments are enabled
 
-	form := web.GetForm(ctx).(*api.CreateSampleAiCommentForm)
+	form := web.GetForm(ctx).(*api.GenerateAiSampleCodesForm)
 
 	// TODOC 싱글톤으로 바꾼 뒤에
 	// TODOC 설정을 통해 의존성 주입하는 방식으로 바꾸기
 
 	aiService := new(ai_service.DiscussionAiServiceImpl)
 	aiRequester := new(ai_service.AiSampleCodeRequesterImpl)
-	adapter := new(ai_service.DiscussionDbAdapterImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
 	sampleCodes, err := ai_service.DiscussionAiService.GenerateAiSampleCodes(aiService, ctx, form, aiRequester, adapter)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
-			"message": err.Error()})
+			"message": err.Error()},
+		)
 		return
 	}
 
 	ctx.JSON(http.StatusAccepted, sampleCodes)
+}
+
+func CreateAiSampleCode(ctx *context.Context) {
+
+	// TODOC swagger 추가
+	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
+	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
+
+	aiService := new(ai_service.DiscussionAiServiceImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
+	sampleCode, err := ai_service.DiscussionAiService.CreateAiSampleCode(aiService, ctx, form, adapter)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": err.Error(),
+		})
+	}
+
+	ctx.JSON(http.StatusAccepted, sampleCode)
+
+}
+
+func DeleteAiSampleCode(ctx *context.Context) {
+
+	form := web.GetForm(ctx).(*api.DeleteSampleCodesForm)
+
+	aiService := new(ai_service.DiscussionAiServiceImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
+
+	err := ai_service.DiscussionAiService.DeleteAiSampleCode(aiService, ctx, cast.ToInt64(form.TargetCommentId), adapter)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": err.Error(),
+		})
+	}
+
+	ctx.JSON(http.StatusAccepted, map[string]any{
+		"message": "sampleCode has deleted",
+	})
+}
+
+func GetAiSampleCode(ctx *context.Context) {
+
+	commentID := ctx.Req.URL.Query().Get("comment_id")
+
+	aiService := new(ai_service.DiscussionAiServiceImpl)
+	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
+
+	response, err := ai_service.DiscussionAiService.GetAiSampleCodeByCommentID(aiService, ctx, cast.ToInt64(commentID), adapter)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": err.Error(),
+		})
+
+	}
+
+	ctx.JSON(http.StatusOK, response)
+
 }

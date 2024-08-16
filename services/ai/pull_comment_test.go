@@ -59,7 +59,7 @@ func TestCreateAiPullComment(t *testing.T) {
 	// Mock context and form
 	ctx := &context.Context{}
 
-	var fileContent *[]structs.PathContentMap = new([]structs.PathContentMap)
+	fileContent := new([]structs.PathContentMap)
 	for i := 0; i < 100; i++ {
 		*fileContent = append(*fileContent, structs.PathContentMap{
 			TreePath: fmt.Sprintf("file%d.go", i),

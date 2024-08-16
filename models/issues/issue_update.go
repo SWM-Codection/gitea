@@ -453,6 +453,7 @@ func UpdateIssueDeadline(ctx context.Context, issue *Issue, deadlineUnix timeuti
 
 	return committer.Commit()
 }
+
 // 커멘트에서 멘션된 유저를 찾고 데이터베이스에 저장하기
 // FindAndUpdateIssueMentions finds users mentioned in the given content string, and saves them in the database.
 func FindAndUpdateIssueMentions(ctx context.Context, issue *Issue, doer *user_model.User, content string) (mentions []*user_model.User, err error) {

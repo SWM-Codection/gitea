@@ -89,6 +89,7 @@ func InvalidateCodeComments(ctx context.Context, prs issues_model.PullRequestLis
 	}
 	return nil
 }
+
 // 체크 코드 코멘트에 필요한 것들이 모여있음.
 // CreateCodeComment creates a comment on the code line
 func CreateCodeComment(ctx context.Context, doer *user_model.User, gitRepo *git.Repository, issue *issues_model.Issue, line int64, content, treePath string, pendingReview bool, replyReviewID int64, latestCommitID string, attachments []string) (*issues_model.Comment, error) {
@@ -182,6 +183,7 @@ func CreateCodeComment(ctx context.Context, doer *user_model.User, gitRepo *git.
 
 	return comment, nil
 }
+
 // 체크 코드에 대한 코멘트가 작성되는 곳
 // createCodeComment creates a plain code comment at the specified line / path
 func createCodeComment(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, issue *issues_model.Issue, content, treePath string, line, reviewID int64, attachments []string) (*issues_model.Comment, error) {
