@@ -7,6 +7,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
+
+	//"structs"
+
+	//"go/doc/comment"
 	"io"
 	"os"
 	"regexp"
@@ -28,8 +33,11 @@ import (
 	"code.gitea.io/gitea/modules/log"
 	repo_module "code.gitea.io/gitea/modules/repository"
 	"code.gitea.io/gitea/modules/setting"
+	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/sync"
 	"code.gitea.io/gitea/modules/util"
+
+	//ai_service "code.gitea.io/gitea/services/ai"
 	gitea_context "code.gitea.io/gitea/services/context"
 	issue_service "code.gitea.io/gitea/services/issue"
 	notify_service "code.gitea.io/gitea/services/notify"
@@ -111,6 +119,44 @@ func NewPullRequest(ctx context.Context, repo *repo_model.Repository, issue *iss
 		if len(compareInfo.Commits) == 0 {
 			return nil
 		}
+
+		for _, commit := range compareInfo.Commits {
+			// Get changed files between base commit and head commit
+			changedFiles, err := baseGitRepo.GetFilesChangedBetween(pr.MergeBase, commit.ID.String())
+			if err != nil {
+				return fmt.Errorf("failed to get changed files between commits %s and %s: %v", pr.MergeBase, commit.ID.String(), err)
+			}
+
+			commentForm := &structs.CreateAiPullCommentForm{
+				Branch:       pr.BaseBranch,
+				FileContents: &[]structs.PathContentMap{},
+				RepoID:       strconv.FormatInt(repo.ID, 10),
+				PullID:       strconv.FormatInt(pr.ID, 10),
+			}
+		
+			// Loop through the changed files
+			for _, file := range changedFiles {
+			
+				var buffer bytes.Buffer
+				if err := git.GetRepoRawDiffForFile(baseGitRepo, "", commit.ID.String(), git.RawDiffNormal, file, &buffer); err != nil {
+					return fmt.Errorf("failed to get raw diff for file %s: %v", file, err)
+				}
+
+				pathContent := &structs.PathContentMap{
+					TreePath: file,
+					Content:  buffer.String(),
+				}
+
+				*commentForm.FileContents = append(*commentForm.FileContents, *pathContent)
+		
+				// Send the diff to the external API (adjust the API call as necessary)
+				//print(buffer.String())
+				//aiService := new(ai_service.AiServiceImpl)
+				//aiService.CreateAiPullComment()
+			}
+		}
+		
+		//ai_service.CreateAiPullComment()
 
 		data := issues_model.PushActionContent{IsForcePush: false}
 		data.CommitIDs = make([]string, 0, len(compareInfo.Commits))
