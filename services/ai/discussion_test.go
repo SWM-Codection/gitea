@@ -12,7 +12,6 @@ import (
 	discussion_model "code.gitea.io/gitea/models/discussion"
 )
 
-// Mock for AiSampleCodeRequester
 type MockAiSampleCodeRequester struct {
 	mock.Mock
 }
@@ -27,7 +26,7 @@ func (m *MockAiSampleCodeRequester) RequestReviewToAI(ctx *context.Context, requ
 	return args.Get(0).(*AiSampleCodeResponse), args.Error(1)
 }
 
-// Mock for AiSampleCodeDbAdapter
+// Mock for SampleCodeDbAdapter
 type MockDiscussionDbAdapter struct {
 	mock.Mock
 }
@@ -41,7 +40,7 @@ func (m *MockDiscussionDbAdapter) GetAiSampleCodesByCommentID(ctx *context.Conte
 	return args.Get(0).(*structs.AiSampleCodeResponse), args.Error(1)
 }
 
-func (m *MockDiscussionDbAdapter) InsertDiscussionAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error) {
+func (m *MockDiscussionDbAdapter) InsertAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error) {
 	args := m.Called(ctx, opts)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -50,7 +49,7 @@ func (m *MockDiscussionDbAdapter) InsertDiscussionAiSampleCode(ctx *context.Cont
 	return args.Get(0).(*discussion_model.AiSampleCode), args.Error(1)
 }
 
-func (m *MockDiscussionDbAdapter) DeleteDiscussionAiSampleCodeByID(ctx *context.Context, id int64) error {
+func (m *MockDiscussionDbAdapter) DeleteAiSampleCodeByID(ctx *context.Context, id int64) error {
 	args := m.Called(ctx, id)
 
 	return args.Error(0)
@@ -98,24 +97,22 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// 모킹을 설정
-			mockRequester := new(MockAiSampleCodeRequester)
-			mockAdapter := new(MockDiscussionDbAdapter)
-			service := &DiscussionAiServiceImpl{}
 
-			// 모의 객체의 동작 설정
+			mockRequester := new(MockAiSampleCodeRequester)
+			AiSampleCodeRequester = mockRequester
+			// 모킹을 설정
+			service := &SampleCodeServiceImpl{}
+
 			for _, response := range tc.mockResponses {
 				mockRequester.On("RequestReviewToAI", mock.Anything, mock.Anything).
 					Return(response, tc.mockError).Once()
 			}
 			ctx := &context.Context{}
-			// 테스트 대상 함수를 실행
-			results, err := service.GenerateAiSampleCodes(ctx, tc.form, mockRequester, mockAdapter)
+			results, err := service.GenerateAiSampleCodes(ctx, tc.form)
 
 			assert.NoError(t, err)
 			assert.Len(t, results, tc.expectedLength)
 
-			// 모의 객체가 호출 확인
 			mockRequester.AssertExpectations(t)
 		})
 	}
@@ -136,23 +133,23 @@ func TestCreateAiSampleCode(t *testing.T) {
 				SampleCodeContent: "Sample code",
 			},
 			mockSetup: func(m *MockDiscussionDbAdapter) {
-				m.On("InsertDiscussionAiSampleCode", mock.Anything, mock.Anything).Return(&discussion_model.AiSampleCode{Id: 1}, nil)
+				m.On("InsertAiSampleCode", mock.Anything, mock.Anything).Return(&discussion_model.AiSampleCode{Id: 1}, nil)
 			},
 			expectedCode:  &discussion_model.AiSampleCode{Id: 1},
 			expectedError: nil,
 		},
-		// Add more test cases here
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockAdapter := new(MockDiscussionDbAdapter)
+			AiSampleCodeDbAdapter = mockAdapter
 			tt.mockSetup(mockAdapter)
 
-			service := &DiscussionAiServiceImpl{}
+			service := &SampleCodeServiceImpl{}
 			ctx := &context.Context{Doer: &user_model.User{ID: 1}}
 
-			code, err := service.CreateAiSampleCode(ctx, tt.form, mockAdapter)
+			code, err := service.CreateAiSampleCode(ctx, tt.form)
 
 			assert.Equal(t, tt.expectedCode, code)
 			assert.Equal(t, tt.expectedError, err)
@@ -184,7 +181,6 @@ func TestDeleteAiSampleCode(t *testing.T) {
 			},
 			expectedError: errors.New("error"),
 		},
-		// Add more test cases here
 	}
 
 	for _, tt := range tests {
@@ -192,10 +188,10 @@ func TestDeleteAiSampleCode(t *testing.T) {
 			mockAdapter := new(MockDiscussionDbAdapter)
 			tt.mockSetup(mockAdapter)
 
-			service := &DiscussionAiServiceImpl{}
+			service := &SampleCodeServiceImpl{}
 			ctx := &context.Context{}
 
-			err := service.DeleteAiSampleCode(ctx, tt.id, mockAdapter)
+			err := service.DeleteAiSampleCode(ctx, tt.id)
 
 			assert.Equal(t, tt.expectedError, err)
 			mockAdapter.AssertExpectations(t)
@@ -282,23 +278,18 @@ func TestGetAiSampleCodeByCommentID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// mock setup
 			mockDbAdapter := new(MockDiscussionDbAdapter)
+			AiSampleCodeDbAdapter = mockDbAdapter
 			tt.mockSetup(mockDbAdapter)
 
-			// 서비스 인스턴스 생성
-			service := DiscussionAiServiceImpl{}
-			// 컨텍스트 설정
+			service := SampleCodeServiceImpl{}
 			ctx := &context.Context{}
 
-			// 호출
-			result, err := service.GetAiSampleCodeByCommentID(ctx, tt.id, mockDbAdapter)
+			result, err := service.GetAiSampleCodeByCommentID(ctx, tt.id)
 
-			// 결과 검증
 			assert.Equal(t, tt.expectedError, err)
 			assert.Equal(t, tt.expectedCode, result)
 
-			// mock assertions
 			mockDbAdapter.AssertExpectations(t)
 		})
 	}

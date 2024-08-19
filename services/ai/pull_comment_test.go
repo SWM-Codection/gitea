@@ -12,18 +12,18 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockAiRequester is a mock implementation of AiRequester
+// MockAiRequester is a mock implementation of PullCommentRequester
 type MockAiRequester struct {
 	mock.Mock
 }
 
-func (m *MockAiRequester) RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error) {
+func (m *MockAiRequester) RequestReviewToAI(ctx *context.Context, request *AiPullCommentRequest) (*AiPullCommentResponse, error) {
 	time.Sleep(1000 * time.Millisecond)
 	args := m.Called(ctx, request)
-	return args.Get(0).(*AiReviewResponse), args.Error(1)
+	return args.Get(0).(*AiPullCommentResponse), args.Error(1)
 }
 
-// MockDbAdapter is a mock implementation of DbAdapter
+// MockDbAdapter is a mock implementation of PullCommentDbAdapter
 type MockDbAdapter struct {
 	mock.Mock
 }
@@ -49,13 +49,11 @@ func (m *MockDbAdapter) DeleteAiPullCommentByID(ctx *context.Context, id int64) 
 }
 
 func TestCreateAiPullComment(t *testing.T) {
-	// Set up the mock AiRequester
 	mockRequester := new(MockAiRequester)
-	aiService := &AiServiceImpl{}
-
-	// Set up the mock DbAdapter
+	AiPullCommentRequester = mockRequester
 	mockDbAdapter := new(MockDbAdapter)
-
+	AiPullCommentDbAdapter = mockDbAdapter
+	aiService := &PullCommentServiceImpl{}
 	// Mock context and form
 	ctx := &context.Context{}
 
@@ -66,11 +64,11 @@ func TestCreateAiPullComment(t *testing.T) {
 			Content:  fmt.Sprintf("code content %d", i),
 		})
 
-		mockRequester.On("RequestReviewToAI", ctx, &AiReviewRequest{
+		mockRequester.On("RequestReviewToAI", ctx, &AiPullCommentRequest{
 			Branch:   "main",
 			TreePath: fmt.Sprintf("file%d.go", i),
 			Content:  fmt.Sprintf("code content %d", i),
-		}).Return(&AiReviewResponse{
+		}).Return(&AiPullCommentResponse{
 			Branch:   "main",
 			TreePath: fmt.Sprintf("file%d.go", i+100),
 			Content:  fmt.Sprintf("code content %d", i+100),
@@ -84,20 +82,14 @@ func TestCreateAiPullComment(t *testing.T) {
 		FileContents: fileContent,
 	}
 
-	// Mock response from AI
-
-	// Mock GetIssueByID
 	issue := &issues.Issue{}
 	mockDbAdapter.On("GetIssueByID", ctx, int64(123)).Return(issue, nil)
 
-	// Mock CreateAiPullComment
 	comment := issues.AiPullComment{ID: 10}
 	mockDbAdapter.On("CreateAiPullComment", ctx, mock.Anything).Return(&comment, nil)
 
-	// Call the method under test
-	err := aiService.CreateAiPullComment(ctx, form, mockRequester, mockDbAdapter)
+	err := aiService.CreateAiPullComment(ctx, form)
 
-	// Assert the expectations
 	assert.NoError(t, err)
 	mockRequester.AssertExpectations(t)
 	mockDbAdapter.AssertExpectations(t)
