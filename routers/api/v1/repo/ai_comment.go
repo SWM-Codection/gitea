@@ -36,14 +36,8 @@ func CreateAiPullComment(ctx *context.Context) {
 	// Check if attachments are enabled
 
 	form := web.GetForm(ctx).(*api.CreateAiPullCommentForm)
-
-	// TODOC 싱글톤으로 바꾼 뒤에
-	// TODOC 설정을 통해 의존성 주입하는 방식으로 바꾸기
-
-	aiService := new(ai_service.AiServiceImpl)
-	aiRequester := new(ai_service.AiRequesterImpl)
-	adapter := new(ai_service.DbAdapterImpl)
-	err := ai_service.AiService.CreateAiPullComment(aiService, ctx, form, aiRequester, adapter)
+	
+	err := ai_service.AiPullCommentService.CreateAiPullComment(ctx, form)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
@@ -83,13 +77,7 @@ func GenerateAiSampleCodes(ctx *context.Context) {
 
 	form := web.GetForm(ctx).(*api.GenerateAiSampleCodesForm)
 
-	// TODOC 싱글톤으로 바꾼 뒤에
-	// TODOC 설정을 통해 의존성 주입하는 방식으로 바꾸기
-
-	aiService := new(ai_service.DiscussionAiServiceImpl)
-	aiRequester := new(ai_service.AiSampleCodeRequesterImpl)
-	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
-	sampleCodes, err := ai_service.DiscussionAiService.GenerateAiSampleCodes(aiService, ctx, form, aiRequester, adapter)
+	sampleCodes, err := ai_service.AiSampleCodeService.GenerateAiSampleCodes(ctx, form)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
@@ -107,9 +95,7 @@ func CreateAiSampleCode(ctx *context.Context) {
 	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
 	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
 
-	aiService := new(ai_service.DiscussionAiServiceImpl)
-	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
-	sampleCode, err := ai_service.DiscussionAiService.CreateAiSampleCode(aiService, ctx, form, adapter)
+	sampleCode, err := ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
@@ -125,10 +111,7 @@ func DeleteAiSampleCode(ctx *context.Context) {
 
 	form := web.GetForm(ctx).(*api.DeleteSampleCodesForm)
 
-	aiService := new(ai_service.DiscussionAiServiceImpl)
-	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
-
-	err := ai_service.DiscussionAiService.DeleteAiSampleCode(aiService, ctx, cast.ToInt64(form.TargetCommentId), adapter)
+	err := ai_service.AiSampleCodeService.DeleteAiSampleCode(ctx, cast.ToInt64(form.TargetCommentId))
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
@@ -145,10 +128,7 @@ func GetAiSampleCode(ctx *context.Context) {
 
 	commentID := ctx.Req.URL.Query().Get("comment_id")
 
-	aiService := new(ai_service.DiscussionAiServiceImpl)
-	adapter := new(ai_service.AiSampleCodeDbAdapterImpl)
-
-	response, err := ai_service.DiscussionAiService.GetAiSampleCodeByCommentID(aiService, ctx, cast.ToInt64(commentID), adapter)
+	response, err := ai_service.AiSampleCodeService.GetAiSampleCodeByCommentID(ctx, cast.ToInt64(commentID))
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{

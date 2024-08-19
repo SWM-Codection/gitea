@@ -9,22 +9,22 @@ import (
 	"sync"
 )
 
-type DiscussionAiService interface {
-	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, adapter AiSampleCodeDbAdapter) (*api.AiSampleCodeResponse, error)
-	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm, aiRequester AiSampleCodeRequester, adapter AiSampleCodeDbAdapter) ([]*AiSampleCodeResponse, error)
-	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm, adapter AiSampleCodeDbAdapter) (*discussion_model.AiSampleCode, error)
-	DeleteAiSampleCode(ctx *context.Context, id int64, adapter AiSampleCodeDbAdapter) error
+type SampleCodeService interface {
+	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error)
+	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error)
+	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm) (*discussion_model.AiSampleCode, error)
+	DeleteAiSampleCode(ctx *context.Context, id int64) error
 }
 
 var DEFAULT_CAPACITY int64 = 10
 
-type DiscussionAiServiceImpl struct{}
+type SampleCodeServiceImpl struct{}
 
-var _ DiscussionAiService = &DiscussionAiServiceImpl{}
+var _ SampleCodeService = &SampleCodeServiceImpl{}
 
-func (is *DiscussionAiServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, adapter AiSampleCodeDbAdapter) (*api.AiSampleCodeResponse, error) {
+func (is *SampleCodeServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error) {
 
-	response, err := adapter.GetAiSampleCodesByCommentID(ctx, commentID)
+	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, commentID)
 
 	if err != nil {
 		return nil, err
@@ -34,10 +34,10 @@ func (is *DiscussionAiServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Conte
 
 }
 
-func (is *DiscussionAiServiceImpl) CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm, adapter AiSampleCodeDbAdapter) (*discussion_model.AiSampleCode, error) {
+func (is *SampleCodeServiceImpl) CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm) (*discussion_model.AiSampleCode, error) {
 	// TODOC Discussion Comment 무결성 검사
 
-	aiSampleCode, err := adapter.InsertDiscussionAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
+	aiSampleCode, err := AiSampleCodeDbAdapter.InsertAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
 		TargetCommentId: cast.ToInt64(form.TargetCommentId),
 		GenearaterId:    ctx.Doer.ID,
 		Content:         &form.SampleCodeContent,
@@ -53,7 +53,7 @@ func (is *DiscussionAiServiceImpl) CreateAiSampleCode(ctx *context.Context, form
 
 // TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
-func (is *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm, aiRequester AiSampleCodeRequester, adapter AiSampleCodeDbAdapter) ([]*AiSampleCodeResponse, error) {
+func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error) {
 	wg := new(sync.WaitGroup)
 
 	wg.Add(AI_SAMPLE_CODE_UNIT)
@@ -63,7 +63,7 @@ func (is *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, f
 	for i := 0; i < AI_SAMPLE_CODE_UNIT; i++ {
 		go func(form *api.GenerateAiSampleCodesForm) {
 			defer wg.Done()
-			result, err := aiRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
+			result, err := AiSampleCodeRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
 				CodeContent:    form.CodeContent,
 				CommentContent: form.CommentContent,
 			})
@@ -95,7 +95,7 @@ func (is *DiscussionAiServiceImpl) GenerateAiSampleCodes(ctx *context.Context, f
 
 // TODOC a
 
-func (aiService *DiscussionAiServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64, adapter AiSampleCodeDbAdapter) error {
+func (is *SampleCodeServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64) error {
 
-	return adapter.DeleteDiscussionAiSampleCodeByID(ctx, id)
+	return AiSampleCodeDbAdapter.DeleteAiSampleCodeByID(ctx, id)
 }

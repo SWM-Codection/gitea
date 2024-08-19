@@ -18,19 +18,19 @@ type AiSampleCodeResponse struct {
 	SampleCode string `json:"sample_code"`
 }
 
-type AiSampleCodeRequesterImpl struct{}
+type SampleCodeRequesterImpl struct{}
 
-type AiSampleCodeRequester interface {
+type SampleCodeRequester interface {
 	RequestReviewToAI(ctx *context.Context, request *AiSampleCodeRequest) (*AiSampleCodeResponse, error)
 }
 
-var _ AiSampleCodeRequester = &AiSampleCodeRequesterImpl{}
+var _ SampleCodeRequester = &SampleCodeRequesterImpl{}
 
 type AiSampleCodeResult struct {
 	SampleCode string `json:"sample_code"`
 }
 
-func (aiRequest *AiSampleCodeRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiSampleCodeRequest) (*AiSampleCodeResponse, error) {
+func (aiRequest *SampleCodeRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiSampleCodeRequest) (*AiSampleCodeResponse, error) {
 
 	response, err := ai_client.Request().SetBody(request).Post("/api/sample")
 
@@ -50,37 +50,36 @@ func (aiRequest *AiSampleCodeRequesterImpl) RequestReviewToAI(ctx *context.Conte
 	return result, nil
 }
 
-type AiReviewRequest struct {
+type AiPullCommentRequest struct {
 	Branch   string `json:"branch"`
 	TreePath string `json:"file_path"`
 	Content  string `json:"code"`
 }
 
-type AiReviewResponse struct {
+type AiPullCommentResponse struct {
 	Branch   string `json:"branch"`
 	TreePath string `json:"file_path"`
 	Content  string `json:"code"`
 }
 
-type AiServiceImpl struct{}
+type PullCommentServiceImpl struct{}
 
-type AiRequesterImpl struct{}
+type PullCommentRequesterImpl struct{}
 
-type AiRequester interface {
-	RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error)
+type PullCommentRequester interface {
+	RequestReviewToAI(ctx *context.Context, request *AiPullCommentRequest) (*AiPullCommentResponse, error)
 }
 
-var _ AiService = &AiServiceImpl{}
-var _ AiRequester = &AiRequesterImpl{}
+var _ PullCommentRequester = &PullCommentRequesterImpl{}
 
-func (aiRequest *AiRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiReviewRequest) (*AiReviewResponse, error) {
+func (aiRequest *PullCommentRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiPullCommentRequest) (*AiPullCommentResponse, error) {
 
 	response, err := ai_client.Request().SetBody(request).Post(fmt.Sprintf("/api/sample"))
 
 	if err != nil {
 		return nil, err
 	}
-	result := &AiReviewResponse{}
+	result := &AiPullCommentResponse{}
 
 	json.Unmarshal(response.Body(), result)
 

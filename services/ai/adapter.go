@@ -7,18 +7,18 @@ import (
 	"github.com/spf13/cast"
 )
 
-type AiSampleCodeDbAdapter interface {
+type SampleCodeDbAdapter interface {
 	// GetDiscussionCommentByID(ctx *context.Context, id int64) (*issues_model.Issue, error)
-	InsertDiscussionAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error)
-	DeleteDiscussionAiSampleCodeByID(ctx *context.Context, id int64) error
+	InsertAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error)
+	DeleteAiSampleCodeByID(ctx *context.Context, id int64) error
 	GetAiSampleCodesByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error)
 }
 
-type AiSampleCodeDbAdapterImpl struct{}
+type SampleCodeDbAdapterImpl struct{}
 
-var _ AiSampleCodeDbAdapter = &AiSampleCodeDbAdapterImpl{}
+var _ SampleCodeDbAdapter = &SampleCodeDbAdapterImpl{}
 
-func (is *AiSampleCodeDbAdapterImpl) GetAiSampleCodesByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error) {
+func (is *SampleCodeDbAdapterImpl) GetAiSampleCodesByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error) {
 
 	sampleCodes, err := discussion_model.GetAiSampleCodeByCommentID(ctx, commentID)
 
@@ -41,11 +41,11 @@ func (is *AiSampleCodeDbAdapterImpl) GetAiSampleCodesByCommentID(ctx *context.Co
 	return &response, nil
 }
 
-func (is *AiSampleCodeDbAdapterImpl) InsertDiscussionAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error) {
+func (is *SampleCodeDbAdapterImpl) InsertAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error) {
 	return discussion_model.CreateAiSampleCode(ctx, opts)
 }
 
-func (is *AiSampleCodeDbAdapterImpl) DeleteDiscussionAiSampleCodeByID(ctx *context.Context, id int64) error {
+func (is *SampleCodeDbAdapterImpl) DeleteAiSampleCodeByID(ctx *context.Context, id int64) error {
 
 	return discussion_model.DeleteAiSampleCodeByID(ctx, id)
 
