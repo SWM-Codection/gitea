@@ -44,6 +44,7 @@ import (
 	pull_service "code.gitea.io/gitea/services/pull"
 	repo_service "code.gitea.io/gitea/services/repository"
 	user_service "code.gitea.io/gitea/services/user"
+	ai_service "code.gitea.io/gitea/services/ai"
 
 	"github.com/gobwas/glob"
 )
@@ -1328,6 +1329,39 @@ func CompareAndPullRequestPost(ctx *context.Context) {
 		}
 		return
 	}
+
+	commentForm, err := pull_service.CreateAiCommentForm(repo, pullRequest, ci.HeadGitRepo, ci.CompareInfo)
+		if err != nil {
+			log.Error("create ai comment form failed %v", err)
+			return
+		}
+
+	// 동기 방식 -> 느림
+	//ai_service.AiPullCommentService.CreateAiPullComment(ctx, commentForm)
+
+	// 고루틴 사용 -> context가 죽음 -> 저장이 안됨
+	go func(ctxCopy *context.Context) {
+		err := ai_service.AiPullCommentService.CreateAiPullComment(ctxCopy, commentForm)
+		if err != nil {
+			log.Error("Failed to create AI pull comment: %v", err)
+		}
+	}(ctx)
+
+	/*
+	log.Error("original ctxCopy : %v", ctx)
+	go func(ctx *context.Context) {
+
+		commentForm, err := pull_service.CreateAiCommentForm(repo, pullRequest, ci.HeadGitRepo, ci.CompareInfo)
+		if err != nil {
+			log.Error("create ai comment form failed %v", err)
+			return
+		}
+
+		err = ai_service.AiPullCommentService.CreateAiPullComment(giteaCtx, commentForm)
+		if err != nil {
+			log.Error("Failed to create AI pull comment: %v", err)
+		}
+	}(ctx)*/
 
 	if projectID > 0 && ctx.Repo.CanWrite(unit.TypeProjects) {
 		if err := issues_model.IssueAssignOrRemoveProject(ctx, pullIssue, ctx.Doer, projectID, 0); err != nil {

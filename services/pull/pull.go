@@ -120,44 +120,6 @@ func NewPullRequest(ctx context.Context, repo *repo_model.Repository, issue *iss
 			return nil
 		}
 
-		for _, commit := range compareInfo.Commits {
-			// Get changed files between base commit and head commit
-			changedFiles, err := baseGitRepo.GetFilesChangedBetween(pr.MergeBase, commit.ID.String())
-			if err != nil {
-				return fmt.Errorf("failed to get changed files between commits %s and %s: %v", pr.MergeBase, commit.ID.String(), err)
-			}
-
-			commentForm := &structs.CreateAiPullCommentForm{
-				Branch:       pr.BaseBranch,
-				FileContents: &[]structs.PathContentMap{},
-				RepoID:       strconv.FormatInt(repo.ID, 10),
-				PullID:       strconv.FormatInt(pr.ID, 10),
-			}
-		
-			// Loop through the changed files
-			for _, file := range changedFiles {
-			
-				var buffer bytes.Buffer
-				if err := git.GetRepoRawDiffForFile(baseGitRepo, "", commit.ID.String(), git.RawDiffNormal, file, &buffer); err != nil {
-					return fmt.Errorf("failed to get raw diff for file %s: %v", file, err)
-				}
-
-				pathContent := &structs.PathContentMap{
-					TreePath: file,
-					Content:  buffer.String(),
-				}
-
-				*commentForm.FileContents = append(*commentForm.FileContents, *pathContent)
-		
-				// Send the diff to the external API (adjust the API call as necessary)
-				//print(buffer.String())
-				//aiService := new(ai_service.AiServiceImpl)
-				//aiService.CreateAiPullComment()
-			}
-		}
-		
-		//ai_service.CreateAiPullComment()
-
 		data := issues_model.PushActionContent{IsForcePush: false}
 		data.CommitIDs = make([]string, 0, len(compareInfo.Commits))
 		for i := len(compareInfo.Commits) - 1; i >= 0; i-- {
@@ -220,6 +182,51 @@ func NewPullRequest(ctx context.Context, repo *repo_model.Repository, issue *iss
 	}
 
 	return nil
+}
+
+func CreateAiCommentForm(repo *repo_model.Repository, pr *issues_model.PullRequest, baseGitRepo *git.Repository, compareInfo *git.CompareInfo) (*structs.CreateAiPullCommentForm, error) {
+	commentForm := &structs.CreateAiPullCommentForm{
+		Branch:       pr.BaseBranch,
+		FileContents: &[]structs.PathContentMap{},
+		RepoID:       strconv.FormatInt(repo.ID, 10),
+		PullID:       strconv.FormatInt(pr.ID, 10),
+	}
+
+	for _, commit := range compareInfo.Commits {
+		// Get changed files between base commit and head commit
+		changedFiles, err := baseGitRepo.GetFilesChangedBetween(pr.MergeBase, commit.ID.String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get changed files between commits %s and %s: %v", pr.MergeBase, commit.ID.String(), err)
+		}
+
+		// Loop through the changed files
+		for _, file := range changedFiles {
+
+			var buffer bytes.Buffer
+
+			// Using git show to get the full file content from the commit
+			stdout, _, err := git.NewCommand(baseGitRepo.Ctx, "show").
+				AddDynamicArguments(fmt.Sprintf("%s:%s", commit.ID.String(), file)).
+				RunStdString(&git.RunOpts{
+					Dir: baseGitRepo.Path,
+				})
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to get full content for file %s in commit %s: %v", file, commit.ID.String(), err)
+			}
+
+			buffer.WriteString(stdout)
+
+			pathContent := &structs.PathContentMap{
+				TreePath: file,
+				Content:  buffer.String(),
+			}
+
+			*commentForm.FileContents = append(*commentForm.FileContents, *pathContent)
+		}
+	}
+
+	return commentForm, nil
 }
 
 // ChangeTargetBranch changes the target branch of this pull request, as the given user.

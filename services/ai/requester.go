@@ -74,7 +74,7 @@ var _ PullCommentRequester = &PullCommentRequesterImpl{}
 
 func (aiRequest *PullCommentRequesterImpl) RequestReviewToAI(ctx *context.Context, request *AiPullCommentRequest) (*AiPullCommentResponse, error) {
 
-	response, err := ai_client.Request().SetBody(request).Post(fmt.Sprintf("/api/sample"))
+	response, err := ai_client.Request().SetBody(request).Post(fmt.Sprintf("/api/pulls"))
 
 	if err != nil {
 		return nil, err

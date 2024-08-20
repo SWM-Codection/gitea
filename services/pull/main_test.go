@@ -8,10 +8,12 @@ import (
 	"testing"
 
 	"code.gitea.io/gitea/models/unittest"
+	"code.gitea.io/gitea/modules/log"
 
 	_ "code.gitea.io/gitea/models/actions"
 )
 
 func TestMain(m *testing.M) {
+	log.Info("asdf")
 	unittest.MainTest(m)
 }
