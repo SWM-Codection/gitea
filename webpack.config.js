@@ -15,6 +15,7 @@ import tailwindcss from 'tailwindcss';
 import tailwindConfig from './tailwind.config.js';
 import tailwindcssNesting from 'tailwindcss/nesting/index.js';
 import postcssNesting from 'postcss-nesting';
+import SpeedMeasurePlugin from 'speed-measure-webpack-plugin';
 
 const {EsbuildPlugin} = EsBuildLoader;
 const {SourceMapDevToolPlugin, DefinePlugin} = webpack;
@@ -240,6 +241,7 @@ export default {
       emitError: true,
       allow: '(Apache-2.0 OR 0BSD OR BSD-2-Clause OR BSD-3-Clause OR MIT OR ISC OR CPAL-1.0 OR Unlicense OR EPL-1.0 OR EPL-2.0)',
     }) : new AddAssetPlugin('licenses.txt', `Licenses are disabled during development`),
+    new SpeedMeasurePlugin(),
   ],
   performance: {
     hints: false,
