@@ -96,6 +96,11 @@ func GetValidateContext(req *http.Request) (ctx *ValidateContext) {
 	return ctx
 }
 
+func (c Context) NewChildContext() *Context {
+	c.Base.originCtx = context.WithoutCancel(c.Base.originCtx)
+	return &c
+}
+
 func NewTemplateContextForWeb(ctx *Context) TemplateContext {
 	tmplCtx := NewTemplateContext(ctx)
 	tmplCtx["Locale"] = ctx.Base.Locale
