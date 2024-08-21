@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"strconv"
 
 	"code.gitea.io/gitea/models"
 	"code.gitea.io/gitea/models/db"
@@ -30,6 +31,7 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 	"code.gitea.io/gitea/modules/sync"
 	"code.gitea.io/gitea/modules/util"
+	"code.gitea.io/gitea/modules/structs"
 	gitea_context "code.gitea.io/gitea/services/context"
 	issue_service "code.gitea.io/gitea/services/issue"
 	notify_service "code.gitea.io/gitea/services/notify"
@@ -174,6 +176,51 @@ func NewPullRequest(ctx context.Context, repo *repo_model.Repository, issue *iss
 	}
 
 	return nil
+}
+
+func CreateAiCommentForm(repo *repo_model.Repository, pr *issues_model.PullRequest, baseGitRepo *git.Repository, compareInfo *git.CompareInfo) (*structs.CreateAiPullCommentForm, error) {
+	commentForm := &structs.CreateAiPullCommentForm{
+		Branch:       pr.BaseBranch,
+		FileContents: &[]structs.PathContentMap{},
+		RepoID:       strconv.FormatInt(repo.ID, 10),
+		PullID:       strconv.FormatInt(pr.ID, 10),
+	}
+
+	for _, commit := range compareInfo.Commits {
+		// Get changed files between base commit and head commit
+		changedFiles, err := baseGitRepo.GetFilesChangedBetween(pr.MergeBase, commit.ID.String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get changed files between commits %s and %s: %v", pr.MergeBase, commit.ID.String(), err)
+		}
+
+		// Loop through the changed files
+		for _, file := range changedFiles {
+
+			var buffer bytes.Buffer
+
+			// Using git show to get the full file content from the commit
+			stdout, _, err := git.NewCommand(baseGitRepo.Ctx, "show").
+				AddDynamicArguments(fmt.Sprintf("%s:%s", commit.ID.String(), file)).
+				RunStdString(&git.RunOpts{
+					Dir: baseGitRepo.Path,
+				})
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to get full content for file %s in commit %s: %v", file, commit.ID.String(), err)
+			}
+
+			buffer.WriteString(stdout)
+
+			pathContent := &structs.PathContentMap{
+				TreePath: file,
+				Content:  buffer.String(),
+			}
+
+			*commentForm.FileContents = append(*commentForm.FileContents, *pathContent)
+		}
+	}
+
+	return commentForm, nil
 }
 
 // ChangeTargetBranch changes the target branch of this pull request, as the given user.

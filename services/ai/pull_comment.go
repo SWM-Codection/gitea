@@ -63,7 +63,8 @@ func (is *PullCommentServiceImpl) DeleteAiPullComment(ctx *context.Context, id i
 func saveResults(ctx *context.Context, reviewResults chan *AiPullCommentResponse, pullID int64) error {
 	pull, err := AiPullCommentDbAdapter.GetIssueByID(ctx, pullID)
 	if err != nil {
-		return fmt.Errorf("pr not found by id")
+		// context canceled
+		return fmt.Errorf("pr not found by id %v", err)
 	}
 
 	for result := range reviewResults {
