@@ -186,38 +186,35 @@ func CreateAiCommentForm(repo *repo_model.Repository, pr *issues_model.PullReque
 		PullID:       strconv.FormatInt(pr.ID, 10),
 	}
 
-	for _, commit := range compareInfo.Commits {
-		// Get changed files between base commit and head commit
-		changedFiles, err := baseGitRepo.GetFilesChangedBetween(pr.MergeBase, commit.ID.String())
+	// Get changed files between base commit and head commit
+	changedFiles, err := baseGitRepo.GetFilesChangedBetween(pr.BaseBranch, pr.HeadBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get changed files between commits %s and %s: %v", pr.BaseBranch, pr.HeadBranch, err)
+	}
+
+	for _, file := range changedFiles {
+
+		var buffer bytes.Buffer
+
+		// git show 명령어를 사용하여 해당 파일의 내용을 가져옴
+		stdout, _, err := git.NewCommand(baseGitRepo.Ctx, "show").
+			AddDynamicArguments(fmt.Sprintf("%s:%s", pr.HeadBranch, file)).
+			RunStdString(&git.RunOpts{
+				Dir: baseGitRepo.Path,
+			})
+
 		if err != nil {
-			return nil, fmt.Errorf("failed to get changed files between commits %s and %s: %v", pr.MergeBase, commit.ID.String(), err)
+			return nil, fmt.Errorf("failed to get full content for file %s in branch %s: %v", file, pr.HeadBranch, err)
 		}
 
-		// Loop through the changed files
-		for _, file := range changedFiles {
+		buffer.WriteString(stdout)
 
-			var buffer bytes.Buffer
-
-			// Using git show to get the full file content from the commit
-			stdout, _, err := git.NewCommand(baseGitRepo.Ctx, "show").
-				AddDynamicArguments(fmt.Sprintf("%s:%s", commit.ID.String(), file)).
-				RunStdString(&git.RunOpts{
-					Dir: baseGitRepo.Path,
-				})
-
-			if err != nil {
-				return nil, fmt.Errorf("failed to get full content for file %s in commit %s: %v", file, commit.ID.String(), err)
-			}
-
-			buffer.WriteString(stdout)
-
-			pathContent := &structs.PathContentMap{
-				TreePath: file,
-				Content:  buffer.String(),
-			}
-
-			*commentForm.FileContents = append(*commentForm.FileContents, *pathContent)
+		pathContent := &structs.PathContentMap{
+			TreePath: file,
+			Content:  buffer.String(),
 		}
+
+		*commentForm.FileContents = append(*commentForm.FileContents, *pathContent)
 	}
 
 	return commentForm, nil

@@ -44,6 +44,7 @@ func fetchCodeCommentsByReview(ctx context.Context, issue *Issue, currentUser *u
 		}
 		pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], comment)
 	}
+	
 	return pathToLineToComment, nil
 }
 
@@ -134,4 +135,76 @@ func FetchCodeCommentsByLine(ctx context.Context, issue *Issue, currentUser *use
 		Line:     line,
 	}
 	return findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
+}
+
+func FetchCodeAiComments(ctx context.Context, issue *Issue, currentUser *user_model.User, fileLines map[string]int64) (CodeComments, error) {
+	return fetchCodeAiCommentsByReview(ctx, issue, currentUser, nil, fileLines)
+}
+
+func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, currentUser *user_model.User, review *Review, fileLines map[string]int64) (CodeComments, error) {
+	pathToLineToComment := make(CodeComments)
+	var comments CommentList
+
+	// AiPullComment 리스트를 가져옴
+	aiPullComments, err := fetchAiPullComments(ctx, issue, currentUser, review)
+	if err != nil {
+		return nil, err
+	}
+
+	// AiPullComment를 Comment로 변환
+	for _, aiPullComment := range aiPullComments {
+		comment, err := convertAiPullCommentToComment(ctx, aiPullComment, issue, fileLines)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+
+	for _, comment := range comments {
+		if pathToLineToComment[comment.TreePath] == nil {
+			pathToLineToComment[comment.TreePath] = make(map[int64][]*Comment)
+		}
+		pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], comment)
+	}
+
+	return pathToLineToComment, nil
+}
+
+
+// convertAiPullCommentToComment converts an AiPullComment into a Comment
+func convertAiPullCommentToComment(ctx context.Context, aiPullComment *AiPullComment, issue *Issue, fileLines map[string]int64) (*Comment, error) {
+	// AiPullComment를 Comment로 변환
+	comment := &Comment{
+		ID:          -1,
+		PosterID:    -3,
+		IssueID:     aiPullComment.PullID,
+		Content:     aiPullComment.Content,
+		TreePath:    aiPullComment.TreePath,
+		CreatedUnix: aiPullComment.CreatedUnix,
+		UpdatedUnix: aiPullComment.UpdatedUnix,
+		CommitSHA:   aiPullComment.CommitSHA,
+		Line:        fileLines[aiPullComment.TreePath],
+	}
+
+	if err := comment.LoadPoster(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := comment.LoadReactions(ctx, issue.Repo); err != nil {
+		return nil, err
+	}
+
+	// 마크다운 렌더링 (AI Pull Comment의 내용을 HTML로 변환)
+	var err error
+	if comment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+		Ctx: ctx,
+		Links: markup.Links{
+			Base: issue.Repo.Link(),
+		},
+		Metas: issue.Repo.ComposeMetas(ctx),
+	}, aiPullComment.Content); err != nil {
+		return nil, err
+	}
+
+	return comment, nil
 }

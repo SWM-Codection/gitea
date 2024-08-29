@@ -14,11 +14,11 @@ type PullCommentService interface {
 	CreateAiPullComment(ctx *context.Context, form *api.CreateAiPullCommentForm) error
 	DeleteAiPullComment(ctx *context.Context, id int64) error
 }
-
 var _ PullCommentService = &PullCommentServiceImpl{}
 
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
 func (is *PullCommentServiceImpl) CreateAiPullComment(ctx *context.Context, form *api.CreateAiPullCommentForm) error {
+
 	branch := form.Branch
 	wg := new(sync.WaitGroup)
 
@@ -30,6 +30,14 @@ func (is *PullCommentServiceImpl) CreateAiPullComment(ctx *context.Context, form
 	for _, fileContent := range *form.FileContents {
 		go func(fileContent *api.PathContentMap) {
 			defer wg.Done()
+
+			// Recover from any panic within this goroutine
+            defer func() {
+                if r := recover(); r != nil {
+                    fmt.Errorf("Recovered from panic in AI pull comment request: %v", r)
+                }
+            }()
+
 			result, err := AiPullCommentRequester.RequestReviewToAI(ctx, &AiPullCommentRequest{
 				Branch:   branch,
 				TreePath: fileContent.TreePath,

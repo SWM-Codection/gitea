@@ -29,7 +29,14 @@ func (u *User) IsGhost() bool {
 	if u == nil {
 		return false
 	}
-	return u.ID == GhostUserID && u.Name == GhostUserName
+	return (u.ID == GhostUserID && u.Name == GhostUserName)
+}
+
+func (u *User) IsCodection() bool {
+	if u == nil {
+		return false
+	}
+	return (u.ID == CodectionUserId && u.Name == CodectionUserName)
 }
 
 // NewReplaceUser creates and returns a fake user for external user
@@ -62,6 +69,20 @@ func NewActionsUser() *User {
 		Type:                    UserTypeIndividual,
 		AllowCreateOrganization: true,
 		Visibility:              structs.VisibleTypePublic,
+	}
+}
+
+const (
+	CodectionUserId	       = -3
+	CodectionUserName      = "Codection"
+	CodectionUserLowerName = "codection"
+)
+
+func NewCodectionUser() *User {
+	return &User{
+		ID:        CodectionUserId,
+		Name:      CodectionUserName,
+		LowerName: CodectionUserLowerName,
 	}
 }
 

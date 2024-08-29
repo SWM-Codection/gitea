@@ -870,6 +870,8 @@ func GetPossibleUserByID(ctx context.Context, id int64) (*User, error) {
 		return NewGhostUser(), nil
 	case ActionsUserID:
 		return NewActionsUser(), nil
+	case CodectionUserId:
+		return NewCodectionUser(), nil
 	case 0:
 		return nil, ErrUserNotExist{}
 	default:

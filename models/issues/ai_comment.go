@@ -9,6 +9,7 @@ import (
 	user_model "code.gitea.io/gitea/models/user"
 
 	"code.gitea.io/gitea/modules/timeutil"
+	"xorm.io/builder"
 )
 
 // init 메소드가 있으면 자동적으로 xorm에서 이 메소드를 실행하는듯 하다.
@@ -34,6 +35,22 @@ type AiPullComment struct {
 	CommitSHA   string             `xorm:"VARCHAR(64)"`
 	// CommitID        int64
 
+}
+
+type FindAiPullCommentsOptions struct {
+	RepoID    int64
+	PullID    int64
+}
+
+func (opts FindAiPullCommentsOptions) ToConds() builder.Cond {
+	conds := builder.NewCond()
+	if opts.PullID > 0 {
+		conds = conds.And(builder.Eq{"pull_id": opts.PullID})
+	}
+	if opts.RepoID > 0 {
+		conds = conds.And(builder.Eq{"review_id": opts.RepoID})
+	}
+	return conds
 }
 
 type CreateAiPullCommentOption struct {
@@ -134,6 +151,19 @@ func DeleteAiPullCommentByID(ctx context.Context, id int64) error {
 
 	return commiter.Commit()
 
+}
+
+type AiPullCommentList []*AiPullComment
+
+func fetchAiPullComments(ctx context.Context, issue *Issue, currentUser *user_model.User, review *Review) ([]*AiPullComment, error) {
+	var aiPullComments []*AiPullComment
+
+	e := db.GetEngine(ctx)
+	if err := e.Where("pull_id = ?", issue.ID).Find(&aiPullComments); err != nil {
+		return nil, err
+	}
+
+	return aiPullComments, nil
 }
 
 // TODOC repo가 삭제되면 Ai Comment도 삭제하는 로직

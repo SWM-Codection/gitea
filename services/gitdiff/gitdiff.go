@@ -465,11 +465,49 @@ type Diff struct {
 	NumViewedFiles               int // user-specific
 }
 
+func getFileLines(diff *Diff) map[string]int64 {
+	fileLineMap := make(map[string]int64)
+
+	for _, file := range diff.Files {
+		if len(file.Sections) > 0 {
+			// Get the file name and the last line index
+			fileName := file.Sections[0].FileName
+			lastLineIdx := int64(len(file.Sections[0].Lines) - 1) // Cast to int64
+
+			// Store them in the map
+			fileLineMap[fileName] = lastLineIdx
+		}
+	}
+
+	return fileLineMap
+}
+
 // LoadComments loads comments into each line
 func (diff *Diff) LoadComments(ctx context.Context, issue *issues_model.Issue, currentUser *user_model.User, showOutdatedComments bool) error {
 	allComments, err := issues_model.FetchCodeComments(ctx, issue, currentUser, showOutdatedComments)
 	if err != nil {
 		return err
+	}
+	aiComments, err := issues_model.FetchCodeAiComments(ctx, issue, currentUser, getFileLines(diff))
+	if err != nil {
+		return err
+	}
+	for fileName, aiLineCommits := range aiComments {
+		if existingLineCommits, ok := allComments[fileName]; ok {
+			// If the file exists in allComments, merge the line comments
+			for lineNumber, aiCommentsForLine := range aiLineCommits {
+				if existingCommentsForLine, exists := existingLineCommits[lineNumber]; exists {
+					// If line exists, append AI comments
+					allComments[fileName][lineNumber] = append(existingCommentsForLine, aiCommentsForLine...)
+				} else {
+					// If line doesn't exist, add AI comments
+					allComments[fileName][lineNumber] = aiCommentsForLine
+				}
+			}
+		} else {
+			// If the file doesn't exist in allComments, add the entire entry from AI comments
+			allComments[fileName] = aiLineCommits
+		}
 	}
 	for _, file := range diff.Files {
 		if lineCommits, ok := allComments[file.Name]; ok {
