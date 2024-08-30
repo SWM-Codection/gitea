@@ -26,6 +26,7 @@ const (
 	tplOrgHome base.TplName = "org/home"
 )
 
+// 체크 org 메인페이지
 // Home show organization home page
 func Home(ctx *context.Context) {
 	uname := ctx.Params(":username")

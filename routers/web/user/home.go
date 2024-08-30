@@ -6,6 +6,8 @@ package user
 
 import (
 	"bytes"
+	"code.gitea.io/gitea/services/dashboard"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -45,6 +47,7 @@ const (
 	tplIssues     base.TplName = "user/dashboard/issues"
 	tplMilestones base.TplName = "user/dashboard/milestones"
 	tplProfile    base.TplName = "user/profile"
+	tmpl
 )
 
 // getDashboardContextUser finds out which context user dashboard is being viewed as .
@@ -65,6 +68,29 @@ func getDashboardContextUser(ctx *context.Context) *user_model.User {
 	ctx.Data["Orgs"] = orgs
 
 	return ctxUser
+}
+
+func OrgDashboard(ctx *context.Context) {
+
+}
+
+func OrgDashBoardPullFeedBackTimeData(ctx *context.Context) {
+
+	OrgID := ctx.Org.Organization.ID
+
+	status, err := dashboard.DdashboardService.GetFeedBackTimeStatus(ctx, OrgID, ctx.Cache)
+
+	if err != nil {
+		if errors.Is(err, dashboard.ErrAwaitGeneration) {
+			log.Error(err.Error())
+			ctx.Status(http.StatusAccepted)
+			return
+		}
+		ctx.ServerError("GetFeedBackTimeStatus", err)
+	} else {
+		ctx.JSON(http.StatusOK, status)
+	}
+
 }
 
 // Dashboard render the dashboard page

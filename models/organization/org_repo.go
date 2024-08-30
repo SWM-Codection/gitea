@@ -15,3 +15,12 @@ func GetOrgRepositories(ctx context.Context, orgID int64) (repo_model.Repository
 	var orgRepos []*repo_model.Repository
 	return orgRepos, db.GetEngine(ctx).Where("owner_id = ?", orgID).Find(&orgRepos)
 }
+
+func GetOrgRepositoryOrgIDS(ctx context.Context, orgID int64) ([]int64, error) {
+	var orgRepos []int64
+	err := db.GetEngine(ctx).Table("repository").
+		Where("owner_id = ?", orgID).
+		Cols("id").
+		Find(&orgRepos)
+	return orgRepos, err
+}

@@ -4,11 +4,6 @@
 package issues
 
 import (
-	"context"
-	"fmt"
-	"slices"
-	"strings"
-
 	"code.gitea.io/gitea/models/db"
 	git_model "code.gitea.io/gitea/models/git"
 	"code.gitea.io/gitea/models/organization"
@@ -16,9 +11,15 @@ import (
 	access_model "code.gitea.io/gitea/models/perm/access"
 	"code.gitea.io/gitea/models/unit"
 	user_model "code.gitea.io/gitea/models/user"
+	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/timeutil"
 	"code.gitea.io/gitea/modules/util"
+	"context"
+	"fmt"
+	"slices"
+	"strings"
+	"time"
 
 	"xorm.io/builder"
 )
@@ -89,6 +90,7 @@ type ReviewType int
 // ReviewTypeUnknown unknown review type
 const ReviewTypeUnknown ReviewType = -1
 
+// 체크 리뷰 승인 타입
 const (
 	// ReviewTypePending is a review which is not published yet
 	ReviewTypePending ReviewType = iota
@@ -139,6 +141,7 @@ type Review struct {
 
 	CreatedUnix timeutil.TimeStamp `xorm:"INDEX created"`
 	UpdatedUnix timeutil.TimeStamp `xorm:"INDEX updated"`
+	DeletedUnix timeutil.TimeStamp `xorm:"INDEX deleted"`
 
 	// CodeComments are the initial code comments of the review
 	CodeComments CodeComments `xorm:"-"`
@@ -528,6 +531,66 @@ func GetReviewByIssueIDAndUserID(ctx context.Context, issueID, userID int64) (*R
 	return review, nil
 }
 
+type PullReviewFirstCreatedUnix struct {
+	IssueCreated  timeutil.TimeStamp `xorm:"'issue_created_unix'"`
+	ReviewCreated timeutil.TimeStamp `xorm:"'review_created_unix'"`
+}
+
+const diffThreshHold = 48 * 3600
+
+func (firstCreatedUnix *PullReviewFirstCreatedUnix) iSExceedThreshHold(diff time.Duration) bool {
+	if diff.Hours() > diffThreshHold {
+		return true
+	}
+	return false
+}
+
+func (firstCreatedUnix *PullReviewFirstCreatedUnix) CalDiff() timeutil.TimeStamp {
+	diff := firstCreatedUnix.ReviewCreated.AsTime().Sub(firstCreatedUnix.IssueCreated.AsTime())
+
+	if firstCreatedUnix.iSExceedThreshHold(diff) {
+		return diffThreshHold
+	}
+
+	return timeutil.TimeStamp(diff)
+}
+
+func GetFirstReviewCreatedUnixesByRepoIDs(ctx context.Context, RepoIDs []int64) ([]*PullReviewFirstCreatedUnix, error) {
+
+	results := make([]*PullReviewFirstCreatedUnix, 0, len(RepoIDs))
+	PullIDs := make([]int64, 0, len(RepoIDs))
+	err := db.GetEngine(ctx).Table("issue").
+		Join("INNER", "repository", "repository.id = issue.repo_id").
+		Where(builder.In("repository.id", RepoIDs)).
+		Cols("issue.id").
+		Find(&PullIDs)
+
+	if err != nil {
+		log.Error(err.Error())
+		return nil, err
+	}
+
+	// deleted가 된 상태도 포함
+	err = db.GetEngine(ctx).Table("issue").
+		Join("INNER", "review", "review.issue_id = issue.id").
+		Where(builder.In("review.type", ReviewTypeApprove, ReviewTypeRequest, ReviewTypeReject)).
+		And(builder.In("issue.id", PullIDs)).
+		GroupBy("issue.id").
+		OrderBy("MIN(review.created_unix) ASC").
+		Select("issue.id, issue.created_unix as issue_created_unix, MIN(review.created_unix) as review_created_unix").
+		Unscoped().
+		Find(&results)
+
+	if err != nil {
+		log.Error(err.Error())
+
+		return nil, err
+
+	}
+
+	return results, err
+}
+
 // GetTeamReviewerByIssueIDAndTeamID get the latest review request of reviewer team for a pull request
 func GetTeamReviewerByIssueIDAndTeamID(ctx context.Context, issueID, teamID int64) (*Review, error) {
 	review := new(Review)
@@ -536,6 +599,7 @@ func GetTeamReviewerByIssueIDAndTeamID(ctx context.Context, issueID, teamID int6
 		Desc("id").
 		Get(review)
 	if err != nil {
+		log.Error(err.Error())
 		return nil, err
 	}
 

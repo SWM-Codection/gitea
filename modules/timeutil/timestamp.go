@@ -99,3 +99,11 @@ func (ts TimeStamp) FormatDate() string {
 func (ts TimeStamp) IsZero() bool {
 	return int64(ts) == 0 || int64(ts) == timeZeroUnix
 }
+
+func (ts TimeStamp) Day() int {
+	return ts.AsTime().Day()
+}
+
+func (ts TimeStamp) Hour() int {
+	return ts.AsTime().Hour()
+}

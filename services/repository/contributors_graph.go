@@ -199,6 +199,7 @@ func getExtendedCommitStats(repo *git.Repository, revision string /*, limit int 
 	return extendedCommitStats, nil
 }
 
+// 체크 기여자 데이터 불러오는 부분
 func generateContributorStats(genDone chan struct{}, cache cache.StringCache, cacheKey string, repo *repo_model.Repository, revision string) {
 	ctx := graceful.GetManager().HammerContext()
 

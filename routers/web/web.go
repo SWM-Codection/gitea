@@ -897,6 +897,11 @@ func registerRoutes(m *web.Route) {
 		}, context.OrgAssignment(true, false, true))
 
 		m.Group("/{org}", func() {
+			m.Get("/dashboards", user.OrgDashboard)
+			m.Get("/dashboards/pull", user.OrgDashBoardPullFeedBackTimeData)
+		}, context.OrgAssignment(true, true))
+
+		m.Group("/{org}", func() {
 			m.Get("/teams/{team}", org.TeamMembers)
 			m.Get("/teams/{team}/repositories", org.TeamRepositories)
 			m.Post("/teams/{team}/action/{action}", org.TeamsAction)
@@ -1462,7 +1467,7 @@ func registerRoutes(m *web.Route) {
 		ctx.Data["CloneButtonOriginLink"] = ctx.Repo.Repository.WikiCloneLink()
 	})
 	// end "/{username}/{reponame}/wiki"
-
+	// 체크 gitea chart.js
 	m.Group("/{username}/{reponame}/activity", func() {
 		m.Get("", repo.Activity)
 		m.Get("/{period}", repo.Activity)
