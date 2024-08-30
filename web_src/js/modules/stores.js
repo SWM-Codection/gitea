@@ -23,3 +23,14 @@ export function discussionTreeStore() {
   }
   return discussionTreeStoreReactive;
 }
+
+let discussionDetailStoreReactive; 
+export function discussionDetailStore() {
+  if (!discussionDetailStoreReactive) {
+    discussionDetailStoreReactive = reactive({
+      discussion: window.config.pageData.discussion, 
+      discussionContent: window.config.pageData.discussionContent, 
+    })
+  }
+  return discussionDetailStoreReactive;
+}

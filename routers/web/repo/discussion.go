@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
+	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/setting"
@@ -60,6 +61,7 @@ func NewDiscussionPost(ctx *context.Context) {
 // TODO: for now, some clumsy logics are included, but for later this function should be polished
 func Discussions(ctx *context.Context) {
 	// get discussion lists
+
 	listResp, err := discussion_service.GetDiscussionList(ctx)
 	if err != nil {
 		ctx.ServerError("Discussions", err)
@@ -71,6 +73,7 @@ func Discussions(ctx *context.Context) {
 	if err != nil {
 		currentPage = 1
 	}
+
 	pager := context.NewPagination(int(listResp.TotalCount), setting.UI.IssuePagingNum, currentPage, 5)
 
 	// get count info
@@ -86,6 +89,7 @@ func Discussions(ctx *context.Context) {
 		state = "closed"
 	}
 
+	log.Info("discussions : %v", listResp.Discussions)
 	// prepare data for tamplete
 	ctx.Data["Title"] = ctx.Tr("repo.discussion.list")
 	ctx.Data["PageIsDiscussionList"] = true
@@ -105,7 +109,25 @@ func Discussions(ctx *context.Context) {
 func ViewDiscussion(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":index")
 	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
-	log.Info("discussion: %v, err: %v", discussionResponse, err)
+	if err != nil {
+		ctx.ServerError("error on discussion response: err = %v", err)
+	}
+	log.Info("poster id is %v", discussionResponse.PosterId)
+	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
+	if err != nil {
+		ctx.ServerError("errro on get user by id: err = %v", err)
+	}
+	discussionResponse.Poster = poster
+	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
+	if err != nil {
+		ctx.ServerError("error on discussion content response: err = %v", err)
+	}
+	log.Info("discussion response : %v", discussionResponse)
+	log.Info("discussion content response : %v", discussionContentResponse)
+
+	ctx.Data["PageIsDiscussionList"] = true
+	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
+	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }

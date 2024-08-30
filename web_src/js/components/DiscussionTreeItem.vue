@@ -13,7 +13,10 @@ export default {
   data: () => ({
     store: discussionTreeStore(),
     collapsed: false,
-  })
+  }), 
+  mounted() {
+    console.log('discussion tree item mounted!')
+  }
 };
 </script>
 <template>

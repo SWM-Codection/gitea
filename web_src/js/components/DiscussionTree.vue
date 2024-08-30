@@ -75,6 +75,7 @@ export default {
   },
   mounted() {
     // Default to true if unset
+    console.log('discussion tree mounted!')
     this.store.fileTreeIsVisible = true; 
 
     this.hashChangeListener = () => {
@@ -100,10 +101,12 @@ export default {
 };
 </script>
 <template>
-  <div class="discussion-file-tree-items" >
-    <!-- only render the tree if we're visible. in many cases this is something that doesn't change very often -->
-    <DiscussionTreeItem v-for="item in fileTree" :key="item.name" :item="item"/>
-  </div>
+
+<div class="discussion-file-tree-items" >
+  <!-- only render the tree if we're visible. in many cases this is something that doesn't change very often -->
+  <DiscussionTreeItem v-for="item in fileTree" :key="item.name" :item="item"/>
+</div>
+
 </template>
 <style scoped>
 .discussion-file-tree-items {

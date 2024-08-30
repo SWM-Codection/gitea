@@ -52,12 +52,14 @@ export default {
             if (filtered.length <= 0) return;
             const resp = await GET(`${this.store.repoLink}/raw/branch/${this.selectedBranch}/${filtered[0].Name}`);
             const content = await resp.text();
+            const tmp = [] 
             content.split('\n').forEach((line, idx) => {
-                this.store.contents.push({
+                tmp.push({
                     line: idx + 1, 
                     content: line
                 });
             });
+            this.store.contents = tmp; 
         },
         async handleSumbit() {
             console.log('handle submit has been called~')
@@ -69,11 +71,11 @@ export default {
                 if (filtered.length <= 0) return; 
                 const resp = await GET(`${this.store.repoLink}/raw/branch/${this.selectedBranch}/${filePath}`);
                 const content = await resp.text();
-                const lines = content.split('\n').length + 1;  
+                const lines = content.split('\n').length;  
                 return {
                     filePath,
                     startLine: 1, 
-                    endLine: lines + 1, 
+                    endLine: lines, 
                 };
             }));
             

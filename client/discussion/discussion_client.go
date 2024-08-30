@@ -66,15 +66,18 @@ type ModifyDiscussionRequest struct {
 }
 
 type DiscussionResponse struct {
-	Id         int64   `json:"id"`
-	Name       string  `json:"name"`
-	Content    string  `json:"content"`
-	RepoId     int64   `json:"repoId"`
-	PosterId   int64   `json:"posterId"`
-	CommitHash string  `json:"commitHash"`
-	IsClosed   bool    `json:"isClosed"`
-	Deadline   string  `json:"deadline"`
-	Assignees  []int64 `json:"assignees"`
+	Id          int64              `json:"id"`
+	Name        string             `json:"name"`
+	Content     string             `json:"content"`
+	RepoId      int64              `json:"repoId"`
+	PosterId    int64              `json:"posterId"`
+	CommitHash  string             `json:"commitHash"`
+	IsClosed    bool               `json:"isClosed"`
+	Deadline    timeutil.TimeStamp `json:"deadline"`
+	Assignees   []int64            `json:"assignees"`
+	CreatedUnix timeutil.TimeStamp `json:"createdUnix"`
+	UpdatedUnix timeutil.TimeStamp `json:"updatedUnix"`
+	Poster      *user_model.User   `json:"-"`
 }
 
 type Discussion struct {
@@ -102,6 +105,56 @@ type DiscussionListResponse struct {
 type DiscussionCountResponse struct {
 	OpenCount  int `json:"openCount"`
 	CloseCount int `json:"closeCount"`
+}
+
+type ExtractedLine struct {
+	LineNumber int    `json:"lineNumber"`
+	Content    string `json:"content"`
+}
+type CodeBlock struct {
+	CodeId   int64                       `json:"codeId"`
+	Lines    []ExtractedLine             `json:"lines"`
+	Comments []DiscussionCommentResponse `json:"comments"`
+}
+type FileContent struct {
+	FilePath   string      `json:"filePath"`
+	CodeBlocks []CodeBlock `json:"codeBlocks"`
+}
+
+type DiscussionCommentResponse struct {
+	Id        int64                `json:"id"`
+	Scope     string               `json:"scope"`
+	StartLine int                  `json:"startLine"`
+	EndLine   int                  `json:"endLine"`
+	Content   string               `json:"content"`
+	Reactions []DiscussionReaction `json:"reactions"`
+}
+
+type ReactionTypeEnum = string
+
+const (
+	PLUS_ONE  ReactionTypeEnum = "+1"
+	MINUS_ONE ReactionTypeEnum = "-1"
+	LAUGH     ReactionTypeEnum = "laugh"
+	HOORAY    ReactionTypeEnum = "hooray"
+	CONFUSED  ReactionTypeEnum = "confused"
+	HEART     ReactionTypeEnum = "heart"
+	ROCKET    ReactionTypeEnum = "rocket"
+	EYES      ReactionTypeEnum = "eyes"
+)
+
+type DiscussionReaction struct {
+	Id           int64            `json:"id"`
+	Type         ReactionTypeEnum `json:"type"`
+	DiscussionId int64            `json:"discussionId"`
+	CommentId    int64            `json:"commentId"`
+	UserId       int64            `json:"userId"`
+}
+type DiscussionContentResponse struct {
+	DiscussionId    int64                       `json:"discussionId"`
+	Contents        []FileContent               `json:"contents"`
+	GlobalComments  []DiscussionCommentResponse `json:"globalComments"`
+	GlobalReactions []DiscussionReaction        `json:"discussionReaction"`
 }
 
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
@@ -153,7 +206,9 @@ func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListRe
 		return nil, err
 	}
 	result := &DiscussionListResponse{}
-	json.Unmarshal(resp.Body(), result)
+	if err := json.Unmarshal(resp.Body(), result); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -161,8 +216,16 @@ func HandleDiscussionAvailable() (*resty.Response, error) {
 	return client.Request().Post("/discussion/available")
 }
 
-func GetDiscussionContents(discussionId int64) (*resty.Response, error) {
-	return client.Request().Get(fmt.Sprintf("/discussion/%d/codes", discussionId))
+func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
+	if err != nil {
+		return nil, err
+	}
+	result := &DiscussionContentResponse{}
+	if err := json.Unmarshal(resp.Body(), result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func PostComment(request *PostCommentRequest) (*resty.Response, error) {
