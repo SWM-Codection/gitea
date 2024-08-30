@@ -129,5 +129,6 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionContent"] = discussionContentResponse
+	ctx.Data["DiscussionTab"] = "files"
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
