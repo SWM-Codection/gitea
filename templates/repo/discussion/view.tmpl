@@ -48,7 +48,7 @@
 
             <div class="discussion-content-left comment-list prevent-before-timline">
                 {{ if eq .DiscussionTab "conversation" }}
-                    {{ template "repo/discussion/view_conversation" }}
+                    {{ template "repo/discussion/view_conversation" . }}
                 {{ else }}
                     {{ template "repo/discussion/view_file" }}
                 {{ end }}
