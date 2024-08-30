@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	user_model "code.gitea.io/gitea/models/user"
@@ -108,6 +109,8 @@ func Discussions(ctx *context.Context) {
 
 func ViewDiscussion(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":index")
+	isFileTab := strings.HasSuffix(ctx.Req.RequestURI, "/files")
+
 	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
 	if err != nil {
 		ctx.ServerError("error on discussion response: err = %v", err)
@@ -129,6 +132,10 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionContent"] = discussionContentResponse
-	ctx.Data["DiscussionTab"] = "files"
+
+	ctx.Data["DiscussionTab"] = "conversation"
+	if isFileTab {
+		ctx.Data["DiscussionTab"] = "files"
+	}
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
