@@ -469,13 +469,16 @@ func getFileLines(diff *Diff) map[string]int64 {
 	fileLineMap := make(map[string]int64)
 
 	for _, file := range diff.Files {
-		if len(file.Sections) > 0 {
-			// Get the file name and the last line index
-			fileName := file.Sections[0].FileName
-			lastLineIdx := int64(len(file.Sections[0].Lines) - 1) // Cast to int64
-
-			// Store them in the map
-			fileLineMap[fileName] = lastLineIdx
+		found := false
+		for secIdx := len(file.Sections) - 1; secIdx >= 0 && !found; secIdx-- {
+			section := file.Sections[secIdx]
+			for lineIdx := len(section.Lines) - 1; lineIdx >= 0 && !found; lineIdx-- {
+				line := section.Lines[lineIdx]
+				if len(line.Content) > 0 && line.Content[0] == '+' {
+					fileLineMap[file.Sections[0].FileName] = int64(line.RightIdx)
+					found = true // Escape the loop when you find a line that begins with '+'
+				}
+			}
 		}
 	}
 
@@ -488,7 +491,7 @@ func (diff *Diff) LoadComments(ctx context.Context, issue *issues_model.Issue, c
 	if err != nil {
 		return err
 	}
-	aiComments, err := issues_model.FetchCodeAiComments(ctx, issue, currentUser, getFileLines(diff))
+	aiComments, err := issues_model.FetchCodeAiComments(ctx, issue, getFileLines(diff))
 	if err != nil {
 		return err
 	}

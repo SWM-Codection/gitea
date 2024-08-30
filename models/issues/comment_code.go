@@ -137,16 +137,16 @@ func FetchCodeCommentsByLine(ctx context.Context, issue *Issue, currentUser *use
 	return findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
 }
 
-func FetchCodeAiComments(ctx context.Context, issue *Issue, currentUser *user_model.User, fileLines map[string]int64) (CodeComments, error) {
-	return fetchCodeAiCommentsByReview(ctx, issue, currentUser, nil, fileLines)
+func FetchCodeAiComments(ctx context.Context, issue *Issue, fileLines map[string]int64) (CodeComments, error) {
+	return fetchCodeAiCommentsByReview(ctx, issue, fileLines)
 }
 
-func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, currentUser *user_model.User, review *Review, fileLines map[string]int64) (CodeComments, error) {
+func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines map[string]int64) (CodeComments, error) {
 	pathToLineToComment := make(CodeComments)
 	var comments CommentList
 
 	// AiPullComment 리스트를 가져옴
-	aiPullComments, err := fetchAiPullComments(ctx, issue, currentUser, review)
+	aiPullComments, err := fetchAiPullComments(ctx, issue)
 	if err != nil {
 		return nil, err
 	}

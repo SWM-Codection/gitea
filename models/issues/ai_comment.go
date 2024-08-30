@@ -42,17 +42,6 @@ type FindAiPullCommentsOptions struct {
 	PullID    int64
 }
 
-func (opts FindAiPullCommentsOptions) ToConds() builder.Cond {
-	conds := builder.NewCond()
-	if opts.PullID > 0 {
-		conds = conds.And(builder.Eq{"pull_id": opts.PullID})
-	}
-	if opts.RepoID > 0 {
-		conds = conds.And(builder.Eq{"review_id": opts.RepoID})
-	}
-	return conds
-}
-
 type CreateAiPullCommentOption struct {
 	Doer      *user_model.User
 	Repo      *repo_model.Repository
@@ -155,7 +144,7 @@ func DeleteAiPullCommentByID(ctx context.Context, id int64) error {
 
 type AiPullCommentList []*AiPullComment
 
-func fetchAiPullComments(ctx context.Context, issue *Issue, currentUser *user_model.User, review *Review) ([]*AiPullComment, error) {
+func fetchAiPullComments(ctx context.Context, issue *Issue) ([]*AiPullComment, error) {
 	var aiPullComments []*AiPullComment
 
 	e := db.GetEngine(ctx)
