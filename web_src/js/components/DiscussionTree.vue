@@ -14,18 +14,18 @@ export default {
       const result = [];
       for (const file of this.store.files) {
         // Split file into directories
-        const splits = file.Name.split('/');
+        const names = file.Name.split('/');
         let index = 0;
         let parent = null;
         let isFile = false;
-        for (const split of splits) {
+        for (const name of names) {
           index += 1;
           // reached the end
-          if (index === splits.length) {
+          if (index === names.length) {
             isFile = true;
           }
           let newParent = {
-            name: split,
+            name: name,
             children: [],
             isFile,
           };
@@ -37,7 +37,7 @@ export default {
           if (parent) {
             // check if the folder already exists
             const existingFolder = parent.children.find(
-              (x) => x.name === split,
+              (x) => x.name === name,
             );
             if (existingFolder) {
               newParent = existingFolder;
@@ -45,7 +45,7 @@ export default {
               parent.children.push(newParent);
             }
           } else {
-            const existingFolder = result.find((x) => x.name === split);
+            const existingFolder = result.find((x) => x.name === name);
             if (existingFolder) {
               newParent = existingFolder;
             } else {

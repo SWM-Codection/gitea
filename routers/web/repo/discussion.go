@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	user_model "code.gitea.io/gitea/models/user"
@@ -18,9 +17,10 @@ import (
 )
 
 const (
-	tplDiscussionNew  base.TplName = "repo/discussion/new"
-	tplDiscussions    base.TplName = "repo/discussion/list"
-	tplDiscussionView base.TplName = "repo/discussion/view"
+	tplDiscussionNew   base.TplName = "repo/discussion/new"
+	tplDiscussions     base.TplName = "repo/discussion/list"
+	tplDiscussionView  base.TplName = "repo/discussion/view"
+	tplDiscussionFiles base.TplName = "repo/discussion/view_file"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -109,7 +109,6 @@ func Discussions(ctx *context.Context) {
 
 func ViewDiscussion(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":index")
-	isFileTab := strings.HasSuffix(ctx.Req.RequestURI, "/files")
 
 	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
 	if err != nil {
@@ -121,21 +120,33 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("errro on get user by id: err = %v", err)
 	}
 	discussionResponse.Poster = poster
-	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
-	if err != nil {
-		ctx.ServerError("error on discussion content response: err = %v", err)
-	}
+
 	log.Info("discussion response : %v", discussionResponse)
-	log.Info("discussion content response : %v", discussionContentResponse)
 
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
+	ctx.Data["DiscussionTab"] = "conversation"
+
+	ctx.HTML(http.StatusOK, tplDiscussionView)
+}
+
+func ViewDiscussionFiles(ctx *context.Context) {
+	
+	discussionId := ctx.ParamsInt64(":index")
+
+	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
+
+	if err != nil {
+		ctx.ServerError("error on discussion content response: err = %v", err)
+	}
+
+	log.Info("discussion content response : %v", discussionContentResponse)
+
+	ctx.Data["PageIsDiscussionList"] = true
+	ctx.Data["Repository"] = ctx.Repo.Repository
+	ctx.Data["DiscussionTab"] = "files"
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 
-	ctx.Data["DiscussionTab"] = "conversation"
-	if isFileTab {
-		ctx.Data["DiscussionTab"] = "files"
-	}
-	ctx.HTML(http.StatusOK, tplDiscussionView)
+	ctx.HTML(http.StatusOK, tplDiscussionFiles)
 }
