@@ -174,6 +174,27 @@ func renderConversation(ctx *context.Context, comment *issues_model.Comment, ori
 		ctx.ServerError("FetchCodeCommentsByLine", err)
 		return
 	}
+	aiPullComment, err := issues_model.FetchAiPullCommentByLine(ctx, comment.Issue, comment.TreePath, comment.Line)
+
+	if err != nil {
+		ctx.ServerError("FetchAiPullCommentByLine", err)
+		return
+	}
+	if aiPullComment != nil {
+		if err := aiPullComment.LoadPoster(ctx); err != nil {
+			ctx.ServerError("LoadPoster", err)
+			return
+		}
+		if err := aiPullComment.LoadAttachments(ctx); err != nil {
+			ctx.ServerError("LoadPoster", err)
+			return
+		}
+		println(comments[0].RenderedContent)
+		println()
+		comments = append([]*issues_model.Comment{aiPullComment}, comments...)
+		println(comments[0].RenderedContent)
+	}
+
 	if len(comments) == 0 {
 		// if the comments are empty (deleted, outdated, etc), it's better to tell the users that it is outdated
 		ctx.HTML(http.StatusOK, tplConversationOutdated)

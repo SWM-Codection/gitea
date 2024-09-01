@@ -9,7 +9,6 @@ import (
 	user_model "code.gitea.io/gitea/models/user"
 
 	"code.gitea.io/gitea/modules/timeutil"
-	"xorm.io/builder"
 )
 
 // init 메소드가 있으면 자동적으로 xorm에서 이 메소드를 실행하는듯 하다.
@@ -33,8 +32,8 @@ type AiPullComment struct {
 	Status      string             `xorm:"status"` //
 	DeletedUnix timeutil.TimeStamp `xorm:"deleted"`
 	CommitSHA   string             `xorm:"VARCHAR(64)"`
+	Line        int64
 	// CommitID        int64
-
 }
 
 type FindAiPullCommentsOptions struct {
@@ -51,6 +50,12 @@ type CreateAiPullCommentOption struct {
 	CommitSHA string
 	// CommitID string
 
+}
+
+type UpdateAiPullCommentOption struct {
+	CommentID  int64
+	Line	   *int64
+	Content	   *string
 }
 
 type ErrAiPullCommentNotExist struct {
@@ -142,6 +147,44 @@ func DeleteAiPullCommentByID(ctx context.Context, id int64) error {
 
 }
 
+func UpdateAiPullComment(ctx context.Context, opts *UpdateAiPullCommentOption) (*AiPullComment, error) {
+	ctx, committer, err := db.TxContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer committer.Close()
+
+	aiPullComment := &AiPullComment{}
+	e := db.GetEngine(ctx)
+	has, err := e.ID(opts.CommentID).Get(aiPullComment)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, fmt.Errorf("ai pull comment not found")
+	}
+
+	// Update the fields only if the new values are provided
+	if opts.Line != nil {
+		aiPullComment.Line = *opts.Line
+	}
+	if opts.Content != nil {
+		aiPullComment.Content = *opts.Content
+	}
+
+	aiPullComment.UpdatedUnix = timeutil.TimeStampNow()
+
+	if _, err := e.ID(aiPullComment.ID).AllCols().Update(aiPullComment); err != nil {
+		return nil, err
+	}
+
+	if err := committer.Commit(); err != nil {
+		return nil, err
+	}
+
+	return aiPullComment, nil
+}
+
 type AiPullCommentList []*AiPullComment
 
 func fetchAiPullComments(ctx context.Context, issue *Issue) ([]*AiPullComment, error) {
@@ -154,5 +197,19 @@ func fetchAiPullComments(ctx context.Context, issue *Issue) ([]*AiPullComment, e
 
 	return aiPullComments, nil
 }
+
+func fetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string, line int64) (*AiPullComment, error) {
+	var aiPullComment AiPullComment
+
+	e := db.GetEngine(ctx)
+	if has, err := e.Where("pull_id = ? AND tree_path = ? AND line = ?", issue.ID, treePath, line).Get(&aiPullComment); err != nil {
+		return nil, err
+	} else if !has {
+		return nil, nil
+	}
+
+	return &aiPullComment, nil
+}
+
 
 // TODOC repo가 삭제되면 Ai Comment도 삭제하는 로직

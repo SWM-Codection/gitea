@@ -495,23 +495,9 @@ func (diff *Diff) LoadComments(ctx context.Context, issue *issues_model.Issue, c
 	if err != nil {
 		return err
 	}
-	for fileName, aiLineCommits := range aiComments {
-		if existingLineCommits, ok := allComments[fileName]; ok {
-			// If the file exists in allComments, merge the line comments
-			for lineNumber, aiCommentsForLine := range aiLineCommits {
-				if existingCommentsForLine, exists := existingLineCommits[lineNumber]; exists {
-					// If line exists, append AI comments
-					allComments[fileName][lineNumber] = append(existingCommentsForLine, aiCommentsForLine...)
-				} else {
-					// If line doesn't exist, add AI comments
-					allComments[fileName][lineNumber] = aiCommentsForLine
-				}
-			}
-		} else {
-			// If the file doesn't exist in allComments, add the entire entry from AI comments
-			allComments[fileName] = aiLineCommits
-		}
-	}
+
+	issues_model.MergeAIComments(allComments, aiComments)
+
 	for _, file := range diff.Files {
 		if lineCommits, ok := allComments[file.Name]; ok {
 			for _, section := range file.Sections {

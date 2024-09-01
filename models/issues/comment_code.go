@@ -153,7 +153,16 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 
 	// AiPullComment를 Comment로 변환
 	for _, aiPullComment := range aiPullComments {
-		comment, err := convertAiPullCommentToComment(ctx, aiPullComment, issue, fileLines)
+		line := fileLines[aiPullComment.TreePath]
+		updateOpts := UpdateAiPullCommentOption{
+			CommentID:	aiPullComment.ID,
+			Line:		&line,
+		}
+		updatedAiPullComment, err := UpdateAiPullComment(ctx, &updateOpts)
+		if err != nil {
+			return nil, err
+		}
+		comment, err := convertAiPullCommentToComment(ctx, updatedAiPullComment, issue)
 		if err != nil {
 			return nil, err
 		}
@@ -170,9 +179,16 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 	return pathToLineToComment, nil
 }
 
+func FetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string, line int64) (*Comment, error) {
+	aiPullComment, err := fetchAiPullCommentByLine(ctx, issue, treePath, line)
+	if err != nil || aiPullComment == nil {
+		return nil, err
+	}
+	return convertAiPullCommentToComment(ctx, aiPullComment, issue)
+}
 
 // convertAiPullCommentToComment converts an AiPullComment into a Comment
-func convertAiPullCommentToComment(ctx context.Context, aiPullComment *AiPullComment, issue *Issue, fileLines map[string]int64) (*Comment, error) {
+func convertAiPullCommentToComment(ctx context.Context, aiPullComment *AiPullComment, issue *Issue) (*Comment, error) {
 	// AiPullComment를 Comment로 변환
 	comment := &Comment{
 		ID:          -1,
@@ -183,10 +199,15 @@ func convertAiPullCommentToComment(ctx context.Context, aiPullComment *AiPullCom
 		CreatedUnix: aiPullComment.CreatedUnix,
 		UpdatedUnix: aiPullComment.UpdatedUnix,
 		CommitSHA:   aiPullComment.CommitSHA,
-		Line:        fileLines[aiPullComment.TreePath],
+		Line:        aiPullComment.Line,
+		//Poster:		 user_model.NewCodectionUser(),
 	}
 
 	if err := comment.LoadPoster(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := comment.LoadAttachments(ctx); err != nil {
 		return nil, err
 	}
 
@@ -207,4 +228,20 @@ func convertAiPullCommentToComment(ctx context.Context, aiPullComment *AiPullCom
 	}
 
 	return comment, nil
+}
+
+func MergeAIComments(allComments, aiComments CodeComments) {
+	for fileName, aiLineCommits := range aiComments {
+		if existingLineCommits, ok := allComments[fileName]; ok {
+			for lineNumber, aiCommentsForLine := range aiLineCommits {
+				if existingCommentsForLine, exists := existingLineCommits[lineNumber]; exists {
+					allComments[fileName][lineNumber] = append(existingCommentsForLine, aiCommentsForLine...)
+				} else {
+					allComments[fileName][lineNumber] = aiCommentsForLine
+				}
+			}
+		} else {
+			allComments[fileName] = aiLineCommits
+		}
+	}
 }
