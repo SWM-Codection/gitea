@@ -135,18 +135,10 @@ func ViewDiscussionFiles(ctx *context.Context) {
 	
 	discussionId := ctx.ParamsInt64(":index")
 
-	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
-
-	if err != nil {
-		ctx.ServerError("error on discussion content response: err = %v", err)
-	}
-
-	log.Info("discussion content response : %v", discussionContentResponse)
-
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["DiscussionTab"] = "files"
-	ctx.Data["DiscussionContent"] = discussionContentResponse
+	ctx.Data["DiscussionId"] = discussionId
 
 	ctx.HTML(http.StatusOK, tplDiscussionFiles)
 }

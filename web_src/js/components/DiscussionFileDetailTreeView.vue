@@ -1,13 +1,13 @@
 <script>
-import DiscussionTreeItem from './DiscussionTreeItem.vue';
-import {discussionTreeStore} from '../modules/stores.js';
+import {discussionFileTreeStore} from '../modules/stores.js';
 import {setFileFolding} from '../features/file-fold.js';
+import DiscussionFileDetailTreeItem from './DiscussionFileDetailTreeItem .vue';
 
 export default {
-  components: {DiscussionTreeItem},
+  components: {DiscussionFileDetailTreeItem},
   data: () => {
     return {
-      store: discussionTreeStore()
+      store: discussionFileTreeStore(),
     };
   },
   computed: {
@@ -15,19 +15,19 @@ export default {
       const result = [];
       for (const file of this.store.files) {
         // Split file into directories
-        const names = file.Name.split('/');
+        const filePatheNames = file.Name.split('/');
         let index = 0;
         let parent = null;
         let isFile = false;
-        for (const name of names) {
+        for (const name of filePatheNames) {
           index += 1;
           // reached the end
-          if (index === names.length) {
+          if (index === filePatheNames.length) {
             isFile = true;
           }
           let newParent = {
             name: name,
-            children: [],
+            children: [], 
             isFile,
           };
 
@@ -105,7 +105,7 @@ export default {
 
 <div class="discussion-file-tree-items" >
   <!-- only render the tree if we're visible. in many cases this is something that doesn't change very often -->
-  <DiscussionTreeItem v-for="item in fileTree" :key="item.name" :item="item"/>
+  <DiscussionFileDetailTreeItem v-for="item in fileTree" :key="item.name" :item="item"/>
 </div>
 
 </template>
