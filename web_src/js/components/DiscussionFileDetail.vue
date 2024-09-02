@@ -29,13 +29,15 @@ export default {
             let contents = []
             let files = []
             result["contents"].forEach((content, idx) => {
+                const nameHash = crypto.randomUUID()
                 contents.push({
                     Name : content["filePath"],
-                    codeBlocks : content["codeBlocks"]
+                    codeBlocks : content["codeBlocks"],
+                    NameHash: nameHash
                 })
                 files.push({
                     Name : content["filePath"],
-                    NameHash : crypto.randomUUID()
+                    NameHash : nameHash
                 })
             })
             
@@ -114,7 +116,7 @@ export default {
                     <div v-for ="content in store.contents" class="tw-w-full tw-px-1" style="max-height: 600px; margin-bottom: 2rem; overflow: auto;">
                         <div class="file-header ui top attached header tw-items-center tw-justify-between tw-flex-wrap" style="position: sticky; top: 0; z-index: 999;">
                             <div class="file-info tw-font-mono">
-                                <div class="file-info-entry">{{ content.Name }}</div>
+                                <div :href="`#discussion-${content.NameHash}`" class="file-info-entry">{{ content.Name }}</div>
                             </div>
                         </div>
                         <div class="ui bottom attached table unstackable segment">

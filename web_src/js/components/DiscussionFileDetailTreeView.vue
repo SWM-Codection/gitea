@@ -1,7 +1,7 @@
 <script>
 import {discussionFileTreeStore} from '../modules/stores.js';
 import {setFileFolding} from '../features/file-fold.js';
-import DiscussionFileDetailTreeItem from './DiscussionFileDetailTreeItem .vue';
+import DiscussionFileDetailTreeItem from './DiscussionFileDetailTreeItem.vue';
 
 export default {
   components: {DiscussionFileDetailTreeItem},
