@@ -4,15 +4,18 @@
 import { discussionFileTreeStore, discussionResponseDummy } from '../modules/stores.js';
 import { GET, POST } from '../modules/fetch.js'; 
 import DiscussionFileDetailTreeView from './DiscussionFileDetailTreeView.vue';
+import DiscussionCodeLineSelector from './DiscussionCodeLineSelector.vue';
 export default {
     components: {
         DiscussionFileDetailTreeView,
+        DiscussionCodeLineSelector
     },
     data: () => ({
         store: discussionFileTreeStore(), 
         dummy :  discussionResponseDummy(),
         activeMenu: 'file', 
         name: '', 
+        
     }),
     async mounted() {
         console.log('vue component has been mounted'); 
@@ -46,6 +49,10 @@ export default {
             this.store.files = files
             this.store.selectedItem = this.store.files.length > 0 ? '#discussion-' + this.store.files[0].NameHash : null; 
         },
+
+        
+
+        
 
         // async fetchBranches() {
         //     const resp = await GET(`${this.store.repoLink}/branches/list`);
@@ -94,7 +101,6 @@ export default {
 </script>
 
 
-
 <template>
     <div class="form-content">
 
@@ -114,24 +120,8 @@ export default {
                 <DiscussionFileDetailTreeView id="discussion-tree" style="max-height: 600px; width: 200px; overflow: auto;"/>
                 <div style="display: flex; flex-wrap: wrap;">
                     <div v-for ="content in store.contents" class="tw-w-full tw-px-1" style="max-height: 600px; margin-bottom: 2rem; overflow: auto;">
-                        <div class="file-header ui top attached header tw-items-center tw-justify-between tw-flex-wrap" style="position: sticky; top: 0; z-index: 999;">
-                            <div class="file-info tw-font-mono">
-                                <div :href="`#discussion-${content.NameHash}`" class="file-info-entry">{{ content.Name }}</div>
-                            </div>
-                        </div>
-                        <div class="ui bottom attached table unstackable segment">
-                            <div class="file-view code-view" style="display: flex;">
-                                <table>
-                                    <tbody v-for = "codeBlock in content.codeBlocks" >
-                                        <input type="hidden" :value = "`${codeBlock.codeId}`">
-                                        <tr v-for="line in codeBlock.lines" :key ="`${codeBlock.codeId}-${codeBlock.lineNumber}`">
-                                            <td class="lines-num">{{ line.lineNumber }}</td>
-                                            <td class="lines-code chroma">{{ line.content }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <DiscussionCodeLineSelector :content = "content" />
+
                     </div>
                 </div>
             </div>
