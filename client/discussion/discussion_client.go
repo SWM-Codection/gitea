@@ -211,6 +211,19 @@ func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListRe
 	return result, nil
 }
 
+func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
+
+	if err != nil {
+		return nil, err
+	}
+	result := &DiscussionContentResponse{}
+	if err = json.Unmarshal(resp.Body(), result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func HandleDiscussionAvailable() (*resty.Response, error) {
 	return client.Request().Post("/discussion/available")
 }
@@ -226,7 +239,6 @@ func HandleDiscussionAvailable() (*resty.Response, error) {
 // 	}
 // 	return result, nil
 // }
-
 
 func PostComment(request *PostCommentRequest) (bool, error) {
 	resp, err := client.Request().SetBody(request).Post("/discussion/comment")

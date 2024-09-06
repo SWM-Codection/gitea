@@ -5,7 +5,12 @@ import { discussionFileTreeStore, discussionResponseDummy } from '../modules/sto
 import { GET, POST } from '../modules/fetch.js'; 
 import DiscussionFileDetailTreeView from './DiscussionFileDetailTreeView.vue';
 import DiscussionCodeLineSelector from './DiscussionCodeLineSelector.vue';
+
+const {pageData} = window.config
+
 export default {
+    
+
     components: {
         DiscussionFileDetailTreeView,
         DiscussionCodeLineSelector
@@ -25,12 +30,12 @@ export default {
 
         // TODO globalComments, globalReaction 처리 추가
         async fetchDiscussion() {
-            const resp =  this.dummy
+            const resp =  await GET(`${pageData.RepoLink}/discussions/${pageData.DiscussionId}/contents`)
             // const result = resp.json()
-            const result = resp
+            const result = await resp.json()
             let contents = []
             let files = []
-            result["contents"].forEach((content, idx) => {
+            result["contents"].forEach((content) => {
                 const nameHash = crypto.randomUUID()
                 contents.push({
                     Name : content["filePath"],

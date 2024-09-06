@@ -61,6 +61,8 @@ func NewDiscussionPost(ctx *context.Context) {
 	})
 }
 
+
+
 // TODO: for now, some clumsy logics are included, but for later this function should be polished
 func Discussions(ctx *context.Context) {
 	// get discussion lists
@@ -133,6 +135,30 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
+func ViewDiscussionFiles(ctx *context.Context) {
+
+	discussionId := ctx.ParamsInt64(":index")
+	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
+	if err != nil {
+		ctx.ServerError("error on discussion response: err = %v", err)
+	}
+	log.Info("poster id is %v", discussionResponse.PosterId)
+	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
+	if err != nil {
+		ctx.ServerError("errro on get user by id: err = %v", err)
+	}
+	discussionResponse.Poster = poster
+
+	ctx.Data["PageIsDiscussionList"] = true
+	ctx.Data["Repository"] = ctx.Repo.Repository
+	ctx.Data["Discussion"] = discussionResponse
+	ctx.PageData["RepoLink"] = ctx.Repo.Repository.RepoPathLink()
+	ctx.PageData["DiscussionId"] = discussionId
+	ctx.Data["DiscussionTab"] = "files"
+
+	ctx.HTML(http.StatusOK, tplDiscussionView)
+}
+
 func NewDiscussionCommentPost(ctx *context.Context) {
 	form := web.GetForm(ctx).(*forms.CreateDiscussionCommentForm)
 
@@ -170,29 +196,34 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 	ctx.JSONOK()
 }
 
-func ViewDiscussionFiles(ctx *context.Context) {
-
-	discussionId := ctx.ParamsInt64(":index")
-
-	ctx.Data["PageIsDiscussionList"] = true
-	ctx.Data["Repository"] = ctx.Repo.Repository
-	ctx.PageData["RepoLink"] = ctx.Repo.Repository.RepoPathLink()
-
-	ctx.Data["DiscussionTab"] = "files"
-	ctx.PageData["DiscussionId"] = discussionId
-
-	ctx.HTML(http.StatusOK, tplDiscussionFiles)
-}
-
 // RenderNewCodeCommentForm will render the form for creating a new review comment
 func RenderNewDiscussionFileCommentForm(ctx *context.Context) {
 
 	queryParams := ctx.Req.URL.Query()
 
 	discussionId := queryParams.Get("discussionId")
+	codeId := queryParams.Get("codeId")
+	startLine := queryParams.Get("startLine")
+	endLine := queryParams.Get("endLine")
 
 	ctx.Data["DiscussionId"] = discussionId
+	ctx.Data["CodeId"] = codeId
+	ctx.Data["StartLine"] = startLine
+	ctx.Data["EndLine"] = endLine
 	ctx.PageData["RepoLink"] = ctx.Repo.RepoLink
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.HTML(http.StatusOK, tplNewDiscussionComment)
+}
+
+func DiscussionContent(ctx *context.Context) {
+
+	discussionId := ctx.ParamsInt64(":index")
+
+	discussionContent, err := discussion_service.GetDiscussionContent(ctx, discussionId)
+
+	if err != nil {
+		ctx.JSONError(err.Error())
+	}
+
+	ctx.JSON(http.StatusOK, discussionContent)
 }

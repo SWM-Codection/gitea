@@ -33,3 +33,4 @@ func (dc *CreateDiscussionCommentForm) Validate(req *http.Request, errs binding.
 	ctx := context.GetValidateContext(req)
 	return middleware.Validate(errs, ctx.Data, dc, ctx.Locale)
 }
+

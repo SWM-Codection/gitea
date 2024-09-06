@@ -1,8 +1,7 @@
 <script>
-// TODO 코드 드래그 기능 이외의 코멘트 다는 기능 추가 해야함
 import DiscussionFileAddCommentButton from "./DiscussionFileAddCommentButton.vue";
 import { SvgIcon } from "../svg";
-import { GET } from "../modules/fetch";
+import { GET, request } from "../modules/fetch";
 import { initSingleCommentEditor } from "../features/repo-issue";
 import { initComboMarkdownEditor } from "../features/comp/ComboMarkdownEditor";
 
@@ -290,18 +289,24 @@ export default {
       
 
       const queryParams = {
+        
         "discussionId" : this.discussionId,
+        // TODO: 한 번도 드래그 안한 상태면 빈 값이 들어가서 오류 발생하는 거 해결하기 
         "codeId": draggedRange.codeId,
-        "startLine": draggedRange.startLine,
-        "endLine": draggedRange.endLine,
+        "startLine": draggedRange.startPosition.lineNumber,
+        "endLine": draggedRange.endPosition.lineNumber,
       }
-      
-      
+
+      let requestURL = new URL(`${this.repoLink}/discussions/comment`)
+
+      for (const [key, value] of Object.entries(queryParams)) {
+        requestURL.searchParams.set(key, value)
+      }
       
       try {
         let response;
 
-        response = await GET(`${this.repoLink}/discussions/comment?discussionId=${this.discussionId}`)
+        response = await GET(requestURL.toString())
 
         if (response.ok) {
           const body = await response.text()
@@ -342,6 +347,7 @@ export default {
 
     removeCommentForm : (event) => {
       if (event.target && event.target.classList.contains("cancel-code-comment")) {
+      
         const commentForm = event.target.closest("tr")
         if (!commentForm) {
           return
@@ -350,8 +356,6 @@ export default {
       }
     },
 
-
-    
 
   mounted() {
   },

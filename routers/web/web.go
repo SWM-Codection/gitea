@@ -1193,6 +1193,7 @@ func registerRoutes(m *web.Route) {
 			m.Get("", repo.Discussions)
 			m.Group("/{index}", func() {
 				m.Get("", repo.ViewDiscussion)
+				m.Get("/contents", repo.DiscussionContent)
 				m.Group("/files", func() {
 					m.Get("", repo.ViewDiscussionFiles)
 				})
