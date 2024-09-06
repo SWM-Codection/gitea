@@ -1,7 +1,6 @@
 package discussion
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -48,11 +47,11 @@ const (
 
 type PostCommentRequest struct {
 	DiscussionId int64            `json:"discussionId"`
-	CodeId       int64            `json:"codeId"`
+	CodeId       *int64           `json:"codeId"`
 	PosterId     int64            `json:"posterId"`
 	Scope        CommentScopeEnum `json:"scope"`
-	StartLine    sql.NullInt32    `json:"startLine"`
-	EndLine      sql.NullInt32    `json:"endLine"`
+	StartLine    *int32           `json:"startLine"`
+	EndLine      *int32           `json:"endLine"`
 	Content      string           `json:"content"`
 }
 
@@ -228,8 +227,12 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 	return result, nil
 }
 
-func PostComment(request *PostCommentRequest) (*resty.Response, error) {
-	return client.Request().SetBody(request).Post("/discussion/comment")
+func PostComment(request *PostCommentRequest) (bool, error) {
+	resp, err := client.Request().SetBody(request).Post("/discussion/comment")
+	if err != nil {
+		return false, err
+	}
+	return resp.StatusCode() == 201, nil
 }
 
 func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error) {
