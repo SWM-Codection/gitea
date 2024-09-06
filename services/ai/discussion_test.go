@@ -67,8 +67,6 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 		{
 			name: "Successful generation",
 			form: &structs.GenerateAiSampleCodesForm{
-				CodeContent:    "code",
-				CommentContent: "comment",
 			},
 			mockResponses: []*AiSampleCodeResponse{
 				{SampleCode: "sample1"},
@@ -82,8 +80,6 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 		{
 			name: "Partial failure",
 			form: &structs.GenerateAiSampleCodesForm{
-				CodeContent:    "code",
-				CommentContent: "comment",
 			},
 			mockResponses: []*AiSampleCodeResponse{
 				{SampleCode: "sample1"},

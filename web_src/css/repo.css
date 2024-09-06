@@ -2925,3 +2925,21 @@ tbody.commit-list {
 .branch-selector-dropdown .scrolling.menu .loading-indicator {
   height: 4em;
 }
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8); /* 약간 투명한 흰 배경 */
+  z-index: 1000; /* 다른 요소들 위에 표시되도록 z-index 설정 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-img {
+  width: 200px; /* 이미지 크기 설정 */
+  height: auto;
+}

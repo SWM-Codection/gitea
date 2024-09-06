@@ -34,6 +34,7 @@ import {
   initRepoPullRequestAllowMaintainerEdit,
   initRepoPullRequestReview, initRepoIssueSidebarList, initArchivedLabelHandler,
 } from './features/repo-issue.js';
+import {initAiSampleCodeModal} from './features/repo-ai-samplecode.js';
 import {initRepoEllipsisButton, initCommitStatuses} from './features/repo-commit.js';
 import {
   initFootLanguageMenu,
@@ -194,4 +195,5 @@ onDomReady(() => {
   initScopedAccessTokenCategories();
   initColorPickers();
   initDiscussionForm();
+  initAiSampleCodeModal();
 });
