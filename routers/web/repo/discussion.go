@@ -10,6 +10,7 @@ import (
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/setting"
+	"code.gitea.io/gitea/modules/util"
 	"code.gitea.io/gitea/modules/web"
 	"code.gitea.io/gitea/services/context"
 	discussion_service "code.gitea.io/gitea/services/discussion"
@@ -130,6 +131,43 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["DiscussionTab"] = "conversation"
 
 	ctx.HTML(http.StatusOK, tplDiscussionView)
+}
+
+func NewDiscussionCommentPost(ctx *context.Context) {
+	form := web.GetForm(ctx).(*forms.CreateDiscussionCommentForm)
+
+	discussionId := ctx.ParamsInt64(":discussionId")
+	commentScope := util.Iif(
+		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
+		discussion_client.CommentScopeLocal,
+		discussion_client.CommentScopeGlobal,
+	)
+	// if request malformed, then make it valid
+	if commentScope == discussion_client.CommentScopeGlobal {
+		form.CodeId = nil
+		form.StartLine = nil
+		form.EndLine = nil
+	}
+
+	req := &discussion_client.PostCommentRequest{
+		DiscussionId: discussionId,
+		Scope:        commentScope,
+		PosterId:     ctx.Doer.ID,
+		Content:      form.Content,
+		CodeId:       form.CodeId,
+		StartLine:    form.StartLine,
+		EndLine:      form.EndLine,
+	}
+	created, err := discussion_client.PostComment(req)
+	if err != nil {
+		ctx.JSONError(fmt.Sprintf("failed to post discussion comment %v", err))
+	}
+	if !created {
+		// XXX check reachability later
+		// maybe unreachable..
+		ctx.JSONError("hmm something weird..")
+	}
+	ctx.JSONOK()
 }
 
 func ViewDiscussionFiles(ctx *context.Context) {

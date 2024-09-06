@@ -1,8 +1,10 @@
 <div class="ui timeline">
     <!-- discussion content -->
-    <div id="discussion-{{ .Discussion.Id }}" class="timeline-item comment first">
-        <a class="timeline-avatar" href="#">discussion author's avatar</a>
-        <div class="content comment-container">
+    <div id="discussion-{{ .Discussion.Id }}" class="timeline-item comment first tw-pb-4" style="position: relative; margin-left: 72px;">
+        <a class="timeline-avatar"  href="#" style="position: absolute; left: -68px;">					
+            {{ctx.AvatarUtils.Avatar .Discussion.Poster 40}}
+        </a>
+        <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
             <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between" role="heading">
                 <div class="comment-header-left tw-flex tw-items-center">
                     <a class="inline-timeline-avatar" href="#">discussion author's avatar</a>
@@ -28,9 +30,11 @@
 
     <!-- discussion comments -->
     {{ range .DiscussionContent.GlobalComments }}
-        <div class="timeline-item comment" id="discussion-comment-{{ .Id }}">
-            <a  class="timeline-avatar" href="#">comment author avatar here</a>
-            <div class="content comment-container">
+        <div class="timeline-item comment tw-pb-4" id="discussion-comment-{{ .Id }}" class="timeline-item comment first tw-pb-4" style="position: relative; margin-left: 72px;">
+            <a  class="timeline-avatar" href="#" style="position: absolute; left: -68px;">
+                {{ ctx.AvatarUtils.Avatar -1 40}}
+            </a>
+            <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
                 <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between">
                     <div class="comment-header-left tw-flex tw-items-center">
                         <span class="text grey muted-links">commented local string on here</span>
@@ -50,11 +54,13 @@
 
 
     <!-- discussion comment post form -->
-    <div class="timeline-item comment form">
-        <a class="timeline-avatar" href="#">doer avatar here</a>
+    <div class="timeline-item comment form" style="position: relative; margin-left: 72px;">
+        <a class="timeline-avatar" href="#" style="position: absolute; left: -68px;">
+            {{ctx.AvatarUtils.Avatar .SignedUser 40}}
+        </a>
         <div class="content">
             <div class="ui segment">
-                <form class="ui form form-fetch-action" id="comment-form" action="actions on here" method="post">
+                <form class="ui form form-fetch-action" id="comment-form" action="{{.Link}}/comment" method="post">
                     <div class="field">
                         {{template "shared/combomarkdowneditor" (dict
                             "MarkdownPreviewUrl" (print .Reposistory.Link "/markup")
@@ -68,7 +74,7 @@
 
                     <div class="field footer">
                         <div class="text right">
-                            <button id="status-button" class="ui red basic button">{{ctx.Locale.Tr "repo.discussion.close"}}</button>
+                            <!-- <button id="status-button" class="ui red basic button">{{ctx.Locale.Tr "repo.discussion.close"}}</button> -->
                             <button class="ui primary button">{{ctx.Locale.Tr "repo.discussion.create_comment"}}</button>
                         </div>
                     </div>
