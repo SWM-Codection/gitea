@@ -272,3 +272,8 @@ func (ctx *Context) JSONError(msg any) {
 		panic(fmt.Sprintf("unsupported type: %T", msg))
 	}
 }
+
+func (ctx *Context) JSONErrorf(msg ...any) {
+	v := fmt.Sprintf(msg[0].(string), msg[1:])
+	ctx.JSONError(v)
+}
