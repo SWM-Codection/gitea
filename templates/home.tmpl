@@ -1,49 +1,52 @@
 {{template "base/head" .}}
 <div role="main" aria-label="{{if .IsSigned}}{{ctx.Locale.Tr "dashboard"}}{{else}}{{ctx.Locale.Tr "home"}}{{end}}" class="page-content home">
-	<div class="tw-mb-8 tw-px-8">
-		<div class="center">
-			<img class="logo" width="220" height="220" src="{{AssetUrlPrefix}}/img/logo.svg" alt="{{ctx.Locale.Tr "logo"}}">
-			<div class="hero">
-				<h1 class="ui icon header title">
-					{{AppName}}
+	<div class="tw-my-8 tw-px-8">
+		<div class="center" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+			<div style="display: flex; align-items: center; justify-content: center;">
+				<img class="logo" width="130" height="130" src="{{AssetUrlPrefix}}/img/logo.svg" alt="{{ctx.Locale.Tr "logo"}}">
+				<h1 style="font-size: 5.5em; margin-block-start: 0; margin-block-end: 0;">
+					Codection
 				</h1>
-				<h2>{{ctx.Locale.Tr "startpage.app_desc"}}</h2>
+			</div>
+			<div class="hero" style="margin: 24px 0;">
+				<h2>새로운 코드리뷰를 경험해보세요</h2>
 			</div>
 		</div>
 	</div>
+	<div id="home-marquee"></div>
 	<div class="ui stackable middle very relaxed page grid">
 		<div class="eight wide center column">
 			<h1 class="hero ui icon header">
-				{{svg "octicon-flame"}} {{ctx.Locale.Tr "startpage.install"}}
+				{{svg "octicon-comment-discussion"}} 디스커션
 			</h1>
 			<p class="large">
-				{{ctx.Locale.Tr "startpage.install_desc"}}
+				팀원들과 코드에 대한 논의를 통해 더 나은 개선 방향을 찾아보세요
 			</p>
 		</div>
 		<div class="eight wide center column">
 			<h1 class="hero ui icon header">
-				{{svg "octicon-device-desktop"}} {{ctx.Locale.Tr "startpage.platform"}}
+				{{svg "octicon-dependabot"}} AI 코드 리뷰	
 			</h1>
 			<p class="large">
-				{{ctx.Locale.Tr "startpage.platform_desc"}}
+				AI 코드 리뷰로 팀의 생산성을 업그레이드 해보세요
 			</p>
 		</div>
 	</div>
 	<div class="ui stackable middle very relaxed page grid">
 		<div class="eight wide center column">
 			<h1 class="hero ui icon header">
-				{{svg "octicon-rocket"}} {{ctx.Locale.Tr "startpage.lightweight"}}
+				{{svg "octicon-graph"}} 대시보드
 			</h1>
 			<p class="large">
-				{{ctx.Locale.Tr "startpage.lightweight_desc"}}
+				객관적인 통계를 기반으로 팀의 상태를 점검하고 개선해보세요
 			</p>
 		</div>
 		<div class="eight wide center column">
 			<h1 class="hero ui icon header">
-				{{svg "octicon-code"}} {{ctx.Locale.Tr "startpage.license"}}
+				{{svg "octicon-rocket"}} 원클릭 마이그레이션
 			</h1>
 			<p class="large">
-				{{ctx.Locale.Tr "startpage.license_desc"}}
+				다른 원격 리포지토리부터 별도의 복잡한 절차 없이 Codection으로 이관해보세요
 			</p>
 		</div>
 	</div>
