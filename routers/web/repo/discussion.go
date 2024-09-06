@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	tplDiscussionNew   base.TplName = "repo/discussion/new"
-	tplDiscussions     base.TplName = "repo/discussion/list"
-	tplDiscussionView  base.TplName = "repo/discussion/view"
-	tplDiscussionFiles base.TplName = "repo/discussion/view_file"
+	tplDiscussionNew        base.TplName = "repo/discussion/new"
+	tplDiscussions          base.TplName = "repo/discussion/list"
+	tplDiscussionView       base.TplName = "repo/discussion/view"
+	tplDiscussionFiles      base.TplName = "repo/discussion/view_file"
+	tplNewDiscussionComment base.TplName = "repo/discussion/new_file_comment"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -132,13 +133,28 @@ func ViewDiscussion(ctx *context.Context) {
 }
 
 func ViewDiscussionFiles(ctx *context.Context) {
-	
+
 	discussionId := ctx.ParamsInt64(":index")
 
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
+	ctx.PageData["RepoLink"] = ctx.Repo.Repository.RepoPathLink()
+
 	ctx.Data["DiscussionTab"] = "files"
-	ctx.Data["DiscussionId"] = discussionId
+	ctx.PageData["DiscussionId"] = discussionId
 
 	ctx.HTML(http.StatusOK, tplDiscussionFiles)
+}
+
+// RenderNewCodeCommentForm will render the form for creating a new review comment
+func RenderNewDiscussionFileCommentForm(ctx *context.Context) {
+
+	queryParams := ctx.Req.URL.Query()
+
+	discussionId := queryParams.Get("discussionId")
+
+	ctx.Data["DiscussionId"] = discussionId
+	ctx.PageData["RepoLink"] = ctx.Repo.RepoLink
+	ctx.Data["Repository"] = ctx.Repo.Repository
+	ctx.HTML(http.StatusOK, tplNewDiscussionComment)
 }

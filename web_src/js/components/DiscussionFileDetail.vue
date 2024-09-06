@@ -13,7 +13,6 @@ export default {
     data: () => ({
         store: discussionFileTreeStore(), 
         dummy :  discussionResponseDummy(),
-        activeMenu: 'file', 
         name: '', 
         
     }),
@@ -104,22 +103,12 @@ export default {
 <template>
     <div class="form-content">
 
-        <div class="field">
-            <div class="ui top tabular menu">
-                <a class="item" :class="{active: activeMenu === 'file'}" @click="activeMenu = 'file'">
-                    <span class="resize-for-semibold">파일 선택</span>
-                </a>
-                <a class="item" :class="{active: activeMenu === 'write'}" @click="activeMenu = 'write'">
-                    <span class="resize-for-semibold">쓰기</span>
-                </a>
-            </div>
-        </div>
 
         <div style="margin-top: 1rem;">
-            <div id="file-tab-content" style="display:flex;" v-show="activeMenu === 'file'">
-                <DiscussionFileDetailTreeView id="discussion-tree" style="max-height: 600px; width: 200px; overflow: auto;"/>
+            <div id="file-tab-content" style="display:flex; width: 600px">
+                <DiscussionFileDetailTreeView id="discussion-tree" style="width: 200px;"/>
                 <div style="display: flex; flex-wrap: wrap;">
-                    <div v-for ="content in store.contents" class="tw-w-full tw-px-1" style="max-height: 600px; margin-bottom: 2rem; overflow: auto;">
+                    <div v-for ="content in store.contents" class="tw-w-full tw-px-1" style="margin-bottom: 2rem;">
                         <DiscussionCodeLineSelector :content = "content" />
 
                     </div>

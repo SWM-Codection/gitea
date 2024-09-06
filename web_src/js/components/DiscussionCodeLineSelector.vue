@@ -1,7 +1,14 @@
 <script>
-import { on } from "htmx.org";
+// TODO 코드 드래그 기능 이외의 코멘트 다는 기능 추가 해야함
 import DiscussionFileAddCommentButton from "./DiscussionFileAddCommentButton.vue";
 import { SvgIcon } from "../svg";
+import { GET } from "../modules/fetch";
+import { initSingleCommentEditor } from "../features/repo-issue";
+import { initComboMarkdownEditor } from "../features/comp/ComboMarkdownEditor";
+
+
+const {pageData} = window.config
+
 export default {
   components: { DiscussionFileAddCommentButton, SvgIcon },
   props: {
@@ -13,11 +20,14 @@ export default {
 
   data() {
     return {
-      codeLines: [], // 코드 라인 데이터를 배열로 정의
       currentDraggedPosition: null,
       isDraggingForComment: false,
       currentDraggedRange: null,
       showMultiLineCommentForm: null,
+      repoLink: pageData.RepoLink,
+      discussionId: pageData.DiscussionId,
+      errorText: '',
+
     };
   },
 
@@ -273,10 +283,80 @@ export default {
 
       this.removeHighlight();
     },
-  },
+    
+    async showCommentForm(event) {
+      
+      const draggedRange = this.currentDraggedRange
+      
 
-  mounted() {},
-};
+      const queryParams = {
+        "discussionId" : this.discussionId,
+        "codeId": draggedRange.codeId,
+        "startLine": draggedRange.startLine,
+        "endLine": draggedRange.endLine,
+      }
+      
+      
+      
+      try {
+        let response;
+
+        response = await GET(`${this.repoLink}/discussions/comment?discussionId=${this.discussionId}`)
+
+        if (response.ok) {
+          const body = await response.text()
+          console.log(body)
+          
+          const placeholder = document.createElement("tr")
+          const td = document.createElement("td")
+          td.innerHTML = body
+          td.setAttribute("colspan", "3")
+          placeholder.appendChild(td)
+
+
+          const targetLine = event.target.closest("tr")
+          targetLine.insertAdjacentElement("afterend", placeholder)
+          
+          await initComboMarkdownEditor(td.querySelector(".combo-markdown-editor"))
+
+          placeholder.addEventListener('click', this.removeCommentForm, {capture : true}) 
+
+        }
+        else {
+          this.errorText = response.statusText
+        }
+
+        
+      }
+        
+      catch (err) {
+        this.errorText = err.message
+      }
+      
+      finally {
+        if (this.errorText) console.log(this.errorText)
+        // 에러 메시지 표시 관련 로직 추가
+      }
+
+    },
+
+    removeCommentForm : (event) => {
+      if (event.target && event.target.classList.contains("cancel-code-comment")) {
+        const commentForm = event.target.closest("tr")
+        if (!commentForm) {
+          return
+        }
+        commentForm.remove()
+      }
+    },
+
+
+    
+
+  mounted() {
+  },
+  }
+}
 </script>
 
 <template>
@@ -309,6 +389,7 @@ export default {
             <td>
               <button
                 @mousedown="handleMouseDown"
+                @click="showCommentForm"
                 class="ui primary button add-code-comment add-code-comment-right"
               >
                 <SvgIcon name="octicon-plus" />

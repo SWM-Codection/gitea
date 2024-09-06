@@ -1193,8 +1193,12 @@ func registerRoutes(m *web.Route) {
 			m.Get("", repo.Discussions)
 			m.Group("/{index}", func() {
 				m.Get("", repo.ViewDiscussion)
-				m.Get("/files", repo.ViewDiscussionFiles)
+				m.Group("/files", func() {
+					m.Get("", repo.ViewDiscussionFiles)
+				})
 			})
+			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
+
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 
