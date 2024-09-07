@@ -118,26 +118,55 @@ export default {
             const line = target.getAttribute('data-line-no'); 
             this.dragLast = parseInt(line); 
         },
-        handleAddDiscussionCode({target}) {
-            this.store.checkedItems = [...this.store.checkedItems, {
+        handleAddDiscussionCode() {
+            const currentItem = {
                 tag: this.store.selectedItem,
                 file: this.filename, 
                 start: this.dragStart, 
                 end: this.dragEnd,
-            }]; 
+            }
+
+            // XXX idk why, but Array.prototype.includes does not working 
+            const hsaItem = this.store.checkedItems.filter(item => (
+                item.tag === currentItem.tag && 
+                item.file === currentItem.file && 
+                item.start === currentItem.start && 
+                item.end === currentItem.end 
+            )).length > 0;
+
+            if (!hsaItem) {
+                this.store.checkedItems = [...this.store.checkedItems, currentItem]; 
+            }
             this.dragStart = null; 
             this.dragLast = null; 
             this.dragEnd = null;
         },
         handleGotoCheckedFileRange({target}) {
-            const tag = target.getAttribute('data-checked-item-tag'); 
-            const startNumber = parseInt(target.getAttribute('data-checked-item-start')); 
-            const endNumber = parseInt(target.getAttribute('data-checked-item-end')); 
+            console.log('goto file range', target); 
+            const checkedItem = target.closest('.checked-item')
+            const tag = checkedItem.getAttribute('data-checked-item-tag'); 
+            const startNumber = parseInt(checkedItem.getAttribute('data-checked-item-start')); 
+            const endNumber = parseInt(checkedItem.getAttribute('data-checked-item-end')); 
             this.store.reset = false; 
             this.store.selectedItem = tag; 
             this.dragStart = startNumber; 
             this.dragLast = endNumber; 
             this.dragEnd = endNumber; 
+        },
+        handleRemoveCheckedItem({target}) { 
+            const checkedItem = target.closest('.checked-item');
+            const tag = checkedItem.getAttribute('data-checked-item-tag'); 
+            const file = checkedItem.getAttribute('data-checked-item-file'); 
+            const startNumber = parseInt(checkedItem.getAttribute('data-checked-item-start')); 
+            const endNumber = parseInt(checkedItem.getAttribute('data-checked-item-end')); 
+
+            const filtered = this.store.checkedItems.filter(item => (
+                item.tag !== tag || 
+                item.file !== file ||
+                item.start !== startNumber ||
+                item.end !== endNumber 
+            ));
+            this.store.checkedItems = filtered;
         }
     },
     computed: {
@@ -237,7 +266,7 @@ export default {
             </div>
 
             <div class="text right tw-px-1 tw-mt-4">
-                <button class="ui primary button" @click.prevent="handleSubmit">
+                <button class="ui primary button" :class="[store.checkedItems.length > 0 ? null :  'disabled']" @click.prevent="handleSubmit">
                     새로운 디스커션 생성
                 </button>
             </div>
@@ -267,13 +296,22 @@ export default {
     </span>
     <div v-else>
         <div v-for="item in store.checkedItems" 
+            class="checked-item"
             :data-checked-item-tag="item.tag"
+            :data-checked-item-file="item.file"
             :data-checked-item-start="item.start"
             :data-checked-item-end="item.end"
             @click="handleGotoCheckedFileRange"
             style="border: 1px solid #dcdde1; padding: 6px; margin: 3px; border-radius: 5px; cursor: pointer;">
-            <SvgIcon name="octicon-file"/>
-            {{ item.file }}:{{ item.start }}-{{  item.end }}
+
+            <span style="display: flex; justify-content: space-between;">
+                <div>
+                    <SvgIcon name="octicon-file"/>{{ item.file }}:{{ item.start }}-{{  item.end }}
+                </div>
+                <div>
+                    <SvgIcon name="octicon-x" @click.prevent.stop="handleRemoveCheckedItem"/>
+                </div>  
+            </span>
         </div>
     </div>
 </div>
