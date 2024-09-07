@@ -465,12 +465,39 @@ type Diff struct {
 	NumViewedFiles               int // user-specific
 }
 
+func getFileLines(diff *Diff) map[string]int64 {
+	fileLineMap := make(map[string]int64)
+
+	for _, file := range diff.Files {
+		found := false
+		for secIdx := len(file.Sections) - 1; secIdx >= 0 && !found; secIdx-- {
+			section := file.Sections[secIdx]
+			for lineIdx := len(section.Lines) - 1; lineIdx >= 0 && !found; lineIdx-- {
+				line := section.Lines[lineIdx]
+				if len(line.Content) > 0 && line.Content[0] == '+' {
+					fileLineMap[file.Sections[0].FileName] = int64(line.RightIdx)
+					found = true // Escape the loop when you find a line that begins with '+'
+				}
+			}
+		}
+	}
+
+	return fileLineMap
+}
+
 // LoadComments loads comments into each line
 func (diff *Diff) LoadComments(ctx context.Context, issue *issues_model.Issue, currentUser *user_model.User, showOutdatedComments bool) error {
 	allComments, err := issues_model.FetchCodeComments(ctx, issue, currentUser, showOutdatedComments)
 	if err != nil {
 		return err
 	}
+	aiComments, err := issues_model.FetchCodeAiComments(ctx, issue, getFileLines(diff))
+	if err != nil {
+		return err
+	}
+
+	issues_model.MergeAIComments(allComments, aiComments)
+
 	for _, file := range diff.Files {
 		if lineCommits, ok := allComments[file.Name]; ok {
 			for _, section := range file.Sections {
