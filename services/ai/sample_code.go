@@ -16,7 +16,7 @@ import (
 )
 
 type SampleCodeService interface {
-	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error)
+	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, sampleType string) (*api.AiSampleCodeResponse, error)
 	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error)
 	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm) (*discussion_model.AiSampleCode, error)
 	DeleteAiSampleCode(ctx *context.Context, id int64) error
@@ -28,9 +28,9 @@ type SampleCodeServiceImpl struct{}
 
 var _ SampleCodeService = &SampleCodeServiceImpl{}
 
-func (is *SampleCodeServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64) (*api.AiSampleCodeResponse, error) {
+func (is *SampleCodeServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, sampleType string) (*api.AiSampleCodeResponse, error) {
 
-	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, commentID)
+	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, commentID, sampleType)
 
 	if err != nil {
 		return nil, err
@@ -46,6 +46,7 @@ func (is *SampleCodeServiceImpl) CreateAiSampleCode(ctx *context.Context, form *
 	aiSampleCode, err := AiSampleCodeDbAdapter.InsertAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
 		TargetCommentId: cast.ToInt64(form.TargetCommentId),
 		GenearaterId:    ctx.Doer.ID,
+		Type: form.Type,
 		Content:         &form.SampleCodeContent,
 	})
 
@@ -94,6 +95,13 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid TargetCommentId: %v", err)
+	}
+
+	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, targetCommentId, form.Type)
+	println(len(response.SampleCodeContents))
+
+	if err != nil || len(response.SampleCodeContents) > 0 {
+		return nil, fmt.Errorf("already Ai comment: %v", err)
 	}
 
 	comment, err := issues_model.GetCommentByID(ctx, targetCommentId)

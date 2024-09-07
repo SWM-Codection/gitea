@@ -18,6 +18,7 @@ type AiSampleCode struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
 	TargetCommentId int64 `xorm:"'target_comment_id' INDEX NOT NULL"`
 	GenearaterId    int64
+	CommentType			string			   `xorm:"'comment_type'"`
 	Content         string             `xorm:"'content'"`
 	CreatedUnix     timeutil.TimeStamp `xorm:"INDEX created"`
 	UpdatedUnix     timeutil.TimeStamp `xorm:"INDEX updated"`
@@ -28,6 +29,7 @@ type AiSampleCode struct {
 type CreateDiscussionAiCommentOpt struct {
 	TargetCommentId int64
 	GenearaterId    int64
+	Type			string
 
 	Content *string
 }
@@ -50,6 +52,7 @@ func CreateAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt)
 	DiscussionAiComment := &AiSampleCode{
 		GenearaterId:    opts.GenearaterId,
 		TargetCommentId: opts.TargetCommentId,
+		CommentType: opts.Type,
 		Content:         *opts.Content,
 	}
 
@@ -90,7 +93,7 @@ func DeleteAiSampleCodeByID(ctx context.Context, id int64) error {
 
 }
 
-func GetAiSampleCodeByCommentID(ctx context.Context, id int64) ([]*AiSampleCode, error) {
+func GetAiSampleCodeByCommentID(ctx context.Context, id int64, sampleType string) ([]*AiSampleCode, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 
@@ -104,7 +107,7 @@ func GetAiSampleCodeByCommentID(ctx context.Context, id int64) ([]*AiSampleCode,
 
 	sampleCodes := make([]*AiSampleCode, 0, DEFAULT_CAPACITY)
 
-	err = e.Table("ai_sample_code").Where("comment_id=?", id).Find(&sampleCodes)
+	err = e.Table("ai_sample_code").Where("target_comment_id=? AND comment_type = ?", id, sampleType).Find(&sampleCodes)
 
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -112,5 +115,4 @@ func GetAiSampleCodeByCommentID(ctx context.Context, id int64) ([]*AiSampleCode,
 	}
 
 	return sampleCodes, nil
-
 }

@@ -68,7 +68,7 @@ async function saveAiSampleCode(data, aiCodeModal) {
 }
 
 export function initAiSampleCodeModal() {
-  const modalShowBtn = document.querySelector('.show-ai-code-modal');
+  const modalShowBtns = document.querySelectorAll('.show-ai-code-modal');
   const aiCodeModal = document.querySelector('.ai-code-modal');
   const aiCodeModalClose = document.querySelector('.ai-code-modal-close');
   const aiCodeModalInsert = document.querySelector('.ai-code-modal-insert');
@@ -76,21 +76,24 @@ export function initAiSampleCodeModal() {
   let selectedCodeContainer = null;
   let commentId = null;
 
-  if (!modalShowBtn) return;
+  if (!modalShowBtns.length) return;
   if (!aiCodeModal) return;
   if (!aiCodeModalClose) return;
   if (!aiCodeContainers.length) return;
 
-  modalShowBtn.addEventListener('click', async ({target}) => {
-    const tag = target.getAttribute('data-comment-id');
-    commentId = parseInt(tag.split('-')[1]);
+  for (const modalShowBtn of modalShowBtns) {
+    modalShowBtn.addEventListener('click', async ({target}) => {
+      const tag = target.getAttribute('data-comment-id');
+      commentId = parseInt(tag.split('-')[1]);
 
-    const data = {
-      target_comment_id: commentId.toString(),
-    };
+      const data = {
+        target_comment_id: commentId.toString(),
+        type: 'pull',
+      };
 
-    await fetchAiSampleCodes(data, aiCodeContainers);
-  });
+      await fetchAiSampleCodes(data, aiCodeContainers);
+    });
+  }
 
   aiCodeModalClose.addEventListener('click', () => {
     const isHidden = aiCodeModal.classList.contains('tw-hidden');
@@ -116,6 +119,7 @@ export function initAiSampleCodeModal() {
     const data = {
       target_comment_id: commentId.toString(),
       sample_code_content: selectedCodeContainer.textContent,
+      type: 'pull',
     };
     console.log(data);
     await saveAiSampleCode(data, aiCodeModal);

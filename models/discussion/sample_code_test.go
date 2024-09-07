@@ -21,6 +21,7 @@ func TestCreateDiscussionAiSampleCode(t *testing.T) {
 			opts: &discussion.CreateDiscussionAiCommentOpt{
 				TargetCommentId: 1,
 				GenearaterId:    1,
+				Type: 			 "pull",
 				Content:         stringPtr("Test content"),
 			},
 			wantErr: false,
@@ -52,16 +53,19 @@ func TestDeleteDiscussionAiSampleCodeByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		id      int64
+		Type string
 		wantErr bool
 	}{
 		{
 			name:    "Valid deletion",
 			id:      1,
+			Type: "pull",
 			wantErr: false,
 		},
 		{
 			name:    "Invalid deletion - non-existent ID",
 			id:      99999,
+			Type: "pull",
 			wantErr: true,
 		},
 		// Add more test cases as needed
@@ -76,7 +80,7 @@ func TestDeleteDiscussionAiSampleCodeByID(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				// Verify deletion
-				_, err := discussion.GetAiSampleCodeByCommentID(context.Background(), tt.id)
+				_, err := discussion.GetAiSampleCodeByCommentID(context.Background(), tt.id, tt.Type)
 				assert.Error(t, err) // Should not find the deleted item
 			}
 		})
@@ -90,6 +94,7 @@ func TestGetAiSampleCodeByCommentID(t *testing.T) {
 		name    string
 		id      int64
 		want    int
+		Type	string
 		wantErr bool
 	}{
 		{
@@ -110,7 +115,7 @@ func TestGetAiSampleCodeByCommentID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, unittest.PrepareTestDatabase())
-			got, err := discussion.GetAiSampleCodeByCommentID(context.Background(), tt.id)
+			got, err := discussion.GetAiSampleCodeByCommentID(context.Background(), tt.id, tt.Type)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
