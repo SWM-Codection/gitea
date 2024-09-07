@@ -1,12 +1,17 @@
 <script>
 import DiscussionFileAddCommentButton from "./DiscussionFileAddCommentButton.vue";
 import { SvgIcon } from "../svg";
-import { GET, request } from "../modules/fetch";
+import { GET, POST, request } from "../modules/fetch";
 import { initSingleCommentEditor } from "../features/repo-issue";
-import { initComboMarkdownEditor } from "../features/comp/ComboMarkdownEditor";
+import {
+  initComboMarkdownEditor,
+  validateTextareaNonEmpty,
+} from "../features/comp/ComboMarkdownEditor";
+import { ErrorCodes } from "vue";
+import { comment } from "postcss";
+import { discussionResponseDummy } from "../modules/stores";
 
-
-const {pageData} = window.config
+const { pageData } = window.config;
 
 export default {
   components: { DiscussionFileAddCommentButton, SvgIcon },
@@ -25,13 +30,16 @@ export default {
       showMultiLineCommentForm: null,
       repoLink: pageData.RepoLink,
       discussionId: pageData.DiscussionId,
-      errorText: '',
-
+      errorText: "",
     };
   },
 
+  async mounted() {
+      await this.fetchDiscussionComment()
+    },
   methods: {
     isFileSelecting(fileElement) {
+      discussionResponseDummy;
       return fileElement
         .closest(".discussion-file-table")
         ?.classList.contains("is-selecting");
@@ -144,7 +152,7 @@ export default {
 
     handleMouseDown(event) {
       if (!(event instanceof MouseEvent)) {
-        return
+        return;
       }
 
       if (event.button !== 0) {
@@ -218,18 +226,15 @@ export default {
       const target = event.target.closest("tr");
 
       if (!(target instanceof Element)) {
-        return
+        return;
       }
 
       if (this.currentDraggedPosition) {
         this.beginDrag();
       }
-      
 
       const linesNum = target.querySelector(".lines-num");
       const linesCode = target.querySelector(".lines-code");
-
-
 
       if (linesNum && linesNum?.classList.contains("lines-num")) {
         this.commentDragSelectionIfMouseEnterToLineNumber(linesNum);
@@ -282,85 +287,181 @@ export default {
 
       this.removeHighlight();
     },
-    
+
     async showCommentForm(event) {
-      
-      const draggedRange = this.currentDraggedRange
-      
+      const draggedRange = this.currentDraggedRange;
 
       const queryParams = {
-        
-        "discussionId" : this.discussionId,
-        // TODO: 한 번도 드래그 안한 상태면 빈 값이 들어가서 오류 발생하는 거 해결하기 
-        "codeId": draggedRange.codeId,
-        "startLine": draggedRange.startPosition.lineNumber,
-        "endLine": draggedRange.endPosition.lineNumber,
-      }
+        discussionId: this.discussionId,
+        // TODO: 한 번도 드래그 안한 상태면 빈 값이 들어가서 오류 발생하는 거 해결하기
+        codeId: draggedRange.codeId,
+        startLine: draggedRange.startPosition.lineNumber,
+        endLine: draggedRange.endPosition.lineNumber,
+      };
 
-      let requestURL = new URL(`${this.repoLink}/discussions/comment`)
+      let requestURL = new URL(`${this.repoLink}/discussions/comment`);
 
       for (const [key, value] of Object.entries(queryParams)) {
-        requestURL.searchParams.set(key, value)
+        requestURL.searchParams.set(key, value);
       }
-      
+
       try {
         let response;
 
-        response = await GET(requestURL.toString())
+        response = await GET(requestURL.toString());
 
         if (response.ok) {
-          const body = await response.text()
-          console.log(body)
-          
-          const placeholder = document.createElement("tr")
-          const td = document.createElement("td")
-          td.innerHTML = body
-          td.setAttribute("colspan", "3")
-          placeholder.appendChild(td)
+          const body = await response.text();
+          console.log(body);
 
+          const placeholder = document.createElement("tr");
+          const td = document.createElement("td");
+          td.innerHTML = body;
+          td.setAttribute("colspan", "3");
+          placeholder.appendChild(td);
 
-          const targetLine = event.target.closest("tr")
-          targetLine.insertAdjacentElement("afterend", placeholder)
-          
-          await initComboMarkdownEditor(td.querySelector(".combo-markdown-editor"))
+          const targetLine = event.target.closest("tr");
+          targetLine.insertAdjacentElement("afterend", placeholder);
 
-          placeholder.addEventListener('click', this.removeCommentForm, {capture : true}) 
+          await initComboMarkdownEditor(
+            td.querySelector(".combo-markdown-editor"),
+          );
+          // TODO: 폼 등록
+          await this.initDiscussionFileCommentForm(td.querySelector("form"));
 
+          placeholder.addEventListener("click", this.removeCommentForm, {
+            capture: true,
+          });
+        } else {
+          this.errorText = response.statusText;
         }
-        else {
-          this.errorText = response.statusText
-        }
-
-        
-      }
-        
-      catch (err) {
-        this.errorText = err.message
-      }
-      
-      finally {
-        if (this.errorText) console.log(this.errorText)
+      } catch (err) {
+        this.errorText = err.message;
+      } finally {
+        if (this.errorText) console.log(this.errorText);
         // 에러 메시지 표시 관련 로직 추가
       }
-
     },
 
-    removeCommentForm : (event) => {
-      if (event.target && event.target.classList.contains("cancel-code-comment")) {
-      
-        const commentForm = event.target.closest("tr")
+    removeCommentForm: (event) => {
+      if (
+        event.target &&
+        event.target.classList.contains("cancel-code-comment")
+      ) {
+        const commentForm = event.target.closest("tr");
         if (!commentForm) {
-          return
+          return;
         }
-        commentForm.remove()
+        commentForm.remove();
       }
     },
 
+    async submitDiscussionFileCommentForm(event) {
+      if (!event.target) {
+        return;
+      }
+      event.preventDefault();
 
-  mounted() {
+      const form = event.target;
+      const textarea = form.querySelector("textarea");
+      if (!validateTextareaNonEmpty(textarea)) {
+        return;
+      }
+      if (form.classList.contains("is-loading")) return;
+      try {
+        form.classList.add("is-loading");
+        const formData = new FormData();
+        formData.append(textarea.name, textarea.value);
+
+        // Add any other form fields if present
+        form.querySelectorAll("input").forEach((input) => {
+          if (input.name) {
+            formData.append(input.name, input.value);
+          }
+        });
+        const response = await POST(
+          `${this.repoLink}/discussions/${this.discussionId}/comment`,
+          { data: formData },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+        const body = await response.json();
+
+        const resp = await GET(
+          `${this.repoLink}/discussions/comment/${body.id}`,
+        );
+        const commentHolderHTML = await resp.text();
+
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = commentHolderHTML;
+        const commentHolder = tempDiv.firstElementChild;
+
+        form
+          .closest(".discussion-file-comment-holder")
+          .replaceWith(commentHolder);
+      } catch (e) {
+        console.log(e.errorText);
+      } finally {
+        form.classList.remove("is-loading");
+      }
+    },
+
+    async fetchDiscussionComment() {
+      const codeBlocks = this.content.codeBlocks;
+
+      try {
+        const allHtmlTexts = await Promise.all(
+          codeBlocks.map(async (codeBlock) => {
+            const comments = codeBlock.comments;
+            const codeId = codeBlock.codeId;
+
+            const htmlTexts = await Promise.all(
+              comments.map(async (comment) => {
+                const response = await GET(
+                  `${this.repoLink}/discussions/comment/${comment.id}`,
+                );
+                const result = await response.text();
+
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = result;
+                const commentHolder = tempDiv.firstElementChild;
+
+                return { comment, commentHolder, codeId };
+              }),
+            );
+
+            return htmlTexts;
+          }),
+        );
+
+        allHtmlTexts.flat().forEach(({ comment, commentHolder, codeId }) => {
+          const targetLine = this.$refs.codeTable.querySelector(
+            `#line-${codeId}-${comment.endLine}`,
+          );
+
+          if (targetLine) {
+            const tr = document.createElement("tr")
+            const td = document.createElement("td")
+            td.setAttribute("colspan", "3")
+            td.appendChild(commentHolder) 
+            tr.appendChild(td)
+            targetLine.insertAdjacentElement('afterend', tr);
+          }
+        });
+      } catch (e) {
+        console.error("Error processing code blocks:", e);
+      }
+
+    },
+
+    async initDiscussionFileCommentForm(form) {
+      form.addEventListener("submit", this.submitDiscussionFileCommentForm);
+    },
+
   },
-  }
-}
+};
 </script>
 
 <template>

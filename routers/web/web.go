@@ -1230,7 +1230,9 @@ func registerRoutes(m *web.Route) {
 			})
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
+
 			})
+			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.

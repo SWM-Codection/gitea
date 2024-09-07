@@ -1,5 +1,5 @@
 {{if $.comment}}
-	{{template "repo/discussion/file_comment_form" dict "root" $.root "hidden" $.hidden "reply" $.reply "Line" $.comment.UnsignedLine "File" $.comment.TreePath "Side" $.comment.DiffSide "HasComments" true}}
+	{{template "repo/discussion/file_comment_form" dict "root" $.root "hidden" $.hidden "HasComments" true}}
 {{else if $.root}}
 	{{template "repo/discussion/file_comment_form" $}}
 {{else}}

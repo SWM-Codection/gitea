@@ -2,6 +2,7 @@ package repo
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 
@@ -9,7 +10,10 @@ import (
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
+	"code.gitea.io/gitea/modules/markup"
+	"code.gitea.io/gitea/modules/markup/markdown"
 	"code.gitea.io/gitea/modules/setting"
+	"code.gitea.io/gitea/modules/timeutil"
 	"code.gitea.io/gitea/modules/util"
 	"code.gitea.io/gitea/modules/web"
 	"code.gitea.io/gitea/services/context"
@@ -21,6 +25,7 @@ const (
 	tplDiscussionNew        base.TplName = "repo/discussion/new"
 	tplDiscussions          base.TplName = "repo/discussion/list"
 	tplDiscussionView       base.TplName = "repo/discussion/view"
+	tplDiscussionComments   base.TplName = "repo/discussion/file_comments"
 	tplDiscussionFiles      base.TplName = "repo/discussion/view_file"
 	tplNewDiscussionComment base.TplName = "repo/discussion/new_file_comment"
 )
@@ -60,8 +65,6 @@ func NewDiscussionPost(ctx *context.Context) {
 		"discussionId": discussionId,
 	})
 }
-
-
 
 // TODO: for now, some clumsy logics are included, but for later this function should be polished
 func Discussions(ctx *context.Context) {
@@ -184,16 +187,85 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 		StartLine:    form.StartLine,
 		EndLine:      form.EndLine,
 	}
-	created, err := discussion_client.PostComment(req)
+	id, err := discussion_client.PostComment(req)
 	if err != nil {
 		ctx.JSONError(fmt.Sprintf("failed to post discussion comment %v", err))
 	}
-	if !created {
+	if id == nil {
 		// XXX check reachability later
 		// maybe unreachable..
 		ctx.JSONError("hmm something weird..")
 	}
-	ctx.JSONOK()
+	ctx.JSON(http.StatusOK, map[string]int64 {
+		"id" : *id,
+	})
+
+}
+
+type ReactionList []*discussion_client.DiscussionReaction
+
+func (list ReactionList) GroupByType() map[string]ReactionList {
+	reactions := make(map[string]ReactionList)
+	for _, reaction := range list {
+		reactions[reaction.Type] = append(reactions[reaction.Type], reaction)
+	}
+	return reactions
+}
+
+type DiscussionComment struct {
+	ID              int64
+	Poster          *user_model.User
+	Content         string
+	StartLine       int64
+	EndLine         int64
+	Reactions       ReactionList
+	RenderedContent template.HTML
+	CreatedUnix     timeutil.TimeStamp
+}
+
+func (c *DiscussionComment) HashTag() string {
+	return fmt.Sprintf("discussioncomment-%d", c.ID)
+}
+
+// TODO: 추후 NewDiscussionPost 메소드와 통합할지 고려해보기
+func RenderNewDiscussionComment(ctx *context.Context) {
+
+	id := ctx.ParamsInt64("id")
+	comment, err := discussion_client.GetDiscussionComment(id)
+
+	if err != nil {
+		ctx.ServerError("failed to fetch comment: %v", err)
+	}
+	// TODO: 답글 기능 고려해서 넣기
+	comments := make([]*DiscussionComment, 0, 1)
+
+	newComment := &DiscussionComment{
+		ID:          comment.Id,
+		StartLine:   comment.StartLine,
+		EndLine:     comment.EndLine,
+		CreatedUnix: comment.CreatedUnix,
+		Reactions:   comment.Reactions,
+		Poster:      ctx.Doer,
+		Content:     comment.Content,
+	}
+	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+		Ctx: ctx,
+		Links: markup.Links{
+			Base: ctx.Repo.RepoLink,
+		},
+	}, newComment.Content)
+
+	if err != nil {
+		ctx.ServerError("markdown rendering failed : %v", err)
+	}
+
+	comments = append(comments, newComment)
+	ctx.Data["comments"] = comments
+
+	// TODO: 디스커션 코멘트 렌더링 하기
+
+	ctx.HTML(http.StatusOK, tplDiscussionComments)
+
 }
 
 // RenderNewCodeCommentForm will render the form for creating a new review comment

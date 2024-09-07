@@ -1,11 +1,10 @@
 {{if and $.root.SignedUserID (not $.Repository.IsArchived)}}
-<form class="ui form {{if $.hidden}}tw-hidden comment-form{{end}}" action="{{$.Link}}/comment" method="post">
+<form class="ui form {{if $.hidden}}tw-hidden comment-form{{end}}" action="{{$.root.RepoLink}}/discussions/{{$.root.DiscussionId}}/comment" method="post">
 
 	{{$.root.CsrfTokenHtml}}
-        <input type="hidden" name="StartLine" value="{{$.root.StartLine}}">
-        <input type="hidden" name="EndLine" value="{{$.root.EndLine}}">
-        <input type="hidden" name="CodeId" value = "{{$.root.CodeId}}">
-        <input type="hidden" name = "DiscussionId" value = "{{$.root.DiscussionId}}">
+        <input type="hidden" name="startLine" value="{{$.root.StartLine}}">
+        <input type="hidden" name="endLine" value="{{$.root.EndLine}}">
+        <input type="hidden" name="codeId" value = "{{$.root.CodeId}}">
 
 		{{template "shared/combomarkdowneditor" (dict
 			"MarkdownPreviewUrl" (print $.root.Repository.Link "/markup")

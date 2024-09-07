@@ -925,7 +925,7 @@ td .commit-summary {
   background: var(--color-box-body);
 }
 
-.repository.view.issue .comment-list .conversation-holder .comment .comment-container {
+.repository.view.issue .comment-list .conversation-holder .discussion-file-comment-holder .comment .comment-container {
   border: none;
 }
 
