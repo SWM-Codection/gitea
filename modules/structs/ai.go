@@ -38,5 +38,5 @@ type AiSampleCodeContent struct {
 
 type AiSampleCodeResponse struct {
 	CommentID          string                 `json:"comment_id"`
-	SampleCodeContents []*AiSampleCodeContent `json:"contents"`
+	SampleCodeContent *AiSampleCodeContent `json:"content"`
 }

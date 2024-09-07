@@ -93,7 +93,7 @@ func DeleteAiSampleCodeByID(ctx context.Context, id int64) error {
 
 }
 
-func GetAiSampleCodeByCommentID(ctx context.Context, id int64, sampleType string) ([]*AiSampleCode, error) {
+func GetAiSampleCodeByCommentID(ctx context.Context, id int64, sampleType string) (*AiSampleCode, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 
@@ -105,14 +105,17 @@ func GetAiSampleCodeByCommentID(ctx context.Context, id int64, sampleType string
 
 	e := db.GetEngine(ctx)
 
-	sampleCodes := make([]*AiSampleCode, 0, DEFAULT_CAPACITY)
+	sampleCode := new(AiSampleCode)
 
-	err = e.Table("ai_sample_code").Where("target_comment_id=? AND comment_type = ?", id, sampleType).Find(&sampleCodes)
+	has, err := e.Table("ai_sample_code").Where("target_comment_id=? AND comment_type = ?", id, sampleType).Get(sampleCode)
 
 	if err != nil {
-		fmt.Errorf(err.Error())
-		return nil, err
+		return nil, fmt.Errorf("failed to get AI sample code: %w", err)
 	}
 
-	return sampleCodes, nil
+	if !has {
+		return nil, nil
+	}
+
+	return sampleCode, nil
 }

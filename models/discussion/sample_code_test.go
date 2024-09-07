@@ -115,18 +115,19 @@ func TestGetAiSampleCodeByCommentID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, unittest.PrepareTestDatabase())
+	
 			got, err := discussion.GetAiSampleCodeByCommentID(context.Background(), tt.id, tt.Type)
+	
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Len(t, got, tt.want)
-				for _, sampleCode := range got {
-					assert.Equal(t, tt.id, sampleCode.TargetCommentId)
-				}
+				assert.NotNil(t, got)
+				assert.Equal(t, tt.id, got.TargetCommentId)
 			}
 		})
 	}
+	
 }
 
 func stringPtr(s string) *string {

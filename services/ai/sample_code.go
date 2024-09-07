@@ -98,9 +98,8 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 	}
 
 	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, targetCommentId, form.Type)
-	println(len(response.SampleCodeContents))
 
-	if err != nil || len(response.SampleCodeContents) > 0 {
+	if err != nil || response.SampleCodeContent != nil {
 		return nil, fmt.Errorf("already Ai comment: %v", err)
 	}
 
