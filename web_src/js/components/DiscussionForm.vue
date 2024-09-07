@@ -50,11 +50,11 @@ export default {
             if (!this.store.selectedItem) return;
             const filtered = this.store.files.filter(file => '#discussion-' + file.NameHash === this.store.selectedItem)
             if (filtered.length <= 0) return;
-            const resp = await GET(`${this.store.repoLink}/raw/branch/${this.selectedBranch}/${filtered[0].Name}`);
-            const content = await resp.text();
-            const tmp = [] 
-            content.split('\n').forEach((line, idx) => {
-                tmp.push({
+            const resp = await GET(`${this.store.repoLink}/highlight/branch/${this.selectedBranch}/${filtered[0].Name}`);
+            const content = await resp.json();
+            console.log(content);
+            content.html.forEach((line, idx) => {
+                this.store.contents.push({
                     line: idx + 1, 
                     content: line
                 });
@@ -135,12 +135,12 @@ export default {
                         </div>
                     </div>
                     <div class="ui bottom attached table unstackable segment">
-                        <div class="file-view code-view">
+                        <div class="file-view code-view" style="white-space-collapse: preserve;">
                             <table>
                                 <tbody>
                                     <tr v-for="content in store.contents">
                                         <td class="lines-num">{{ content.line }}</td>
-                                        <td class="lines-code chroma">{{ content.content }}</td>
+                                        <td class="lines-code chroma" v-html="content.content"/>
                                     </tr>
                                 </tbody>
                             </table>
