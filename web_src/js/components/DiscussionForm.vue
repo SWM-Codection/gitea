@@ -266,7 +266,7 @@ export default {
             </div>
 
             <div class="text right tw-px-1 tw-mt-4">
-                <button class="ui primary button" :class="[store.checkedItems.length > 0 ? null :  'disabled']" @click.prevent="handleSubmit">
+                <button class="ui primary button" :class="[store.checkedItems.length > 0 && name.length > 0 ? null :  'disabled']" @click.prevent="handleSubmit">
                     새로운 디스커션 생성
                 </button>
             </div>
