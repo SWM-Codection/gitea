@@ -142,7 +142,6 @@ export default {
             this.dragEnd = null;
         },
         handleGotoCheckedFileRange({target}) {
-            console.log('goto file range', target); 
             const checkedItem = target.closest('.checked-item')
             const tag = checkedItem.getAttribute('data-checked-item-tag'); 
             const startNumber = parseInt(checkedItem.getAttribute('data-checked-item-start')); 
