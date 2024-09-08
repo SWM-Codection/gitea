@@ -96,6 +96,11 @@ func GetValidateContext(req *http.Request) (ctx *ValidateContext) {
 	return ctx
 }
 
+func (c Context) NewChildContext() *Context {
+	c.Base.originCtx = context.WithoutCancel(c.Base.originCtx)
+	return &c
+}
+
 func NewTemplateContextForWeb(ctx *Context) TemplateContext {
 	tmplCtx := NewTemplateContext(ctx)
 	tmplCtx["Locale"] = ctx.Base.Locale
@@ -266,4 +271,9 @@ func (ctx *Context) JSONError(msg any) {
 	default:
 		panic(fmt.Sprintf("unsupported type: %T", msg))
 	}
+}
+
+func (ctx *Context) JSONErrorf(msg ...any) {
+	v := fmt.Sprintf(msg[0].(string), msg[1:])
+	ctx.JSONError(v)
 }

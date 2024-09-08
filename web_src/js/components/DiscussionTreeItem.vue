@@ -29,7 +29,6 @@ export default {
     <!-- file -->
     <SvgIcon name="octicon-file"/>
     <span class="gt-ellipsis tw-flex-1">{{ item.name }}</span>
-    <input type="checkbox" :value="item.file.Name" v-model="store.checkedItems">
   </a>
   <div v-else class="item-directory" :title="item.name" @click.stop="collapsed = !collapsed">
     <!-- directory -->
