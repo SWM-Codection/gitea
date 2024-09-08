@@ -89,7 +89,9 @@ import {initDirAuto} from './modules/dirauto.js';
 import {initRepositorySearch} from './features/repo-search.js';
 import {initColorPickers} from './features/colorpicker.js';
 import {initAdminSelfCheck} from './features/admin/selfcheck.js';
-import {initDiscussionForm} from './features/repo-discussion-form.js';
+
+import { initDiscussionForm } from './features/repo-discussion-form.js';
+import { initHomeMarquee } from './features/home-marquee.js';
 
 // Init Gitea's Fomantic settings
 initGiteaFomantic();
@@ -195,5 +197,7 @@ onDomReady(() => {
   initScopedAccessTokenCategories();
   initColorPickers();
   initDiscussionForm();
+  initHomeMarquee();
   initAiSampleCodeModal();
+
 });
