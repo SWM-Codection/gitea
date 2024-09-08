@@ -78,6 +78,7 @@ export default {
     this.store.fileTreeIsVisible = true; 
 
     this.hashChangeListener = () => {
+      this.store.reset = true; 
       this.store.selectedItem = window.location.hash;
       this.expandSelectedFile();
     };

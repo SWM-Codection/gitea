@@ -14,12 +14,13 @@ type PathContentMap struct {
 
 type GenerateAiSampleCodesForm struct {
 	TargetCommentId string `json:"target_comment_id"`
-	CommentContent  string `json:"comment"`
-	CodeContent     string `json:"code"`
+	Type			string `json:"type"`
 }
+
 type CreateAiSampleCodesForm struct {
 	TargetCommentId   string `json:"target_comment_id"`
-	SampleCodeContent string `json:"sample_code"`
+	SampleCodeContent string `json:"sample_code_content"`
+	Type			  string `json:"type"`
 }
 
 type DeleteSampleCodesForm struct {
@@ -37,5 +38,5 @@ type AiSampleCodeContent struct {
 
 type AiSampleCodeResponse struct {
 	CommentID          string                 `json:"comment_id"`
-	SampleCodeContents []*AiSampleCodeContent `json:"contents"`
+	SampleCodeContent *AiSampleCodeContent `json:"content"`
 }
