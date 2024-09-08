@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	tplDiscussionNew        base.TplName = "repo/discussion/new"
-	tplDiscussions          base.TplName = "repo/discussion/list"
-	tplDiscussionView       base.TplName = "repo/discussion/view"
+	tplDiscussionNew            base.TplName = "repo/discussion/new"
+	tplDiscussions              base.TplName = "repo/discussion/list"
+	tplDiscussionView           base.TplName = "repo/discussion/view"
 	tplDiscussionFileComments   base.TplName = "repo/discussion/file_comments"
-	tplDiscussionFiles      base.TplName = "repo/discussion/view_file"
+	tplDiscussionFiles          base.TplName = "repo/discussion/view_file"
 	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
 )
 
@@ -128,8 +128,16 @@ func ViewDiscussion(ctx *context.Context) {
 	}
 	discussionResponse.Poster = poster
 
+	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
+
+	if err != nil {
+		ctx.ServerError("error on discussion content response: err = %v", err)
+	}
+
+	log.Info("discussion content response : %v", discussionContentResponse)
 	log.Info("discussion response : %v", discussionResponse)
 
+	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
@@ -196,8 +204,8 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 		// maybe unreachable..
 		ctx.JSONError("hmm something weird..")
 	}
-	ctx.JSON(http.StatusOK, map[string]int64 {
-		"id" : *id,
+	ctx.JSON(http.StatusOK, map[string]int64{
+		"id": *id,
 	})
 
 }

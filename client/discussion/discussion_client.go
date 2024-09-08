@@ -244,8 +244,6 @@ func HandleDiscussionAvailable() (*resty.Response, error) {
 	return client.Request().Post("/discussion/available")
 }
 
-
-
 func PostComment(request *PostCommentRequest) (*int64, error) {
 	resp, err := client.Request().SetBody(request).Post("/discussion/comment")
 	if err != nil {
@@ -310,4 +308,16 @@ func (d *Discussion) LoadPoster(ctx *context.Context) (err error) {
 func (d *Discussion) LoadRepo(ctx *context.Context) (err error) {
 	d.Repo = ctx.Repo.Repository
 	return nil
+}
+
+func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
+	if err != nil {
+		return nil, err
+	}
+	result := &DiscussionContentResponse{}
+	if err := json.Unmarshal(resp.Body(), result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
