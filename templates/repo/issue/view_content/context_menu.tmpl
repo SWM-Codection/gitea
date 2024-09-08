@@ -24,6 +24,7 @@
 					{{if .delete}}
 						<div class="item context js-aria-clickable delete-comment" data-comment-id={{.item.HashTag}} data-url="{{.ctxData.RepoLink}}/comments/{{.item.ID}}/delete" data-locale="{{ctx.Locale.Tr "repo.issues.delete_comment_confirm"}}">{{ctx.Locale.Tr "repo.issues.context.delete"}}</div>
 					{{end}}
+					<div class="item context js-aria-clickable show-ai-code-modal" data-comment-id="{{ .item.HashTag }}">{{ctx.Locale.Tr "repo.issues.context.sample"}}</div>
 				{{end}}
 			{{end}}
 			{{$canUserBlock := call .ctxData.CanBlockUser .ctxData.SignedUser .item.Poster}}

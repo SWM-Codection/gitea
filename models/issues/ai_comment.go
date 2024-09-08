@@ -114,7 +114,6 @@ func GetAIPullCommentByID(ctx context.Context, id int64) (*AiPullComment, error)
 	}
 
 	return comment, nil
-
 }
 
 func DeleteAiPullCommentByID(ctx context.Context, id int64) error {

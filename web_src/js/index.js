@@ -34,6 +34,7 @@ import {
   initRepoPullRequestAllowMaintainerEdit,
   initRepoPullRequestReview, initRepoIssueSidebarList, initArchivedLabelHandler,
 } from './features/repo-issue.js';
+import {initAiSampleCodeModal} from './features/repo-ai-samplecode.js';
 import {initRepoEllipsisButton, initCommitStatuses} from './features/repo-commit.js';
 import {
   initFootLanguageMenu,
@@ -88,7 +89,7 @@ import {initDirAuto} from './modules/dirauto.js';
 import {initRepositorySearch} from './features/repo-search.js';
 import {initColorPickers} from './features/colorpicker.js';
 import {initAdminSelfCheck} from './features/admin/selfcheck.js';
-import { initDiscussionForm } from './features/repo-discussion-form.js';
+import {initDiscussionForm} from './features/repo-discussion-form.js';
 
 // Init Gitea's Fomantic settings
 initGiteaFomantic();
@@ -194,4 +195,5 @@ onDomReady(() => {
   initScopedAccessTokenCategories();
   initColorPickers();
   initDiscussionForm();
+  initAiSampleCodeModal();
 });

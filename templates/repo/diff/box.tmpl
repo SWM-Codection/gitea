@@ -1,5 +1,8 @@
 {{$showFileTree := (and (not .DiffNotAvailable) (gt .Diff.NumFiles 1))}}
 <div>
+	<div class="loading-overlay tw-hidden">
+		<img class="loading-img" src="{{AssetUrlPrefix}}/img/loading.png">
+	</div>
 	<div class="diff-detail-box diff-box">
 		<div class="tw-flex tw-items-center tw-flex-wrap tw-gap-2 tw-ml-0.5">
 			{{if $showFileTree}}
