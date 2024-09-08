@@ -3,6 +3,7 @@ package discussion
 import (
 	"strconv"
 
+	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/services/context"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
@@ -30,8 +31,10 @@ func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListR
 	}
 	page-- // gitea uses 1-based paginiation methodology, but discussion backend uses 0-based pagination methodology
 
+	log.Info("calling get discussion list with repoId: %v, isClosed: %v, page: %v", repoId, isClosed, page)
 	discussionListResponse, err := discussion_client.GetDiscussionList(repoId, isClosed, page)
 	if err != nil {
+		log.Info("discusisonClient.getdiscussionList failed1")
 		return nil, err
 	}
 	// post process discussions
@@ -40,4 +43,16 @@ func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListR
 		d.LoadPoster(ctx)
 	}
 	return discussionListResponse, nil
+}
+
+func GetDiscussionContent(ctx *context.Context, discussionId int64) (*discussion_client.DiscussionContentResponse, error) {
+
+	content, err := discussion_client.GetDiscussionContent(discussionId)
+
+	if err != nil {
+		log.Error("discussion_client.GetDiscussionContent failed: %v", err.Error())
+		return nil, err
+	}
+
+	return content, nil
 }

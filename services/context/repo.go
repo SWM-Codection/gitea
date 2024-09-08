@@ -61,8 +61,8 @@ type Repository struct {
 	TagName      string
 	TreePath     string
 	CommitID     string
-	RepoLink     string
 	CloneLink    repo_model.CloneLink
+	RepoLink     string
 	CommitsCount int64
 
 	PullRequest *PullRequest

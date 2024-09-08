@@ -20,3 +20,17 @@ func (d *CreateDiscussionForm) Validate(req *http.Request, errs binding.Errors) 
 	ctx := context.GetValidateContext(req)
 	return middleware.Validate(errs, ctx.Data, d, ctx.Locale)
 }
+
+type CreateDiscussionCommentForm struct {
+	Content string `form:"content"`
+
+	CodeId    *int64 `form:"codeId"`
+	StartLine *int32 `form:"startLine"`
+	EndLine   *int32 `form:"endLine"`
+}
+
+func (dc *CreateDiscussionCommentForm) Validate(req *http.Request, errs binding.Errors) binding.Errors {
+	ctx := context.GetValidateContext(req)
+	return middleware.Validate(errs, ctx.Data, dc, ctx.Locale)
+}
+

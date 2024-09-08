@@ -1,9 +1,9 @@
 <script>
 import {SvgIcon} from '../svg.js';
-import {discussionTreeStore} from '../modules/stores.js';
+import {discussionFileTreeStore} from '../modules/stores.js';
 
 export default {
-  components: {SvgIcon},
+  components: {SvgIcon,},
   props: {
     item: {
       type: Object,
@@ -11,7 +11,7 @@ export default {
     },
   },
   data: () => ({
-    store: discussionTreeStore(),
+    store: discussionFileTreeStore(),
     collapsed: false,
   }), 
   mounted() {
@@ -38,7 +38,7 @@ export default {
   </div>
 
   <div v-if="item.children?.length" v-show="!collapsed" class="sub-items">
-    <DiscussionTreeItem v-for="childItem in item.children" :key="childItem.name" :item="childItem"/>
+    <DiscussionFileDetailTreeItem v-for="childItem in item.children" :key="childItem.name" :item="childItem"/>
   </div>
 </template>
 <style scoped>

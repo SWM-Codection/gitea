@@ -1193,7 +1193,13 @@ func registerRoutes(m *web.Route) {
 			m.Get("", repo.Discussions)
 			m.Group("/{index}", func() {
 				m.Get("", repo.ViewDiscussion)
+				m.Get("/contents", repo.DiscussionContent)
+				m.Group("/files", func() {
+					m.Get("", repo.ViewDiscussionFiles)
+				})
 			})
+			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
+
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 
@@ -1222,6 +1228,11 @@ func registerRoutes(m *web.Route) {
 				m.Combo("").Get(context.RepoRef(), repo.NewDiscussion).
 					Post(web.Bind(forms.CreateDiscussionForm{}), repo.NewDiscussionPost)
 			})
+			m.Group("/{discussionId}", func() {
+				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
+
+			})
+			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.

@@ -164,7 +164,7 @@ func UpdateResolveConversation(ctx *context.Context) {
 
 	renderConversation(ctx, comment, origin)
 }
-
+// 체크 코멘트가 만들어졌을 때 렌더링 되는 곳
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {
 	ctx.Data["PageIsPullFiles"] = origin == "diff"
 

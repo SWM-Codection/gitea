@@ -1,13 +1,14 @@
 package ai
 
 import (
+	"errors"
+	"testing"
+
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
-	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 
 	discussion_model "code.gitea.io/gitea/models/discussion"
 )
@@ -66,8 +67,7 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 	}{
 		{
 			name: "Successful generation",
-			form: &structs.GenerateAiSampleCodesForm{
-			},
+			form: &structs.GenerateAiSampleCodesForm{},
 			mockResponses: []*AiSampleCodeResponse{
 				{SampleCode: "sample1"},
 				{SampleCode: "sample2"},
@@ -79,8 +79,7 @@ func TestGenerateAiSampleCodes(t *testing.T) {
 		},
 		{
 			name: "Partial failure",
-			form: &structs.GenerateAiSampleCodesForm{
-			},
+			form: &structs.GenerateAiSampleCodesForm{},
 			mockResponses: []*AiSampleCodeResponse{
 				{SampleCode: "sample1"},
 				nil,
