@@ -127,8 +127,9 @@ func DeleteAiSampleCode(ctx *context.Context) {
 func GetAiSampleCode(ctx *context.Context) {
 
 	commentID := ctx.Req.URL.Query().Get("comment_id")
+	sampleType := ctx.Req.URL.Query().Get("type")
 
-	response, err := ai_service.AiSampleCodeService.GetAiSampleCodeByCommentID(ctx, cast.ToInt64(commentID))
+	response, err := ai_service.AiSampleCodeService.GetAiSampleCodeByCommentID(ctx, cast.ToInt64(commentID), sampleType)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
