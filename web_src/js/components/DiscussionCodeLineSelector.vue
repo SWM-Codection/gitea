@@ -1,14 +1,11 @@
 <script>
 import DiscussionFileAddCommentButton from "./DiscussionFileAddCommentButton.vue";
 import { SvgIcon } from "../svg";
-import { GET, POST, request } from "../modules/fetch";
-import { initSingleCommentEditor } from "../features/repo-issue";
+import { GET, POST} from "../modules/fetch";
 import {
   initComboMarkdownEditor,
   validateTextareaNonEmpty,
 } from "../features/comp/ComboMarkdownEditor";
-import { ErrorCodes } from "vue";
-import { comment } from "postcss";
 import { discussionResponseDummy } from "../modules/stores";
 
 const { pageData } = window.config;

@@ -25,9 +25,9 @@ const (
 	tplDiscussionNew        base.TplName = "repo/discussion/new"
 	tplDiscussions          base.TplName = "repo/discussion/list"
 	tplDiscussionView       base.TplName = "repo/discussion/view"
-	tplDiscussionComments   base.TplName = "repo/discussion/file_comments"
+	tplDiscussionFileComments   base.TplName = "repo/discussion/file_comments"
 	tplDiscussionFiles      base.TplName = "repo/discussion/view_file"
-	tplNewDiscussionComment base.TplName = "repo/discussion/new_file_comment"
+	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -264,7 +264,7 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 
 	// TODO: 디스커션 코멘트 렌더링 하기
 
-	ctx.HTML(http.StatusOK, tplDiscussionComments)
+	ctx.HTML(http.StatusOK, tplDiscussionFileComments)
 
 }
 
@@ -284,7 +284,7 @@ func RenderNewDiscussionFileCommentForm(ctx *context.Context) {
 	ctx.Data["EndLine"] = endLine
 	ctx.PageData["RepoLink"] = ctx.Repo.RepoLink
 	ctx.Data["Repository"] = ctx.Repo.Repository
-	ctx.HTML(http.StatusOK, tplNewDiscussionComment)
+	ctx.HTML(http.StatusOK, tplNewDiscussionFileComment)
 }
 
 func DiscussionContent(ctx *context.Context) {
