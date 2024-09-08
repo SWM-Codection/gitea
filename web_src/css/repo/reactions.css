@@ -9,6 +9,11 @@
   padding-bottom: 8px;
 }
 
+.discussion-file-comment-holder {
+  margin: 1em 0 0 36px;
+  padding-bottom: 8px;
+}
+
 .bottom-reactions .ui.label {
   padding: 5px 8px;
   font-weight: var(--font-weight-normal);

@@ -2,7 +2,7 @@
 	{{$approvalCounts := .ApprovalCounts}}
 	{{range .Discussions}}
 		<div class="flex-item">
-			<div class="flex-item-icon">
+			<div class="flex-item-icon"> 
 				{{if $.CanWriteIssuesOrPulls}}
 				<input type="checkbox" autocomplete="off" class="issue-checkbox tw-mr-4" data-issue-id={{.ID}} aria-label="{{ctx.Locale.Tr "repo.issues.action_check"}} &quot;{{.Title}}&quot;">
 				{{end}}

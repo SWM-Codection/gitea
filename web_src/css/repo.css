@@ -927,6 +927,11 @@ td .commit-summary {
 
 .repository.view.issue .comment-list .conversation-holder .comment .comment-container {
   border: none;
+
+}
+
+.discussion-file-comment-holder {
+  border: none;
 }
 
 @media (max-width: 767.98px) {

@@ -121,12 +121,14 @@ type FileContent struct {
 }
 
 type DiscussionCommentResponse struct {
-	Id        int64                `json:"id"`
-	Scope     string               `json:"scope"`
-	StartLine int                  `json:"startLine"`
-	EndLine   int                  `json:"endLine"`
-	Content   string               `json:"content"`
-	Reactions []DiscussionReaction `json:"reactions"`
+	Id          int64                 `json:"id"`
+	PosterId    int64                 `json:"poster_id"`
+	Scope       string                `json:"scope"`
+	StartLine   int64                 `json:"startLine"`
+	EndLine     int64                 `json:"endLine"`
+	Content     string                `json:"content"`
+	CreatedUnix timeutil.TimeStamp    `json:"createdUnix"`
+	Reactions   []*DiscussionReaction `json:"reactions"`
 }
 
 type ReactionTypeEnum = string
@@ -211,28 +213,50 @@ func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListRe
 	return result, nil
 }
 
-func HandleDiscussionAvailable() (*resty.Response, error) {
-	return client.Request().Post("/discussion/available")
-}
-
-func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, error) {
+func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error) {
 	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
+
 	if err != nil {
 		return nil, err
 	}
 	result := &DiscussionContentResponse{}
-	if err := json.Unmarshal(resp.Body(), result); err != nil {
+	if err = json.Unmarshal(resp.Body(), result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func PostComment(request *PostCommentRequest) (bool, error) {
+func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse, error) {
+	resp, err := client.Request().SetQueryParam("id", strconv.FormatInt(discussionCommentId, 10)).Get("/discussion/comment")
+	if err != nil {
+		return nil, err
+	}
+
+	result := &DiscussionCommentResponse{}
+
+	if err = json.Unmarshal(resp.Body(), result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func HandleDiscussionAvailable() (*resty.Response, error) {
+	return client.Request().Post("/discussion/available")
+}
+
+
+
+func PostComment(request *PostCommentRequest) (*int64, error) {
 	resp, err := client.Request().SetBody(request).Post("/discussion/comment")
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return resp.StatusCode() == 201, nil
+	bodyStr := string(resp.Body())
+	id, err := strconv.ParseInt(bodyStr, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &id, nil
 }
 
 func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error) {

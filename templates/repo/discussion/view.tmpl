@@ -28,11 +28,11 @@
 
         <div class="ui discussion tabs container">
             <div class="ui top attached discussion tabular menu">
-                <a class="item active" href="#">
+                <a class="item  {{ if eq .DiscussionTab "conversation" }} active {{end}}" href="{{.RepoLink}}/discussions/{{.Discussion.Id}}">
                     {{svg "octicon-comment-discussion"}}
                     <span class="resize-for-semibold">대화</span>
                 </a>
-                <a class="item" href="#">
+                <a class="item {{ if eq .DiscussionTab "files" }} active {{end}}" href="{{.RepoLink}}/{{.Id}}discussions/{{.Discussion.Id}}/files">
                     {{svg "octicon-git-commit"}}
                     <span class="resize-for-semibold">파일 목록</span>
                 </a>
@@ -50,7 +50,7 @@
                 {{ if eq .DiscussionTab "conversation" }}
                     {{ template "repo/discussion/view_conversation" . }}
                 {{ else }}
-                    {{ template "repo/discussion/view_file" }}
+                    {{ template "repo/discussion/view_file" .}}
                 {{ end }}
                 <script>
                     window.config.pageData.discussionFileInfo = {} 
