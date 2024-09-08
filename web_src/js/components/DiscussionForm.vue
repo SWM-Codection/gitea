@@ -63,7 +63,6 @@ export default {
                     content: line
                 });
             });
-            this.store.contents = tmp; 
         },
         async handleSubmit() {
             const name = this.name; 
