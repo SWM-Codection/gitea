@@ -1,5 +1,4 @@
 <script>
-import DiscussionFileAddCommentButton from "./DiscussionFileAddCommentButton.vue";
 import { SvgIcon } from "../svg";
 import { GET, POST} from "../modules/fetch";
 import {
@@ -11,7 +10,7 @@ import { discussionResponseDummy } from "../modules/stores";
 const { pageData } = window.config;
 
 export default {
-  components: { DiscussionFileAddCommentButton, SvgIcon },
+  components: { SvgIcon },
   props: {
     content: {
       type: Object,
@@ -41,6 +40,7 @@ export default {
         .closest(".discussion-file-table")
         ?.classList.contains("is-selecting");
     },
+
     setSelection(target, canExpand) {
       const targetLineData = target.id.split("-");
 
@@ -273,6 +273,7 @@ export default {
     },
 
     handleClick(event) {
+
       if (!this.currentDraggedRange) {
         return;
       }
@@ -285,12 +286,22 @@ export default {
       this.removeHighlight();
     },
 
+    
+
     async showCommentForm(event) {
+
+      if (this.isDraggingForComment == false) {
+        const line = event.target.closest("tr")
+        const targetProperties = line.id.split("-")
+        const codeId = targetProperties[1]
+        const codeLinePosition = this.createCodePosition(codeId, targetProperties[2]) 
+        this.currentDraggedRange = this.createCodeLineRange(codeId, codeLinePosition, codeLinePosition)
+      }
+
       const draggedRange = this.currentDraggedRange;
 
       const queryParams = {
         discussionId: this.discussionId,
-        // TODO: 한 번도 드래그 안한 상태면 빈 값이 들어가서 오류 발생하는 거 해결하기
         codeId: draggedRange.codeId,
         startLine: draggedRange.startPosition.lineNumber,
         endLine: draggedRange.endPosition.lineNumber,
@@ -508,11 +519,11 @@ export default {
 </template>
 
 <style scoped>
-/* 선택된 라인의 스타일을 정의합니다. */
+
+
 .selected-line {
   background-color: #f5f5dc;
 }
-/* 테이블이 선택 중일 때의 스타일을 정의합니다. */
 .is-selecting {
   cursor: pointer;
 }
