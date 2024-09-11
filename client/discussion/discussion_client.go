@@ -76,6 +76,7 @@ type DiscussionResponse struct {
 	Assignees   []int64            `json:"assignees"`
 	CreatedUnix timeutil.TimeStamp `json:"createdUnix"`
 	UpdatedUnix timeutil.TimeStamp `json:"updatedUnix"`
+	Index       int64              `json:"index"`
 	Poster      *user_model.User   `json:"-"`
 }
 

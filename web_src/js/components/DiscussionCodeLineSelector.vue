@@ -467,7 +467,7 @@ export default {
     style="position: sticky; top: 0; z-index: 999"
   >
     <div class="file-info tw-font-mono">
-      <div :href="`#discussion-${content.NameHash}`" class="file-info-entry">
+      <div :id="`discussion-${content.NameHash}`" class="file-info-entry">
         {{ content.Name }}
       </div>
     </div>
