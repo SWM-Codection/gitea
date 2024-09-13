@@ -157,6 +157,14 @@ export function initRepoIssueSidebarList() {
   $('.ui.dropdown.label-filter, .ui.dropdown.select-label').dropdown('setting', {'hideDividers': 'empty'}).dropdown('refreshItems');
 }
 
+function getConversationHolderPath(deleteButton) {
+  const conversationHolder = deleteButton.closest('.conversation-holder');
+  if (conversationHolder) {
+    return conversationHolder.getAttribute('data-path');
+  }
+  return null;
+}
+
 export function initRepoIssueCommentDelete() {
   // Delete comment
   document.addEventListener('click', async (e) => {
@@ -164,9 +172,18 @@ export function initRepoIssueCommentDelete() {
     e.preventDefault();
 
     const deleteButton = e.target;
+
+    const dataPath = getConversationHolderPath(deleteButton);
+
+    const indexElement = document.querySelector('.index');
+    let indexValue = indexElement ? indexElement.textContent : '';
+    indexValue = indexValue.replace('#', '');
+
     if (window.confirm(deleteButton.getAttribute('data-locale'))) {
       try {
-        const response = await POST(deleteButton.getAttribute('data-url'));
+        const deleteUrl = `${deleteButton.getAttribute('data-url')}?path=${encodeURIComponent(dataPath)}&index=${encodeURIComponent(indexValue)}`;
+        const response = await POST(deleteUrl);
+        // const response = await POST(deleteButton.getAttribute('data-url'));
         if (!response.ok) throw new Error('Failed to delete comment');
 
         const conversationHolder = deleteButton.closest('.conversation-holder');

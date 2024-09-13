@@ -18,8 +18,8 @@ type AiSampleCode struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
 	TargetCommentId int64 `xorm:"'target_comment_id' INDEX NOT NULL"`
 	GenearaterId    int64
-	CommentType			string			   `xorm:"'comment_type'"`
-	Content         string             `xorm:"'content'"`
+	CommentType		string			   `xorm:"'comment_type'"`
+	Content         string             `xorm:"'content' text"`
 	CreatedUnix     timeutil.TimeStamp `xorm:"INDEX created"`
 	UpdatedUnix     timeutil.TimeStamp `xorm:"INDEX updated"`
 	Status          string             `xorm:"status"` //
