@@ -212,14 +212,6 @@ func fetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string
 
 func GetAiSampleCodeByIdxAndPath(ctx context.Context, idx int64, dataPath string) (*AiPullComment, error) {
 
-	ctx, committer, err := db.TxContext(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer committer.Close()
-
 	e := db.GetEngine(ctx)
 
 	pullComment := new(AiPullComment)
