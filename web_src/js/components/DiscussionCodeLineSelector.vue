@@ -473,7 +473,7 @@ export default {
     </div>
   </div>
   <div class="ui bottom attached table unstackable segment">
-    <div class="file-view code-view" style="display: flex">
+    <div class="file-view code-view" style="display: flex;">
       <table :id="content.Name" ref="codeTable" class="discussion-file-table">
         <tbody v-for="codeBlock in content.codeBlocks">
           <tr
@@ -497,8 +497,8 @@ export default {
                 <SvgIcon name="octicon-plus" />
               </button>
             </td>
-            <td class="lines-code chroma">
-              {{ line.content }}
+            <td class="lines-code chroma" style="white-space: pre-wrap;" v-html="line.content">
+              
             </td>
           </tr>
         </tbody>

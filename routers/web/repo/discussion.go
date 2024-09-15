@@ -270,7 +270,6 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	comments = append(comments, newComment)
 	ctx.Data["comments"] = comments
 
-	// TODO: 디스커션 코멘트 렌더링 하기
 
 	ctx.HTML(http.StatusOK, tplDiscussionFileComments)
 
@@ -299,7 +298,7 @@ func DiscussionContent(ctx *context.Context) {
 
 	discussionId := ctx.ParamsInt64(":index")
 
-	discussionContent, err := discussion_service.GetDiscussionContent(ctx, discussionId)
+	discussionContent, err := discussion_service.GetDiscussionContentWithHighlights(discussionId)
 
 	if err != nil {
 		ctx.JSONError(err.Error())

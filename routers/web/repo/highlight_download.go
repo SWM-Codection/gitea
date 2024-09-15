@@ -1,10 +1,9 @@
 package repo
 
 import (
+	"html/template"
 	"io"
 	"net/http"
-
-	"html/template"
 
 	"code.gitea.io/gitea/modules/highlight"
 	"code.gitea.io/gitea/modules/log"
