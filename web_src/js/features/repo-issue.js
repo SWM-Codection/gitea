@@ -181,9 +181,14 @@ export function initRepoIssueCommentDelete() {
 
     if (window.confirm(deleteButton.getAttribute('data-locale'))) {
       try {
-        const deleteUrl = `${deleteButton.getAttribute('data-url')}?path=${encodeURIComponent(dataPath)}&index=${encodeURIComponent(indexValue)}`;
+        const params = new URLSearchParams({
+          path: dataPath,
+          index: indexValue,
+        });
+
+        const deleteUrl = `${deleteButton.getAttribute('data-url')}?${params.toString()}`;
         const response = await POST(deleteUrl);
-        // const response = await POST(deleteButton.getAttribute('data-url'));
+
         if (!response.ok) throw new Error('Failed to delete comment');
 
         const conversationHolder = deleteButton.closest('.conversation-holder');
