@@ -57,12 +57,18 @@ export default {
             if (filtered.length <= 0) return;
             const resp = await GET(`${this.store.repoLink}/highlight/branch/${encodeURI(this.selectedBranch)}/${encodeURI(filtered[0].Name)}`);
             const content = await resp.json();
-            content.html.forEach((line, idx) => {
-                this.store.contents.push({
-                    line: idx + 1, 
-                    content: line
+            this.store.isBin = content.isBin; 
+
+
+            if (!this.store.isBin) {
+                console.log('content is ',content);
+                content.html.forEach((line, idx) => {
+                    this.store.contents.push({
+                        line: idx + 1, 
+                        content: line
+                    });
                 });
-            });
+            }
         },
         async handleSubmit() {
             const name = this.name; 
@@ -221,7 +227,7 @@ export default {
                             </div>
                         </div>
                         <div class="ui bottom attached table unstackable segment">
-                            <div class="file-view code-view" style="white-space-collapse: preserve;">
+                            <div class="file-view code-view" style="white-space-collapse: preserve;" v-if="!store.isBin">
                                 <table ref="codeTable">
                                     <tbody>
                                         <tr v-for="content in store.contents" 
@@ -255,6 +261,10 @@ export default {
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="file-view code-view tw-px-4 tw-py-2" style="color: grey; " v-else>
+                                binary file has been selected 
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -290,6 +300,7 @@ export default {
     <span class="text muted flex-text-block" style="margin-bottom: 12px;">
         <strong>선택된 파일 목록</strong>
     </span>
+
     <span style="color: grey;" v-if="store.checkedItems.length === 0">
         선택된 항목이 존재하지 않습니다.
     </span>
