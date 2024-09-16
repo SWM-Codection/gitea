@@ -1199,6 +1199,7 @@ func registerRoutes(m *web.Route) {
 				})
 			})
 			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
+			m.Delete("/comment", repo.DeleteDiscussionComment)
 
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))

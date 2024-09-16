@@ -23,6 +23,11 @@ type DiscussionCode struct {
 	EndLine   int    `json:"endLine"`
 }
 
+type DeleteDiscussionCommentRequest struct {
+	PosterId            int64 `json:"posterId"`
+	DiscussionCommentId int64 `json:"discussionCommentId"`
+}
+
 type PostDiscussionRequest struct {
 	RepoId     int64            `json:"repoId"`
 	Poster     *user_model.User `json:"-"`
@@ -321,4 +326,18 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 		return nil, err
 	}
 	return result, nil
+}
+
+func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
+	request := &DeleteDiscussionCommentRequest{
+		DiscussionCommentId: discussionCommentId,
+		PosterId:            posterId}
+	_, err := client.Request().SetBody(request).Delete("/discussion/comment")
+
+	if err != nil {
+		log.Error("DeleteDiscussionComment failed: %s", err.Error())
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }

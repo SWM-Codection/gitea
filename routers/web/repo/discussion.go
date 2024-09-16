@@ -312,3 +312,26 @@ func DiscussionContent(ctx *context.Context) {
 
 	ctx.JSON(http.StatusOK, discussionContent)
 }
+
+func DeleteDiscussionComment(ctx *context.Context) {
+	posterId := ctx.Doer.ID
+	queryParams := ctx.Req.URL.Query()
+
+	IdStr := queryParams.Get("discussionId")
+	discussionCommentId, err := strconv.ParseInt(IdStr, 10, 64)
+
+	if err != nil {
+		log.Error(err.Error())
+		ctx.JSONError(err.Error())
+	}
+
+	err = discussion_service.DeleteDiscussionComment(ctx, discussionCommentId, posterId)
+
+	if err != nil {
+		log.Error(err.Error())
+		ctx.JSONError(err.Error())
+	}
+
+	ctx.JSONOK()
+
+}
