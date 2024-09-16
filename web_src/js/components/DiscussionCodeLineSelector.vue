@@ -14,10 +14,10 @@
       <table :id="content.Name" ref="codeTable" class="discussion-file-table">
         <tbody v-for="codeBlock in content.codeBlocks" :key="codeBlock.codeId">
           <DiscussionFileCodeLine
-          :lines="codeBlock.lines"
-          :codeId="codeBlock.codeId"
-          @show-comment-form="showCommentForm"
-          @handle-mouse-down="handleMouseDown"
+            :lines="codeBlock.lines"
+            :codeId="codeBlock.codeId"
+            @show-comment-form="showCommentForm"
+            @handle-mouse-down="handleMouseDown"
           />
         </tbody>
       </table>
@@ -26,7 +26,6 @@
 </template>
 
 <script>
-
 import { GET, POST } from "../modules/fetch";
 import {
   initComboMarkdownEditor,
@@ -37,7 +36,7 @@ import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
 const { pageData } = window.config;
 
 export default {
-  components: {  DiscussionFileCodeLine },
+  components: { DiscussionFileCodeLine },
 
   props: {
     content: {
@@ -69,10 +68,13 @@ export default {
     },
 
     setSelection(target, canExpand) {
-      const {codeId, lineNumber} = this.extractDataFromLine(target)
+      const { codeId, lineNumber } = this.extractDataFromLine(target);
 
-      if (canExpand && this.currentDraggedRange && this.currentDraggedRange.codeId === codeId) {
-
+      if (
+        canExpand &&
+        this.currentDraggedRange &&
+        this.currentDraggedRange.codeId === codeId
+      ) {
         if (lineNumber < this.currentDraggedRange.startPosition.lineNumber) {
           return;
         }
@@ -80,11 +82,13 @@ export default {
         const expandedRange = this.createCodeLineRange(
           codeId,
           this.currentDraggedRange.startPosition,
-          this.createCodePosition(codeId, lineNumber)
+          this.createCodePosition(codeId, lineNumber),
         );
 
         this.showMultiLineCommentForm = () => {
-          const button = target.closest("tr")?.querySelector(".add-code-comment");
+          const button = target
+            .closest("tr")
+            ?.querySelector(".add-code-comment");
           if (button) {
             button.click();
           }
@@ -92,7 +96,11 @@ export default {
         this.displayHighlight(expandedRange);
       } else {
         const position = this.createCodePosition(codeId, lineNumber);
-        const expandedRange = this.createCodeLineRange(codeId, position, position);
+        const expandedRange = this.createCodeLineRange(
+          codeId,
+          position,
+          position,
+        );
         this.displayHighlight(expandedRange);
       }
     },
@@ -108,7 +116,9 @@ export default {
           const lineElements = new Set();
 
           for (let i = startLine; i <= endLine; i++) {
-            const lineElement = this.$refs.codeTable.querySelector(`#line-${codeId}-${i}`);
+            const lineElement = this.$refs.codeTable.querySelector(
+              `#line-${codeId}-${i}`,
+            );
             if (lineElement) {
               lineElements.add(lineElement);
             }
@@ -152,7 +162,9 @@ export default {
       }
 
       const targetElement = event.currentTarget;
-      const lineNumberElement = this.prevLinkableLine(targetElement.parentElement);
+      const lineNumberElement = this.prevLinkableLine(
+        targetElement.parentElement,
+      );
 
       if (!lineNumberElement) {
         return;
@@ -175,7 +187,10 @@ export default {
 
       targetElement.addEventListener("mouseup", mouseUpHandler, { once: true });
 
-      if (this.currentDraggedRange && this.currentDraggedRange.elements().size > 1) {
+      if (
+        this.currentDraggedRange &&
+        this.currentDraggedRange.elements().size > 1
+      ) {
         event.preventDefault();
       }
     },
@@ -193,14 +208,20 @@ export default {
     },
 
     addCommentDragSelectionEvent(table) {
-      table.addEventListener("mouseenter", this.handleDragMouseEvent, { capture: true });
+      table.addEventListener("mouseenter", this.handleDragMouseEvent, {
+        capture: true,
+      });
     },
 
     removeCommentDragSelectionEvent(table) {
       this.isDraggingForComment = false;
-      table.removeEventListener("mouseenter", this.handleDragMouseEvent, { capture: true });
+      table.removeEventListener("mouseenter", this.handleDragMouseEvent, {
+        capture: true,
+      });
       setTimeout(() => {
-        document.addEventListener("click", this.handleClickOutside, { once: true });
+        document.addEventListener("click", this.handleClickOutside, {
+          once: true,
+        });
       }, 0);
     },
 
@@ -270,27 +291,34 @@ export default {
       const targetProperties = line.id.split("-");
       const codeId = targetProperties[1];
       const lineNumber = targetProperties[2];
-      return {codeId, lineNumber}
+      return { codeId, lineNumber };
     },
 
-    
-    createCommentPlaceHolder(commentText) {
+    async createCommentPlaceHolder(commentText) {
       const placeholder = document.createElement("tr");
       const td = document.createElement("td");
-        td.innerHTML = commentText;
-        td.setAttribute("colspan", "3");
-        placeholder.appendChild(td);
-      return placeholder
+      td.innerHTML = commentText;
+      td.setAttribute("colspan", "3");
+      placeholder.appendChild(td);
+      await initComboMarkdownEditor(
+          td.querySelector(".combo-markdown-editor"),
+        );
+        await this.initDiscussionFileCommentForm(td.querySelector("form"));
+      return placeholder;
     },
 
     async showCommentForm(event) {
       if (!this.isDraggingForComment) {
         const line = event.target.closest("tr");
-        
-        const {codeId, lineNumber} = this.extractDataFromLine(line)
-        
+
+        const { codeId, lineNumber } = this.extractDataFromLine(line);
+
         const codeLinePosition = this.createCodePosition(codeId, lineNumber);
-        this.currentDraggedRange = this.createCodeLineRange(codeId, codeLinePosition, codeLinePosition);
+        this.currentDraggedRange = this.createCodeLineRange(
+          codeId,
+          codeLinePosition,
+          codeLinePosition,
+        );
       }
 
       const { codeId, startPosition, endPosition } = this.currentDraggedRange;
@@ -314,15 +342,14 @@ export default {
         }
         const body = await response.text();
 
-        const placeholder = this.createCommentPlaceHolder(body)
+        const placeholder = await this.createCommentPlaceHolder(body);
 
         const targetLine = event.target.closest("tr");
         targetLine.insertAdjacentElement("afterend", placeholder);
 
-        await initComboMarkdownEditor(td.querySelector(".combo-markdown-editor"));
-        await this.initDiscussionFileCommentForm(td.querySelector("form"));
-
-        placeholder.addEventListener("click", this.removeCommentForm, { capture: true });
+        placeholder.addEventListener("click", this.removeCommentForm, {
+          capture: true,
+        });
       } catch (err) {
         this.errorText = err.message;
         console.error(this.errorText);
@@ -330,7 +357,10 @@ export default {
     },
 
     removeCommentForm(event) {
-      if (event.target && event.target.classList.contains("cancel-code-comment")) {
+      if (
+        event.target &&
+        event.target.classList.contains("cancel-code-comment")
+      ) {
         const commentForm = event.target.closest("tr");
         if (commentForm) {
           commentForm.remove();
@@ -357,7 +387,7 @@ export default {
 
         const response = await POST(
           `${this.repoLink}/discussions/${this.discussionId}/comment`,
-          { data: formData }
+          { data: formData },
         );
 
         if (!response.ok) {
@@ -367,14 +397,18 @@ export default {
 
         const body = await response.json();
 
-        const resp = await GET(`${this.repoLink}/discussions/comment/${body.id}`);
+        const resp = await GET(
+          `${this.repoLink}/discussions/comment/${body.id}`,
+        );
         const commentHolderHTML = await resp.text();
 
         const tempDiv = document.createElement("div");
         tempDiv.innerHTML = commentHolderHTML;
         const commentHolder = tempDiv.firstElementChild;
 
-        form.closest(".discussion-file-comment-holder").replaceWith(commentHolder);
+        form
+          .closest(".discussion-file-comment-holder")
+          .replaceWith(commentHolder);
       } catch (e) {
         this.errorText = e.message;
         console.error(this.errorText);
@@ -385,8 +419,8 @@ export default {
 
     convertTextToHTML(text) {
       const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = text
-      return tempDiv.firstElementChild
+      tempDiv.innerHTML = text;
+      return tempDiv.firstElementChild;
     },
 
     async fetchDiscussionComments() {
@@ -395,10 +429,12 @@ export default {
         const commentPromises = codeBlocks.flatMap((codeBlock) => {
           const { codeId, comments } = codeBlock;
           return comments.map(async (comment) => {
-            const response = await GET(`${this.repoLink}/discussions/comment/${comment.id}`);
+            const response = await GET(
+              `${this.repoLink}/discussions/comment/${comment.id}`,
+            );
             const result = await response.text();
 
-            const commentHolder = this.convertTextToHTML(result)
+            const commentHolder = this.convertTextToHTML(result);
 
             return { comment, commentHolder, codeId };
           });
@@ -407,7 +443,9 @@ export default {
         const allComments = await Promise.all(commentPromises);
 
         allComments.forEach(({ comment, commentHolder, codeId }) => {
-          const targetLine = this.$refs.codeTable.querySelector(`#line-${codeId}-${comment.endLine}`);
+          const targetLine = this.$refs.codeTable.querySelector(
+            `#line-${codeId}-${comment.endLine}`,
+          );
 
           if (targetLine) {
             const tr = document.createElement("tr");
