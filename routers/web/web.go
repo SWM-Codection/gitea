@@ -1199,7 +1199,6 @@ func registerRoutes(m *web.Route) {
 				})
 			})
 			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
-			m.Delete("/comment", repo.DeleteDiscussionComment)
 
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
@@ -1231,6 +1230,8 @@ func registerRoutes(m *web.Route) {
 			})
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
+				m.Delete("/comment", repo.DeleteDiscussionFileComment)
+
 
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)

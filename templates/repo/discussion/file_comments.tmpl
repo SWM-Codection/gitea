@@ -1,7 +1,7 @@
 {{if len .comments}}
 	{{$comment := index .comments 0}}
 	<div class="discussion-file-comment-holder">
-		<div id="code-comments-{{$comment.ID}}" class="field comment-code-cloud">
+		<div id="{{$comment.HashTag}}" class="field comment-code-cloud">
 			<div class="comment-list">
 				<ui class="ui comments">
 					{{template "repo/discussion/file_comment" dict "root" $ "comments" .comments}}

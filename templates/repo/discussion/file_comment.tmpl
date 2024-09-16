@@ -13,6 +13,8 @@
 			</div>
 			<div class="comment-header-right actions tw-flex tw-items-center">
 				{{template "repo/issue/view_content/add_reaction" dict "ActionURL" (printf "%s/comments/%d/reactions" $.root.RepoLink .ID)}}
+				{{template "repo/discussion/context_menu" dict "ctxData" $.root "item" . "delete" true "issue" false "diff" false "IsCommentPoster" (and $.root.IsSigned (eq $.root.SignedUserID .Poster.ID))}}
+
 			</div>
 		</div>
 		<div class="ui attached segment comment-body">
@@ -30,6 +32,7 @@
 		{{$reactions := .Reactions.GroupByType}}
 		{{if $reactions}}
 			{{template "repo/issue/view_content/reactions" dict "ActionURL" (printf "%s/comments/%d/reactions" $.root.RepoLink .ID) "Reactions" $reactions}}
+
 		{{end}}
 	</div>
 </div>

@@ -32,6 +32,7 @@ import {
   validateTextareaNonEmpty,
 } from "../features/comp/ComboMarkdownEditor";
 import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
+import {initDiscussionCommentEventHandler} from "../features/discussion-file-comment";
 
 const { pageData } = window.config;
 
@@ -245,6 +246,8 @@ export default {
       }
     },
 
+    
+
     beginDrag() {
       if (!this.currentDraggedPosition) {
         return;
@@ -300,10 +303,8 @@ export default {
       td.innerHTML = commentText;
       td.setAttribute("colspan", "3");
       placeholder.appendChild(td);
-      await initComboMarkdownEditor(
-          td.querySelector(".combo-markdown-editor"),
-        );
-        await this.initDiscussionFileCommentForm(td.querySelector("form"));
+      await initComboMarkdownEditor(td.querySelector(".combo-markdown-editor"));
+      await this.initDiscussionFileCommentForm(td.querySelector("form"));
       return placeholder;
     },
 
@@ -400,11 +401,10 @@ export default {
         const resp = await GET(
           `${this.repoLink}/discussions/comment/${body.id}`,
         );
-        const commentHolderHTML = await resp.text();
+        const commentHolderText = await resp.text();
 
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = commentHolderHTML;
-        const commentHolder = tempDiv.firstElementChild;
+        const commentHolder = this.convertTextToHTML(commentHolderText)
+        initDiscussionCommentEventHandler(commentHolder)
 
         form
           .closest(".discussion-file-comment-holder")
@@ -452,10 +452,12 @@ export default {
             const td = document.createElement("td");
             td.setAttribute("colspan", "3");
             td.appendChild(commentHolder);
+            initDiscussionCommentEventHandler(commentHolder)
             tr.appendChild(td);
             targetLine.insertAdjacentElement("afterend", tr);
           }
         });
+        
       } catch (e) {
         console.error("Error processing code blocks:", e);
       }

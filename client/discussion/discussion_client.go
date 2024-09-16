@@ -128,7 +128,7 @@ type FileContent struct {
 
 type DiscussionCommentResponse struct {
 	Id          int64                 `json:"id"`
-	PosterId    int64                 `json:"poster_id"`
+	PosterId    int64                 `json:"posterId"`
 	Scope       string                `json:"scope"`
 	StartLine   int64                 `json:"startLine"`
 	EndLine     int64                 `json:"endLine"`
