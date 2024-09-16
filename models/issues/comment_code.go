@@ -211,7 +211,7 @@ func FetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string
 func convertAiPullCommentToComment(ctx context.Context, aiPullComment *AiPullComment, issue *Issue) (*Comment, error) {
 	// AiPullComment를 Comment로 변환
 	comment := &Comment{
-		ID:          -1,
+		ID:          0,
 		PosterID:    -3,
 		IssueID:     aiPullComment.PullID,
 		Content:     aiPullComment.Content,
@@ -268,7 +268,7 @@ func MergeAIComments(allComments, aiComments CodeComments) {
 
 func convertAiSampleCodeToComment(ctx context.Context, aiSampleCode *discussion_model.AiSampleCode, issue *Issue, target_comment *Comment) (*Comment, error) {
 	comment := &Comment{
-		ID:          -1,
+		ID:          -target_comment.ID,
 		PosterID:    -3,
 		IssueID:     aiSampleCode.TargetCommentId,
 		Content:     aiSampleCode.Content,

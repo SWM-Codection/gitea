@@ -210,5 +210,24 @@ func fetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string
 	return &aiPullComment, nil
 }
 
+func GetAiSampleCodeByIdxAndPath(ctx context.Context, idx int64, dataPath string) (*AiPullComment, error) {
+
+	e := db.GetEngine(ctx)
+
+	pullComment := new(AiPullComment)
+
+	has, err := e.Table("ai_pull_comment").Where("pull_id=? AND tree_path = ?", idx, dataPath).Get(pullComment)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AI pull Comment: %w", err)
+	}
+
+	if !has {
+		return nil, nil
+	}
+
+	return pullComment, nil
+}
+
 
 // TODOC repo가 삭제되면 Ai Comment도 삭제하는 로직
