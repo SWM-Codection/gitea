@@ -307,3 +307,24 @@ func DiscussionContent(ctx *context.Context) {
 
 	ctx.JSON(http.StatusOK, discussionContent)
 }
+
+func SetDiscussionClosedState(ctx *context.Context) {
+    discussionId := ctx.ParamsInt64(":discussionId")
+    queryParams := ctx.Req.URL.Query()
+	isClosedStr := queryParams.Get("isClosed")
+    
+    isClosed, err := strconv.ParseBool(isClosedStr)
+    if err != nil {
+        ctx.ServerError("Invalid 'isClosed' parameter", err)
+        return
+    }
+
+    err = discussion_client.SetDiscussionClosedState(discussionId, isClosed)
+    if err != nil {
+        ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+        return
+    }
+
+    ctx.Status(http.StatusNoContent)
+}
+

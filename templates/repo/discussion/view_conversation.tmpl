@@ -70,11 +70,14 @@
                             "TextAreaPlaceHolder" (ctx.Locale.Tr "repo.discussion.comment.placeholder")
                             "DropzoneParentContainer" "form, .ui.form"
                         )}}
-                    </div>
-
+                    </div>issues.reopen_issue
+                    {{$statusButtonColor := "red"}}
+                    {{if .Discussion.IsClosed}}{{$statusButtonColor = "green"}}{{end}}
+                    {{$statusButtonText := "repo.discussion.close"}}
+                    {{if .Discussion.IsClosed}}{{$statusButtonText = "repo.issues.reopen_issue"}}{{end}}
                     <div class="field footer">
                         <div class="text right">
-                            <!-- <button id="status-button" class="ui red basic button">{{ctx.Locale.Tr "repo.discussion.close"}}</button> -->
+                            <button id="discussion-status-button" class="ui {{$statusButtonColor}} basic button">{{ctx.Locale.Tr $statusButtonText}}</button>
                             <button class="ui primary button">{{ctx.Locale.Tr "repo.discussion.create_comment"}}</button>
                         </div>
                     </div>
