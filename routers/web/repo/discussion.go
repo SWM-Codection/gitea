@@ -139,8 +139,8 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("error on discussion content response: err = %v", err)
 	}
 
-	log.Info("discussion content response : %v", discussionContentResponse)
-	log.Info("discussion response : %v", discussionResponse)
+	// log.Info("discussion content response : %v", discussionContentResponse)
+	// log.Info("discussion response : %v", discussionResponse)
 
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
@@ -313,6 +313,8 @@ func DiscussionContent(ctx *context.Context) {
 	ctx.JSON(http.StatusOK, discussionContent)
 }
 
+
+
 func SetDiscussionClosedState(ctx *context.Context) {
     discussionId := ctx.ParamsInt64(":discussionId")
     queryParams := ctx.Req.URL.Query()
@@ -330,6 +332,6 @@ func SetDiscussionClosedState(ctx *context.Context) {
         return
     }
 
-    ctx.Status(http.StatusNoContent)
+    ctx.Status(http.StatusOK)
 }
 

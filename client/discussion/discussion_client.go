@@ -324,7 +324,9 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 }
 
 func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
-    resp, err := client.Request().Patch(fmt.Sprintf("/state/%d?isClosed=%t", discussionId, isClosed))
+	println("discussion ", discussionId)
+	println("isClosed ", isClosed)
+    resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
     if err != nil {
         return err
     }
