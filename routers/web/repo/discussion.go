@@ -121,6 +121,11 @@ func ViewDiscussion(ctx *context.Context) {
 	if err != nil {
 		ctx.ServerError("error on discussion response: err = %v", err)
 	}
+	// valid dicussion id must bigger than 0
+	if discussionResponse.Id == 0 {
+		ctx.NotFound("discussion not exists", fmt.Errorf("discussion with %v does not exist", discussionResponse.Id))
+		return
+	}
 	log.Info("poster id is %v", discussionResponse.PosterId)
 	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
 	if err != nil {
