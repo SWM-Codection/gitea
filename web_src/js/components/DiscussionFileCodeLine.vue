@@ -17,8 +17,7 @@
         <SvgIcon name="octicon-plus" />
       </button>
     </td>
-    <td class="lines-code chroma">
-      {{ line.content }}
+    <td class="lines-code chroma"  style="white-space: pre-wrap;" v-html="line.content">
     </td>
   </tr>
 </template>
