@@ -7,11 +7,12 @@
         <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
             <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between" role="heading">
                 <div class="comment-header-left tw-flex tw-items-center">
-                    <a class="inline-timeline-avatar" href="#">discussion author's avatar</a>
                     <span class="text-grey muted-linkes">
-                        <a class="author text black tw-font-semibold muted" href="#">
-                            commented locale string on here
-                        </a>
+                        {{$hashTag := printf "discussion-%d" .Discussion.Id }}
+                        {{$createdStr:= TimeSinceUnix .Discussion.CreatedUnix ctx.Locale}}
+
+                        {{template "shared/user/authorlink" .Discussion.Poster}}
+                        {{ctx.Locale.Tr "repo.issues.commented_at" $hashTag $createdStr}}
                     </span>
                 </div>
                 <div class="comment-header-right actions tw-flex tw-items-center"></div>
@@ -21,7 +22,9 @@
                     {{if .Discussion.Content }}
                         {{.Discussion.Content}}
                     {{ else }}
-                        no description provided in locale string...
+                        <span style="font-style: italic; color: #5b6167; font-size: 14px;">  
+                            {{ctx.Locale.Tr "repo.issues.no_content"}}
+                        </span>
                     {{end}}
                 </div>
             </div>
