@@ -23,6 +23,11 @@ type DiscussionCode struct {
 	EndLine   int    `json:"endLine"`
 }
 
+type DeleteDiscussionCommentRequest struct {
+	PosterId            int64 `json:"posterId"`
+	DiscussionCommentId int64 `json:"discussionCommentId"`
+}
+
 type PostDiscussionRequest struct {
 	RepoId     int64            `json:"repoId"`
 	Poster     *user_model.User `json:"-"`
@@ -123,7 +128,7 @@ type FileContent struct {
 
 type DiscussionCommentResponse struct {
 	Id          int64                 `json:"id"`
-	PosterId    int64                 `json:"poster_id"`
+	PosterId    int64                 `json:"posterId"`
 	Scope       string                `json:"scope"`
 	StartLine   int64                 `json:"startLine"`
 	EndLine     int64                 `json:"endLine"`
@@ -323,17 +328,30 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 	return result, nil
 }
 
+
 func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
-	println("discussion ", discussionId)
-	println("isClosed ", isClosed)
-    resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
-    if err != nil {
-        return err
-    }
+  resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
+  if err != nil {
+      return err
+  }
 
-    if resp.StatusCode() != 204 {
-        return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
-    }
+  if resp.StatusCode() != 204 {
+      return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
+  }
 
-    return nil
+  return nil
+}
+
+func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
+	request := &DeleteDiscussionCommentRequest{
+		DiscussionCommentId: discussionCommentId,
+		PosterId:            posterId}
+	_, err := client.Request().SetBody(request).Delete("/discussion/comment")
+
+	if err != nil {
+		log.Error("DeleteDiscussionComment failed: %s", err.Error())
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }

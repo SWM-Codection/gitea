@@ -1,7 +1,10 @@
 package discussion
 
 import (
+	"fmt"
 	"strconv"
+
+	"code.gitea.io/gitea/modules/highlight"
 
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/services/context"
@@ -45,14 +48,62 @@ func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListR
 	return discussionListResponse, nil
 }
 
-func GetDiscussionContent(ctx *context.Context, discussionId int64) (*discussion_client.DiscussionContentResponse, error) {
-
-	content, err := discussion_client.GetDiscussionContent(discussionId)
-
+func GetDiscussionContent(discussionID int64) (*discussion_client.DiscussionContentResponse, error) {
+	contents, err := discussion_client.GetDiscussionContents(discussionID)
 	if err != nil {
-		log.Error("discussion_client.GetDiscussionContent failed: %v", err.Error())
 		return nil, err
 	}
 
-	return content, nil
+	return contents, nil
+}
+
+func GetDiscussionContentWithHighlights(discussionID int64) (*discussion_client.DiscussionContentResponse, error) {
+	contents, err := discussion_client.GetDiscussionContents(discussionID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = highlightContents(contents)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return contents, nil
+
+}
+
+func highlightContents(contents *discussion_client.DiscussionContentResponse) error {
+	for i := range contents.Contents {
+		if err := highlightContent(&contents.Contents[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func highlightContent(content *discussion_client.FileContent) error {
+	for i, block := range content.CodeBlocks {
+		for j, line := range block.Lines {
+			html, _, err := highlight.File(content.FilePath, "", []byte(line.Content))
+			if err != nil {
+				return fmt.Errorf("failed to highlight line %d in block %d: %w", j, i, err)
+			}
+			if len(html) == 0 {
+				continue
+			}
+
+			content.CodeBlocks[i].Lines[j].Content = string(html[0])
+		}
+	}
+	return nil
+}
+
+func DeleteDiscussionComment(ctx *context.Context, discussionId int64, posterId int64) error {
+
+	if err := discussion_client.DeleteDiscussionComment(discussionId, posterId); err != nil {
+		return err
+	}
+
+	return nil
 }

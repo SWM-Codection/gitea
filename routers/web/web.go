@@ -1230,6 +1230,8 @@ func registerRoutes(m *web.Route) {
 			})
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
+				m.Delete("/comment", repo.DeleteDiscussionFileComment)
+
 
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
