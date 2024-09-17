@@ -322,8 +322,8 @@ func DiscussionContent(ctx *context.Context) {
 }
 
 func SetDiscussionClosedState(ctx *context.Context) {
-  discussionId := ctx.ParamsInt64(":discussionId")
-  queryParams := ctx.Req.URL.Query()
+	discussionId := ctx.ParamsInt64(":discussionId")
+	queryParams := ctx.Req.URL.Query()
 	isClosedStr := queryParams.Get("isClosed")
 
     isClosed, err := strconv.ParseBool(isClosedStr)

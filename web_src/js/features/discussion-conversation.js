@@ -2,9 +2,9 @@ import {PATCH} from '../modules/fetch.js';
 
 export function initDiscussionStatusButton() {
   const discussionStatusButton = document.querySelector('#discussion-status-button');
-  const mutedLink = document.querySelector('a[class="muted"]').getAttribute('href');
 
   if (!discussionStatusButton) return;
+  const mutedLink = document.querySelector('a[class="muted"]').getAttribute('href');
 
   discussionStatusButton.addEventListener('click', async (e) => {
     e.preventDefault();
