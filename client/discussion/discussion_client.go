@@ -341,3 +341,7 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 
 	return nil
 }
+
+func (dr DiscussionResponse) IsPoster(id int64) bool {
+	return dr.PosterId == id
+}

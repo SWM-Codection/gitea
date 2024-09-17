@@ -6,7 +6,13 @@ import (
 	"net/http"
 	"strconv"
 
+	stdCtx "context"
+
 	discussion_client "code.gitea.io/gitea/client/discussion"
+	issues_model "code.gitea.io/gitea/models/issues"
+	"code.gitea.io/gitea/models/organization"
+	access_model "code.gitea.io/gitea/models/perm/access"
+	repo_model "code.gitea.io/gitea/models/repo"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
@@ -126,27 +132,27 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.NotFound("discussion not exists", fmt.Errorf("discussion with %v does not exist", discussionResponse.Id))
 		return
 	}
-	log.Info("poster id is %v", discussionResponse.PosterId)
 	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
 	if err != nil {
 		ctx.ServerError("errro on get user by id: err = %v", err)
 	}
 	discussionResponse.Poster = poster
-
 	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
-
 	if err != nil {
 		ctx.ServerError("error on discussion content response: err = %v", err)
+		return
 	}
-
-	log.Info("discussion response : %v", discussionResponse)
-
+	rd, err := discussionRoleDescriptor(ctx, ctx.Repo.Repository, discussionResponse.Poster, discussionResponse)
+	if err != nil {
+		ctx.ServerError("error on retreiving discussion role descriptor, %v", err)
+		return
+	}
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionTab"] = "conversation"
-
+	ctx.Data["DiscussionRoleDescriptor"] = rd
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -204,12 +210,10 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 	}
 	if id == nil {
 		// XXX check reachability later
-		// maybe unreachable..
 		ctx.JSONError("hmm something weird..")
+		return
 	}
-	ctx.JSON(http.StatusOK, map[string]int64{
-		"id": *id,
-	})
+	ctx.JSON(http.StatusOK, map[string]int64{"id": *id})
 
 }
 
@@ -332,4 +336,46 @@ func DeleteDiscussionFileComment(ctx *context.Context) {
 
 	ctx.JSONOK()
 
+}
+
+func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, poster *user_model.User, discussionResponse *discussion_client.DiscussionResponse) (issues_model.RoleDescriptor, error) {
+	roleDescriptor := issues_model.RoleDescriptor{}
+	roleDescriptor.IsPoster = discussionResponse.IsPoster(poster.ID)
+
+	perm, err := access_model.GetUserRepoPermission(ctx, repo, poster)
+	if err != nil {
+		return roleDescriptor, err
+	}
+
+	// set owner
+	if perm.IsOwner() {
+		roleDescriptor.RoleInRepo = issues_model.RoleRepoOwner
+	}
+	// set org member
+	if repo.Owner.IsOrganization() {
+		isMember, err := organization.IsOrganizationMember(ctx, repo.OwnerID, poster.ID)
+		if err != nil {
+			return roleDescriptor, err
+		}
+		if isMember {
+			roleDescriptor.RoleInRepo = issues_model.RoleRepoMember
+		}
+	}
+	// set collaborator
+	isCollaborator, err := repo_model.IsCollaborator(ctx, repo.ID, poster.ID)
+	if err != nil {
+		return roleDescriptor, err
+	}
+	if isCollaborator {
+		roleDescriptor.RoleInRepo = issues_model.RoleRepoCollaborator
+	}
+	// set contributor
+	hasMergedPr, err := issues_model.HasMergedPullRequestInRepo(ctx, repo.ID, poster.ID)
+	if err != nil {
+		return roleDescriptor, err
+	}
+	if hasMergedPr {
+		roleDescriptor.RoleInRepo = issues_model.RoleRepoContributor
+	}
+	return roleDescriptor, nil
 }
