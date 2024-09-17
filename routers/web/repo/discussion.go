@@ -248,7 +248,16 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 
 	if err != nil {
 		ctx.ServerError("failed to fetch comment: %v", err)
+		return
 	}
+
+	poster, err := user_model.GetUserByID(ctx, comment.PosterId)
+
+	if err != nil {
+		ctx.ServerError("failed to fetch user data: %v", err)
+		return
+	}
+
 	// TODO: 답글 기능 고려해서 넣기
 	comments := make([]*DiscussionComment, 0, 1)
 
@@ -258,7 +267,7 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 		EndLine:     comment.EndLine,
 		CreatedUnix: comment.CreatedUnix,
 		Reactions:   comment.Reactions,
-		Poster:      ctx.Doer,
+		Poster:      poster,
 		Content:     comment.Content,
 	}
 	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
@@ -311,4 +320,20 @@ func DiscussionContent(ctx *context.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, discussionContent)
+}
+
+func DeleteDiscussionFileComment(ctx *context.Context) {
+	posterId := ctx.Doer.ID
+	
+    discussionCommentId := ctx.ParamsInt64(":discussionId")
+	
+	err := discussion_service.DeleteDiscussionComment(ctx, discussionCommentId, posterId)
+
+	if err != nil {
+		log.Error(err.Error())
+		ctx.JSONError(err.Error())
+	}
+
+	ctx.JSONOK()
+
 }

@@ -56,3 +56,12 @@ func GetDiscussionContent(ctx *context.Context, discussionId int64) (*discussion
 
 	return content, nil
 }
+
+func DeleteDiscussionComment(ctx *context.Context, discussionId int64, posterId int64) error {
+
+	if err := discussion_client.DeleteDiscussionComment(discussionId, posterId); err != nil {
+		return err
+	}
+
+	return nil
+}
