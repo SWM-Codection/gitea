@@ -2,9 +2,8 @@ import {POST} from '../modules/fetch.js';
 
 async function fetchAiSampleCodes(data, aiCodeContainers) {
   try {
-    // 로딩 애니메이션을 표시
+    // 로딩 애니메이션 표시
     const loadingImage = document.querySelector('.loading-overlay');
-    console.log(loadingImage);
     if (loadingImage) {
       loadingImage.classList.remove('tw-hidden');
     }
@@ -12,6 +11,12 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
     const response = await POST('/ai/discussion/samples', {data});
 
     if (!response.ok) {
+      const result = await response.json();
+      if (result.message && result.message.includes('already Ai comment')) {
+        loadingImage.classList.add('tw-hidden');
+        alert('이미 샘플 코멘트가 존재합니다');
+        return;
+      }
       throw new Error('Failed to fetch AI sample codes');
     }
 
@@ -22,7 +27,7 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
       for (const [index, sampleCodeObj] of result.entries()) {
         if (aiCodeContainers[index]) {
           // sample_code에 하이라이트된 HTML이 포함되므로, innerHTML로 설정
-          aiCodeContainers[index].innerHTML = sampleCodeObj.sample_code;  // 하이라이트된 sample_code 값 설정
+          aiCodeContainers[index].innerHTML = `<pre><code>${sampleCodeObj.sample_code}</code></pre>`;
         }
       }
     } else {
