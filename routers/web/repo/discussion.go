@@ -139,7 +139,6 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("error on discussion content response: err = %v", err)
 	}
 
-	log.Info("discussion content response : %v", discussionContentResponse)
 	log.Info("discussion response : %v", discussionResponse)
 
 	ctx.Data["DiscussionContent"] = discussionContentResponse
@@ -158,7 +157,6 @@ func ViewDiscussionFiles(ctx *context.Context) {
 	if err != nil {
 		ctx.ServerError("error on discussion response: err = %v", err)
 	}
-	log.Info("poster id is %v", discussionResponse.PosterId)
 	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
 	if err != nil {
 		ctx.ServerError("errro on get user by id: err = %v", err)
@@ -284,7 +282,6 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	comments = append(comments, newComment)
 	ctx.Data["comments"] = comments
 
-
 	ctx.HTML(http.StatusOK, tplDiscussionFileComments)
 
 }
@@ -323,9 +320,9 @@ func DiscussionContent(ctx *context.Context) {
 
 func DeleteDiscussionFileComment(ctx *context.Context) {
 	posterId := ctx.Doer.ID
-	
-    discussionCommentId := ctx.ParamsInt64(":discussionId")
-	
+
+	discussionCommentId := ctx.ParamsInt64(":discussionId")
+
 	err := discussion_service.DeleteDiscussionComment(ctx, discussionCommentId, posterId)
 
 	if err != nil {
