@@ -1,16 +1,44 @@
+<template>
+  <div
+    class="file-header ui top attached header tw-items-center tw-justify-between tw-flex-wrap"
+    style="position: sticky; top: 0; z-index: 999"
+  >
+    <div class="file-info tw-font-mono">
+      <div :id="`discussion-${content.NameHash}`" class="file-info-entry">
+        {{ content.Name }}
+      </div>
+    </div>
+  </div>
+  <div class="ui bottom attached table unstackable segment">
+    <div class="file-view code-view" style="display: flex">
+      <table :id="content.Name" ref="codeTable" class="discussion-file-table">
+        <tbody v-for="codeBlock in content.codeBlocks" :key="codeBlock.codeId">
+          <DiscussionFileCodeLine
+          :lines="codeBlock.lines"
+          :codeId="codeBlock.codeId"
+          @show-comment-form="showCommentForm"
+          @handle-mouse-down="handleMouseDown"
+          />
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
 <script>
-import { SvgIcon } from "../svg";
-import { GET, POST} from "../modules/fetch";
+
+import { GET, POST } from "../modules/fetch";
 import {
   initComboMarkdownEditor,
   validateTextareaNonEmpty,
 } from "../features/comp/ComboMarkdownEditor";
-import { discussionResponseDummy } from "../modules/stores";
+import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
 
 const { pageData } = window.config;
 
 export default {
-  components: { SvgIcon },
+  components: {  DiscussionFileCodeLine },
+
   props: {
     content: {
       type: Object,
@@ -31,77 +59,56 @@ export default {
   },
 
   async mounted() {
-      await this.fetchDiscussionComment()
-    },
+    await this.fetchDiscussionComments();
+  },
+
   methods: {
     isFileSelecting(fileElement) {
-      discussionResponseDummy;
-      return fileElement
-        .closest(".discussion-file-table")
-        ?.classList.contains("is-selecting");
+      const table = fileElement.closest(".discussion-file-table");
+      return table ? table.classList.contains("is-selecting") : false;
     },
 
     setSelection(target, canExpand) {
-      const targetLineData = target.id.split("-");
+      const {codeId, lineNumber} = this.extractDataFromLine(target)
 
-      if (canExpand) {
-        const codeId = targetLineData[1];
-        const endLineNumber = targetLineData[2];
+      if (canExpand && this.currentDraggedRange && this.currentDraggedRange.codeId === codeId) {
 
-        if (
-          this.currentDraggedRange &&
-          this.currentDraggedRange.codeId === codeId
-        ) {
-          if (
-            codeId === this.currentDraggedRange.codeId &&
-            endLineNumber < this.currentDraggedRange.startPosition.lineNumber
-          ) {
-            return;
-          }
-
-          const expandedRange = this.createCodeLineRange(
-            codeId,
-            this.currentDraggedRange.startPosition,
-            this.createCodePosition(codeId, endLineNumber),
-          );
-
-          this.showMultiLineCommentForm = () => {
-            const button = target
-              .closest("tr")
-              ?.querySelector(".add-code-comment");
-            if (button && expandedRange) {
-              button.click();
-            }
-          };
-          this.displayHighlight(expandedRange);
+        if (lineNumber < this.currentDraggedRange.startPosition.lineNumber) {
+          return;
         }
-      } else {
-        const codeId = targetLineData[1];
-        const endLineNumber = targetLineData[2];
+
         const expandedRange = this.createCodeLineRange(
           codeId,
-          this.createCodePosition(codeId, endLineNumber),
-          this.createCodePosition(codeId, endLineNumber),
+          this.currentDraggedRange.startPosition,
+          this.createCodePosition(codeId, lineNumber)
         );
+
+        this.showMultiLineCommentForm = () => {
+          const button = target.closest("tr")?.querySelector(".add-code-comment");
+          if (button) {
+            button.click();
+          }
+        };
+        this.displayHighlight(expandedRange);
+      } else {
+        const position = this.createCodePosition(codeId, lineNumber);
+        const expandedRange = this.createCodeLineRange(codeId, position, position);
         this.displayHighlight(expandedRange);
       }
     },
 
     createCodeLineRange(codeId, startPosition, endPosition) {
       return {
-        startPosition: startPosition,
-        endPosition: endPosition,
-        codeId: codeId,
+        codeId,
+        startPosition,
+        endPosition,
         elements: () => {
           const startLine = Number(startPosition.lineNumber);
           const endLine = Number(endPosition.lineNumber);
-
           const lineElements = new Set();
 
           for (let i = startLine; i <= endLine; i++) {
-            const lineElement = this.$refs.codeTable.querySelector(
-              `#line-${codeId}-${i}`,
-            );
+            const lineElement = this.$refs.codeTable.querySelector(`#line-${codeId}-${i}`);
             if (lineElement) {
               lineElements.add(lineElement);
             }
@@ -113,25 +120,17 @@ export default {
     },
 
     createCodePosition(codeId, lineNumber) {
-      return {
-        codeId: codeId,
-        lineNumber: lineNumber,
-      };
+      return { codeId, lineNumber: Number(lineNumber) };
     },
 
-    displayHighlight(expandedRange) {
+    displayHighlight(range) {
       if (this.currentDraggedRange) {
         for (const el of this.currentDraggedRange.elements()) {
           el.classList.remove("selected-line");
         }
-        this.currentDraggedRange = null;
       }
 
-      this.currentDraggedRange = this.createCodeLineRange(
-        expandedRange.codeId,
-        expandedRange.startPosition,
-        expandedRange.endPosition,
-      );
+      this.currentDraggedRange = range;
 
       for (const el of this.currentDraggedRange.elements()) {
         el.classList.add("selected-line");
@@ -139,27 +138,23 @@ export default {
     },
 
     removeHighlight() {
-      const dummyRange = this.createCodeLineRange(
-        "0",
-        this.createCodePosition("0", "0"),
-        this.createCodePosition("0", "0"),
-      );
-      this.displayHighlight(dummyRange);
+      if (this.currentDraggedRange) {
+        for (const el of this.currentDraggedRange.elements()) {
+          el.classList.remove("selected-line");
+        }
+        this.currentDraggedRange = null;
+      }
     },
 
     handleMouseDown(event) {
-      if (!(event instanceof MouseEvent)) {
-        return;
-      }
-
-      if (event.button !== 0) {
+      if (!(event instanceof MouseEvent) || event.button !== 0) {
         return;
       }
 
       const targetElement = event.currentTarget;
-      const lineNumber = this.prevLinkableLine(targetElement.parentElement);
+      const lineNumberElement = this.prevLinkableLine(targetElement.parentElement);
 
-      if (!lineNumber) {
+      if (!lineNumberElement) {
         return;
       }
 
@@ -169,59 +164,48 @@ export default {
       }
 
       this.addCommentDragSelectionEvent(table);
-      this.currentDraggedPosition = lineNumber;
+      this.currentDraggedPosition = lineNumberElement;
       this.isDraggingForComment = true;
 
-      targetElement?.addEventListener(
-        "mouseup",
-        () => {
-          this.removeCommentDragSelectionEvent(table);
-          this.currentDraggedPosition = null;
-          this.isDraggingForComment = false;
-        },
-        { once: true },
-      );
+      const mouseUpHandler = () => {
+        this.removeCommentDragSelectionEvent(table);
+        this.currentDraggedPosition = null;
+        this.isDraggingForComment = false;
+      };
 
-      if (
-        this.currentDraggedRange &&
-        this.currentDraggedRange.elements.size > 1
-      ) {
+      targetElement.addEventListener("mouseup", mouseUpHandler, { once: true });
+
+      if (this.currentDraggedRange && this.currentDraggedRange.elements().size > 1) {
         event.preventDefault();
       }
     },
 
     commentDragSelectionIfMouseEnterToCode(codeElement) {
-      const target = prevLinkableLine(codeElement);
-
-      if (!target || !isFileSelecting(codeElement)) {
+      const target = this.prevLinkableLine(codeElement);
+      if (!target || !this.isFileSelecting(codeElement)) {
         return;
       }
-
       this.setSelection(target, true);
     },
 
     commentDragSelectionIfMouseEnterToLineNumber(lineNumberElement) {
       this.setSelection(lineNumberElement, true);
     },
+
     addCommentDragSelectionEvent(table) {
-      table.addEventListener("mouseenter", this.handleDragMouseEvent, {
-        capture: true,
-      });
+      table.addEventListener("mouseenter", this.handleDragMouseEvent, { capture: true });
     },
 
     removeCommentDragSelectionEvent(table) {
       this.isDraggingForComment = false;
-      table.removeEventListener("mouseenter", this.handleDragMouseEvent, {
-        capture: true,
-      });
+      table.removeEventListener("mouseenter", this.handleDragMouseEvent, { capture: true });
       setTimeout(() => {
-        document.addEventListener("click", this.handleClick, { once: true });
+        document.addEventListener("click", this.handleClickOutside, { once: true });
       }, 0);
     },
 
     handleDragMouseEvent(event) {
       const target = event.target.closest("tr");
-
       if (!(target instanceof Element)) {
         return;
       }
@@ -233,9 +217,9 @@ export default {
       const linesNum = target.querySelector(".lines-num");
       const linesCode = target.querySelector(".lines-code");
 
-      if (linesNum && linesNum?.classList.contains("lines-num")) {
+      if (linesNum && linesNum.classList.contains("lines-num")) {
         this.commentDragSelectionIfMouseEnterToLineNumber(linesNum);
-      } else if (linesCode && linesCode?.classList.contains("lines-code")) {
+      } else if (linesCode && linesCode.classList.contains("lines-code")) {
         this.commentDragSelectionIfMouseEnterToCode(linesCode);
       }
     },
@@ -250,277 +234,203 @@ export default {
       table.classList.add("is-selecting");
       this.currentDraggedPosition = null;
 
-      document.addEventListener("mouseup", (event) => {
+      const mouseUpHandler = (event) => {
         table.classList.remove("is-selecting", "is-commenting");
-        this.showMultiLineCommentForm && this.showMultiLineCommentForm();
-        this.showMultiLineCommentForm = null;
+        if (this.showMultiLineCommentForm) {
+          this.showMultiLineCommentForm();
+          this.showMultiLineCommentForm = null;
+        }
         this.removeCommentDragSelectionEvent(table);
         event.preventDefault();
-      });
+      };
+
+      document.addEventListener("mouseup", mouseUpHandler, { once: true });
     },
 
     prevLinkableLine(element) {
       if (element.classList.contains("lines-num")) {
         return element;
       }
-
-      const previousElementSibling = element.previousElementSibling;
-      if (previousElementSibling) {
-        return this.prevLinkableLine(previousElementSibling);
-      }
-
-      return null;
+      const prevSibling = element.previousElementSibling;
+      return prevSibling ? this.prevLinkableLine(prevSibling) : null;
     },
 
-    handleClick(event) {
-
+    handleClickOutside(event) {
       if (!this.currentDraggedRange) {
         return;
       }
-
       const target = event.target;
-      if (target?.closest(".discussion-file-table")) {
+      if (target.closest(".discussion-file-table")) {
         return;
       }
-
       this.removeHighlight();
     },
 
+    extractDataFromLine(line) {
+      const targetProperties = line.id.split("-");
+      const codeId = targetProperties[1];
+      const lineNumber = targetProperties[2];
+      return {codeId, lineNumber}
+    },
+
     
+    createCommentPlaceHolder(commentText) {
+      const placeholder = document.createElement("tr");
+      const td = document.createElement("td");
+        td.innerHTML = commentText;
+        td.setAttribute("colspan", "3");
+        placeholder.appendChild(td);
+      return placeholder
+    },
 
     async showCommentForm(event) {
-
-      if (this.isDraggingForComment == false) {
-        const line = event.target.closest("tr")
-        const targetProperties = line.id.split("-")
-        const codeId = targetProperties[1]
-        const codeLinePosition = this.createCodePosition(codeId, targetProperties[2]) 
-        this.currentDraggedRange = this.createCodeLineRange(codeId, codeLinePosition, codeLinePosition)
+      if (!this.isDraggingForComment) {
+        const line = event.target.closest("tr");
+        
+        const {codeId, lineNumber} = this.extractDataFromLine(line)
+        
+        const codeLinePosition = this.createCodePosition(codeId, lineNumber);
+        this.currentDraggedRange = this.createCodeLineRange(codeId, codeLinePosition, codeLinePosition);
       }
 
-      const draggedRange = this.currentDraggedRange;
-
+      const { codeId, startPosition, endPosition } = this.currentDraggedRange;
       const queryParams = {
         discussionId: this.discussionId,
-        codeId: draggedRange.codeId,
-        startLine: draggedRange.startPosition.lineNumber,
-        endLine: draggedRange.endPosition.lineNumber,
+        codeId,
+        startLine: startPosition.lineNumber,
+        endLine: endPosition.lineNumber,
       };
 
-      let requestURL = new URL(`${this.repoLink}/discussions/comment`);
-
-      for (const [key, value] of Object.entries(queryParams)) {
+      const requestURL = new URL(`${this.repoLink}/discussions/comment`);
+      Object.entries(queryParams).forEach(([key, value]) => {
         requestURL.searchParams.set(key, value);
-      }
+      });
 
       try {
-        let response;
-
-        response = await GET(requestURL.toString());
-
-        if (response.ok) {
-          const body = await response.text();
-          console.log(body);
-
-          const placeholder = document.createElement("tr");
-          const td = document.createElement("td");
-          td.innerHTML = body;
-          td.setAttribute("colspan", "3");
-          placeholder.appendChild(td);
-
-          const targetLine = event.target.closest("tr");
-          targetLine.insertAdjacentElement("afterend", placeholder);
-
-          await initComboMarkdownEditor(
-            td.querySelector(".combo-markdown-editor"),
-          );
-          // TODO: 폼 등록
-          await this.initDiscussionFileCommentForm(td.querySelector("form"));
-
-          placeholder.addEventListener("click", this.removeCommentForm, {
-            capture: true,
-          });
-        } else {
+        const response = await GET(requestURL.toString());
+        if (!response.ok) {
           this.errorText = response.statusText;
+          return;
         }
+        const body = await response.text();
+
+        const placeholder = this.createCommentPlaceHolder(body)
+
+        const targetLine = event.target.closest("tr");
+        targetLine.insertAdjacentElement("afterend", placeholder);
+
+        await initComboMarkdownEditor(td.querySelector(".combo-markdown-editor"));
+        await this.initDiscussionFileCommentForm(td.querySelector("form"));
+
+        placeholder.addEventListener("click", this.removeCommentForm, { capture: true });
       } catch (err) {
         this.errorText = err.message;
-      } finally {
-        if (this.errorText) console.log(this.errorText);
-        // 에러 메시지 표시 관련 로직 추가
+        console.error(this.errorText);
       }
     },
 
-    removeCommentForm: (event) => {
-      if (
-        event.target &&
-        event.target.classList.contains("cancel-code-comment")
-      ) {
+    removeCommentForm(event) {
+      if (event.target && event.target.classList.contains("cancel-code-comment")) {
         const commentForm = event.target.closest("tr");
-        if (!commentForm) {
-          return;
+        if (commentForm) {
+          commentForm.remove();
         }
-        commentForm.remove();
       }
     },
 
     async submitDiscussionFileCommentForm(event) {
-      if (!event.target) {
-        return;
-      }
       event.preventDefault();
-
       const form = event.target;
+
       const textarea = form.querySelector("textarea");
       if (!validateTextareaNonEmpty(textarea)) {
         return;
       }
-      if (form.classList.contains("is-loading")) return;
+
+      if (form.classList.contains("is-loading")) {
+        return;
+      }
+
       try {
         form.classList.add("is-loading");
-        const formData = new FormData();
-        formData.append(textarea.name, textarea.value);
+        const formData = new FormData(form);
 
-        // Add any other form fields if present
-        form.querySelectorAll("input").forEach((input) => {
-          if (input.name) {
-            formData.append(input.name, input.value);
-          }
-        });
         const response = await POST(
           `${this.repoLink}/discussions/${this.discussionId}/comment`,
-          { data: formData },
+          { data: formData }
         );
 
         if (!response.ok) {
+          this.errorText = response.statusText;
           return;
         }
+
         const body = await response.json();
 
-        const resp = await GET(
-          `${this.repoLink}/discussions/comment/${body.id}`,
-        );
+        const resp = await GET(`${this.repoLink}/discussions/comment/${body.id}`);
         const commentHolderHTML = await resp.text();
 
         const tempDiv = document.createElement("div");
         tempDiv.innerHTML = commentHolderHTML;
         const commentHolder = tempDiv.firstElementChild;
 
-        form
-          .closest(".discussion-file-comment-holder")
-          .replaceWith(commentHolder);
+        form.closest(".discussion-file-comment-holder").replaceWith(commentHolder);
       } catch (e) {
-        console.log(e.errorText);
+        this.errorText = e.message;
+        console.error(this.errorText);
       } finally {
         form.classList.remove("is-loading");
       }
     },
 
-    async fetchDiscussionComment() {
-      const codeBlocks = this.content.codeBlocks;
+    convertTextToHTML(text) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = text
+      return tempDiv.firstElementChild
+    },
 
+    async fetchDiscussionComments() {
       try {
-        const allHtmlTexts = await Promise.all(
-          codeBlocks.map(async (codeBlock) => {
-            const comments = codeBlock.comments;
-            const codeId = codeBlock.codeId;
+        const codeBlocks = this.content.codeBlocks;
+        const commentPromises = codeBlocks.flatMap((codeBlock) => {
+          const { codeId, comments } = codeBlock;
+          return comments.map(async (comment) => {
+            const response = await GET(`${this.repoLink}/discussions/comment/${comment.id}`);
+            const result = await response.text();
 
-            const htmlTexts = await Promise.all(
-              comments.map(async (comment) => {
-                const response = await GET(
-                  `${this.repoLink}/discussions/comment/${comment.id}`,
-                );
-                const result = await response.text();
+            const commentHolder = this.convertTextToHTML(result)
 
-                const tempDiv = document.createElement("div");
-                tempDiv.innerHTML = result;
-                const commentHolder = tempDiv.firstElementChild;
+            return { comment, commentHolder, codeId };
+          });
+        });
 
-                return { comment, commentHolder, codeId };
-              }),
-            );
+        const allComments = await Promise.all(commentPromises);
 
-            return htmlTexts;
-          }),
-        );
-
-        allHtmlTexts.flat().forEach(({ comment, commentHolder, codeId }) => {
-          const targetLine = this.$refs.codeTable.querySelector(
-            `#line-${codeId}-${comment.endLine}`,
-          );
+        allComments.forEach(({ comment, commentHolder, codeId }) => {
+          const targetLine = this.$refs.codeTable.querySelector(`#line-${codeId}-${comment.endLine}`);
 
           if (targetLine) {
-            const tr = document.createElement("tr")
-            const td = document.createElement("td")
-            td.setAttribute("colspan", "3")
-            td.appendChild(commentHolder) 
-            tr.appendChild(td)
-            targetLine.insertAdjacentElement('afterend', tr);
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.setAttribute("colspan", "3");
+            td.appendChild(commentHolder);
+            tr.appendChild(td);
+            targetLine.insertAdjacentElement("afterend", tr);
           }
         });
       } catch (e) {
         console.error("Error processing code blocks:", e);
       }
-
     },
 
     async initDiscussionFileCommentForm(form) {
       form.addEventListener("submit", this.submitDiscussionFileCommentForm);
     },
-
   },
 };
 </script>
 
-<template>
-  <div
-    class="file-header ui top attached header tw-items-center tw-justify-between tw-flex-wrap"
-    style="position: sticky; top: 0; z-index: 999"
-  >
-    <div class="file-info tw-font-mono">
-      <div :id="`discussion-${content.NameHash}`" class="file-info-entry">
-        {{ content.Name }}
-      </div>
-    </div>
-  </div>
-  <div class="ui bottom attached table unstackable segment">
-    <div class="file-view code-view" style="display: flex">
-      <table :id="content.Name" ref="codeTable" class="discussion-file-table">
-        <tbody v-for="codeBlock in content.codeBlocks">
-          <tr
-            v-for="line in codeBlock.lines"
-            :id="`line-${codeBlock.codeId}-${line.lineNumber}`"
-            class="code-line"
-            :key="`${codeBlock.codeId}-${line.lineNumber}`"
-          >
-            <td
-              class="lines-num"
-              :id="`num-${codeBlock.codeId}-${line.lineNumber}`"
-            >
-              {{ line.lineNumber }}
-            </td>
-            <td>
-              <button
-                @mousedown="handleMouseDown"
-                @click="showCommentForm"
-                class="ui primary button add-code-comment add-code-comment-right"
-              >
-                <SvgIcon name="octicon-plus" />
-              </button>
-            </td>
-            <td class="lines-code chroma">
-              {{ line.content }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</template>
-
 <style scoped>
-
-
 .selected-line {
   background-color: #f5f5dc;
 }
