@@ -61,8 +61,6 @@ async function saveAiSampleCode(data, aiCodeModal) {
       throw new Error('Failed to save AI sample codes');
     }
 
-    console.log('AI sample code saved successfully');
-
     // 데이터 저장 성공 후 모달 닫기 (선택 사항)
     const isHidden = aiCodeModal.classList.contains('tw-hidden');
     if (!isHidden) aiCodeModal.classList.add('tw-hidden');
@@ -119,14 +117,12 @@ export function initAiSampleCodeModal() {
     });
   }
 
-  // Insert 버튼 클릭 시 선택된 area의 텍스트를 콘솔에 출력
   aiCodeModalInsert.addEventListener('click', async () => {
     const data = {
       target_comment_id: commentId.toString(),
       sample_code_content: selectedCodeContainer.textContent,
       type: 'pull',
     };
-    console.log(data);
     await saveAiSampleCode(data, aiCodeModal);
   });
 }
