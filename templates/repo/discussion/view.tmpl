@@ -13,8 +13,11 @@
                 </div>
             </div>
             <div class="discussion-title-meta" style="display: flex;">
-                <div class="ui green label discussion-state-label">
-                    {{svg "octicon-comment-discussion"}} {{ctx.Locale.Tr "repo.discussion.open_title"}}
+                {{$statusLabelText := "repo.issues.open_title"}}
+                {{$statusLabelColor := "green"}}
+                {{if .Discussion.IsClosed}}{{$statusLabelText = "repo.issues.closed_title"}}{{$statusLabelColor = "red"}}{{end}}
+                <div class="ui {{$statusLabelColor}} label discussion-state-label">
+                    {{svg "octicon-comment-discussion"}} {{ctx.Locale.Tr $statusLabelText}}
                 </div>
                 <div class="tw-ml-2 tw-flex-1 tw-break-anywhere">
                     {{$createdStr:= TimeSinceUnix .Discussion.CreatedUnix ctx.Locale}}
