@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	user_model "code.gitea.io/gitea/models/user"
@@ -139,8 +140,8 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("error on discussion content response: err = %v", err)
 	}
 
-	log.Info("discussion content response : %v", discussionContentResponse)
-	log.Info("discussion response : %v", discussionResponse)
+	// log.Info("discussion content response : %v", discussionContentResponse)
+	// log.Info("discussion response : %v", discussionResponse)
 
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
@@ -321,11 +322,71 @@ func DiscussionContent(ctx *context.Context) {
 	ctx.JSON(http.StatusOK, discussionContent)
 }
 
+func SetDiscussionClosedState(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64(":discussionId")
+	queryParams := ctx.Req.URL.Query()
+	isClosedStr := queryParams.Get("isClosed")
+
+    isClosed, err := strconv.ParseBool(isClosedStr)
+    if err != nil {
+        ctx.ServerError("Invalid 'isClosed' parameter", err)
+        return
+    }
+
+    err = discussion_client.SetDiscussionClosedState(discussionId, isClosed)
+    if err != nil {
+        ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+        return
+    }
+
+    ctx.Status(http.StatusOK)
+}
+
+func getActionDiscussionIds(ctx *context.Context) []int64 {
+	commaSeparatedDiscussionIDs := ctx.FormString("issue_ids")
+	if len(commaSeparatedDiscussionIDs) == 0 {
+		return nil
+	}
+	discussionIDs := make([]int64, 0, 10)
+	for _, stringDiscussionID := range strings.Split(commaSeparatedDiscussionIDs, ",") {
+		discussionID, err := strconv.ParseInt(stringDiscussionID, 10, 64)
+		if err != nil {
+			ctx.ServerError("ParseInt", err)
+			return nil
+		}
+		discussionIDs = append(discussionIDs, discussionID)
+	}
+	return discussionIDs
+}
+
+func UpdateDiscussionStatus(ctx *context.Context) {
+	discussionIds := getActionDiscussionIds(ctx)
+
+	var isClosed bool
+	switch action := ctx.FormString("action"); action {
+	case "open":
+		isClosed = false
+	case "close":
+		isClosed = true
+	default:
+		log.Warn("Unrecognized action: %s", action)
+	}
+
+	for _, discussionId := range discussionIds {
+		err := discussion_client.SetDiscussionClosedState(discussionId, isClosed)
+    	if err != nil {
+        	ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+        	return
+    	}
+	}
+	ctx.JSONOK()
+}
+
 func DeleteDiscussionFileComment(ctx *context.Context) {
 	posterId := ctx.Doer.ID
-	
+
     discussionCommentId := ctx.ParamsInt64(":discussionId")
-	
+
 	err := discussion_service.DeleteDiscussionComment(ctx, discussionCommentId, posterId)
 
 	if err != nil {

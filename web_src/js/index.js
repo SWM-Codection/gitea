@@ -93,6 +93,8 @@ import { initDiscussionForm } from './features/repo-discussion-form.js';
 import { initDiscussionFileView } from './features/repo-discussion-view.js';
 import { initHomeMarquee } from './features/home-marquee.js';
 import { initDiscussionCommentDelete } from './features/discussion-general-comment.js';
+import {initDiscussionStatusButton} from './features/discussion-conversation.js';
+
 
 // Init Gitea's Fomantic settings
 initGiteaFomantic();
@@ -202,4 +204,5 @@ onDomReady(() => {
   initAiSampleCodeModal();
   initDiscussionFileView();
   initDiscussionCommentDelete();
+  initDiscussionStatusButton();
 });
