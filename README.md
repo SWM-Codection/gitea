@@ -1,8 +1,8 @@
-<center>
+<p align="center">
     <img height="220px" src="https://raw.githubusercontent.com/SWM-Codection/gitea/dev/assets/logo.svg"/> 
-    <div style="font-size: 3rem; font-weight: 700">Codection</div>
-    <div style="font-size: 1.6rem;">코드리뷰에 효과성을 잇다</div>
-</center>
+    <h1>Codection</h1>
+    <h2 style="font-size: 1.6rem;">코드리뷰에 효과성을 잇다</h2>
+</p>
 
 <br/> 
 
@@ -121,12 +121,12 @@ Github Actions 를 이용하여, CICD 파이프라인을 구축하였습니다.
 
 ### KPT 회고 및 데일리 스크럼
 
-<center>
+<p align="center">
 
 <img src="https://cdn.discordapp.com/attachments/1256491927877189693/1286594749259583559/2024-09-20_4.47.40.png?ex=66ee7a3b&is=66ed28bb&hm=9e867f7062e9e2aca27b8465cd5a8a4a9d6987c8c8669b42e3ef850fbde5f06b"  height="1200"/>
 
 
-</center>
+</p>
 
 하루의 시작을 데일리 스크럼을 통해 작업 일정을 공유하였고 주간 KPT 회고를 진행하여 작업 효율성 향상을 위한 방법론을 찾아갔습니다.
 
