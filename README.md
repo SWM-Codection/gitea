@@ -1,4 +1,8 @@
-# Gitea
+<p align="center">
+    <img height="360px" src="https://media.discordapp.net/attachments/1256491927877189693/1286599206353633401/Screenshot_2024-09-20_at_5.05.45_PM.png?ex=66ee7e62&is=66ed2ce2&hm=cf5f9ab984f6ad5c19c84da854ac4d7fcf98fa5c9fee09feab3c5ff2961ff51e&=&format=webp&quality=lossless&width=900&height=1200"/> 
+</p>
+
+<br/> 
 
 [![](https://github.com/go-gitea/gitea/actions/workflows/release-nightly.yml/badge.svg?branch=main)](https://github.com/go-gitea/gitea/actions/workflows/release-nightly.yml?query=branch%3Amain "Release Nightly")
 [![](https://img.shields.io/discord/322538954119184384.svg?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Gitea "Join the Discord chat at https://discord.gg/Gitea")
@@ -12,129 +16,148 @@
 [![](https://badges.crowdin.net/gitea/localized.svg)](https://crowdin.com/project/gitea "Crowdin")
 [![](https://badgen.net/https/api.tickgit.com/badgen/github.com/go-gitea/gitea/main)](https://www.tickgit.com/browse?repo=github.com/go-gitea/gitea&branch=main "TODOs")
 
-[View this document in Chinese](./README_ZH.md)
 
-## Purpose
+## 목차 
+1. [프로젝트 개요](##프로젝트-개요) 
+    - [프로젝트 소개](###프로젝트-소개)
+    - [시스템 구성도](###시스템-구성도)
+    - [주요 기능](###주요-기능)
+    - [개발 환경](###개발-환경)
 
-The goal of this project is to make the easiest, fastest, and most
-painless way of setting up a self-hosted Git service.
+2. [개발 결과물](##개발-결과물) 
+    - [백엔드 아키텍처](###백엔드-아키텍처)
+    - [API 서버 개발 및 API 문서화/테스트](###API-서버-개발-및-API-문서화/테스트)
+    - [API 서버 리팩토링](###API-서버-리팩토링)
+    - [API 서버 CI/CD 파이프라인](###API-서버-CI/CD-파이프라인)
+    
+3. [수행 방법 및 프로젝트 관리](##수행-방법-및-프로젝트-관리) 
+    - [개발 프로세스](###개발-프로세스)
+    - [KPT 회고 및 데일리 스크럼](###KPT-회고-및-데일리-스크럼)
+    - [형상 관리 프로세스](###형상-관리-프로세스)
+    - [오픈 소스 컨트리뷰트](###오픈-소스-컨트리뷰트)
 
-As Gitea is written in Go, it works across **all** the platforms and
-architectures that are supported by Go, including Linux, macOS, and
-Windows on x86, amd64, ARM and PowerPC architectures.
-This project has been
-[forked](https://blog.gitea.com/welcome-to-gitea/) from
-[Gogs](https://gogs.io) since November of 2016, but a lot has changed.
 
-For online demonstrations, you can visit [try.gitea.io](https://try.gitea.io).
 
-For accessing free Gitea service (with a limited number of repositories), you can visit [gitea.com](https://gitea.com/user/login).
 
-To quickly deploy your own dedicated Gitea instance on Gitea Cloud, you can start a free trial at [cloud.gitea.com](https://cloud.gitea.com).
+## 프로젝트 개요 
 
-## Building
+### 프로젝트 소개
+![](https://media.discordapp.net/attachments/1256491927877189693/1286591486158307349/image.png?ex=66ee7732&is=66ed25b2&hm=c7f158e0b8c196f2ebeb21cd9de53a459c7f50b71deb9ed6595ff05a47c2f19f&=&format=webp&quality=lossless)
 
-From the root of the source tree, run:
+Codection은 코드리뷰 효율성의 향상을 돕는 소프트웨어로서, 오픈 소스 프로젝트인 Gitea를 기반으로 동작하고 있습니다. 
 
-    TAGS="bindata" make build
 
-or if SQLite support is required:
 
-    TAGS="bindata sqlite sqlite_unlock_notify" make build
+### 시스템 구성도
+<center>
 
-The `build` target is split into two sub-targets:
+![system-archiecture](https://media.discordapp.net/attachments/1265563286506569758/1268839428311220314/codection-gitea-diagram.png?ex=66edd30d&is=66ec818d&hm=1c3de5b48a73744cc49bc989655e4c4b1e792b67c2bf15d4a9ca43a0cc40fb6b&=&format=webp&quality=lossless)
 
-- `make backend` which requires [Go Stable](https://go.dev/dl/), the required version is defined in [go.mod](/go.mod).
-- `make frontend` which requires [Node.js LTS](https://nodejs.org/en/download/) or greater.
+</center>
 
-Internet connectivity is required to download the go and npm modules. When building from the official source tarballs which include pre-built frontend files, the `frontend` target will not be triggered, making it possible to build without Node.js.
+<center>
 
-More info: https://docs.gitea.com/installation/install-from-source
+![application-architecture](https://media.discordapp.net/attachments/1256491927877189693/1286589234576363570/image.png?ex=66ee7519&is=66ed2399&hm=ec82ed4921877565ee5f0830b60bec037f615436ab20a05752a7836e3e40d9d6&=&format=webp&quality=lossless)
 
-## Using
+</center>
 
-    ./gitea web
+### 주요 기능
 
-> [!NOTE]
-> If you're interested in using our APIs, we have experimental support with [documentation](https://try.gitea.io/api/swagger).
+<center>
 
-## Contributing
+![main-feature](https://media.discordapp.net/attachments/1256491927877189693/1286590303788339315/2024-09-20_4.30.15.png?ex=66ee7618&is=66ed2498&hm=c16320c99bbb40eac32dc11f2c331f7c9c8cec0d3bcb7d9241e5fd1fbe5261fb&=&format=webp&quality=lossless)
 
-Expected workflow is: Fork -> Patch -> Push -> Pull Request
+</center>
 
-> [!NOTE]
->
-> 1. **YOU MUST READ THE [CONTRIBUTORS GUIDE](CONTRIBUTING.md) BEFORE STARTING TO WORK ON A PULL REQUEST.**
-> 2. If you have found a vulnerability in the project, please write privately to **security@gitea.io**. Thanks!
 
-## Translating
+### 개발 환경
 
-Translations are done through Crowdin. If you want to translate to a new language ask one of the managers in the Crowdin project to add a new language there.
+- Frontend: VueJS, Go template, Javascript
+- Backend: Spring Boot, go-chi, Github Actions
 
-You can also just create an issue for adding a language or ask on discord on the #translation channel. If you need context or find some translation issues, you can leave a comment on the string or ask on Discord. For general translation questions there is a section in the docs. Currently a bit empty but we hope to fill it as questions pop up.
+## 개발 결과물 
 
-https://docs.gitea.com/contributing/localization
+### 백엔드 아키텍처
+WIP
 
-[![Crowdin](https://badges.crowdin.net/gitea/localized.svg)](https://crowdin.com/project/gitea)
+### API 서버 개발 및 API 문서화/테스트
 
-## Further information
+<center>
 
-For more information and instructions about how to install Gitea, please look at our [documentation](https://docs.gitea.com/).
-If you have questions that are not covered by the documentation, you can get in contact with us on our [Discord server](https://discord.gg/Gitea) or create  a post in the [discourse forum](https://discourse.gitea.io/).
+![api-documentation](https://cdn.discordapp.com/attachments/1256491927877189693/1286581113585930281/image.png?ex=66ee6d89&is=66ed1c09&hm=40bd53cc799a21169e9297374eada50699b513cac33dffeafacdcda7fca56c56)
 
-We maintain a list of Gitea-related projects at [gitea/awesome-gitea](https://gitea.com/gitea/awesome-gitea).
+</center>
 
-The official Gitea CLI is developed at [gitea/tea](https://gitea.com/gitea/tea).
 
-## Authors
+OpenAPI 3.0 Spec을 준수하는 Swagger를 사용하여 API 문서화를 진행하였습니다.
 
-- [Maintainers](https://github.com/orgs/go-gitea/people)
-- [Contributors](https://github.com/go-gitea/gitea/graphs/contributors)
-- [Translators](options/locale/TRANSLATORS)
+### API 서버 리팩토링
+WIP
 
-## Backers
+### API 서버 CI/CD 파이프라인
 
-Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com/gitea#backer)]
+<center>
 
-<a href="https://opencollective.com/gitea#backers" target="_blank"><img src="https://opencollective.com/gitea/backers.svg?width=890"></a>
+![ci](https://media.discordapp.net/attachments/1256491927877189693/1286587824136523786/Screenshot_2024-09-20_at_4.20.23_PM.png?ex=66ee73c8&is=66ed2248&hm=a0bfa1b96f40d1d1fa2ea4f0e3778e0eba4bf8833a885d730519859be069e72c&=&format=webp&quality=lossless)
 
-## Sponsors
+</center>
 
-Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/gitea#sponsor)]
+Github Actions 를 이용하여, CICD 파이프라인을 구축하였습니다.  
+또한 Branch Protection Rule 을 통해 반드시 CICD 파이프라인을 통과하고, 코드 리뷰가 이루어진 Pull Request에 대해서만 Merge 를 허용하도록 정책을 설정하여, 보다 안전하고 효과적인 통핣 및 배포 프로세스를 구축할 수 있었습니다. 
 
-<a href="https://opencollective.com/gitea/sponsor/0/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/0/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/1/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/1/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/2/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/2/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/3/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/3/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/4/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/4/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/5/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/5/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/6/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/6/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/7/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/7/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/8/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/8/avatar.svg"></a>
-<a href="https://opencollective.com/gitea/sponsor/9/website" target="_blank"><img src="https://opencollective.com/gitea/sponsor/9/avatar.svg"></a>
+## 수행 방법 및 프로젝트 관리
 
-## FAQ
+### 개발 프로세스 
+<center>
 
-**How do you pronounce Gitea?**
+![jira-kanban](https://media.discordapp.net/attachments/1256491927877189693/1286577899234918470/image.png?ex=66ee6a8a&is=66ed190a&hm=c153abe913fc33c44f9dd621487cdcfe7216bcc0061cbdf62e6d3497db7f3b6c&=&format=webp&quality=lossless)
 
-Gitea is pronounced [/ɡɪ’ti:/](https://youtu.be/EM71-2uDAoY) as in "gi-tea" with a hard g.
+</center>
 
-**Why is this not hosted on a Gitea instance?**
+저희 팀에서는 Jira 의 칸반 기능을 이용하여, 팀원 간 역할 분담을 명확히 하여, 효율적인 협업 프로세스를 이룰 수 있었습니다. 
+또한 Jira 에서 발급한 티켓을 기반으로, 풀 리퀘스트의 연동을 진행하였습니다.
 
-We're [working on it](https://github.com/go-gitea/gitea/issues/1029).
+### KPT 회고 및 데일리 스크럼
 
-## License
+<p align="center">
 
-This project is licensed under the MIT License.
-See the [LICENSE](https://github.com/go-gitea/gitea/blob/main/LICENSE) file
-for the full license text.
+<img src="https://cdn.discordapp.com/attachments/1256491927877189693/1286594749259583559/2024-09-20_4.47.40.png?ex=66ee7a3b&is=66ed28bb&hm=9e867f7062e9e2aca27b8465cd5a8a4a9d6987c8c8669b42e3ef850fbde5f06b"  height="1200"/>
 
-## Screenshots
 
-Looking for an overview of the interface? Check it out!
+</p>
 
-|![Dashboard](https://dl.gitea.com/screenshots/home_timeline.png)|![User Profile](https://dl.gitea.com/screenshots/user_profile.png)|![Global Issues](https://dl.gitea.com/screenshots/global_issues.png)|
-|:---:|:---:|:---:|
-|![Branches](https://dl.gitea.com/screenshots/branches.png)|![Web Editor](https://dl.gitea.com/screenshots/web_editor.png)|![Activity](https://dl.gitea.com/screenshots/activity.png)|
-|![New Migration](https://dl.gitea.com/screenshots/migration.png)|![Migrating](https://dl.gitea.com/screenshots/migration.gif)|![Pull Request View](https://image.ibb.co/e02dSb/6.png)|
-|![Pull Request Dark](https://dl.gitea.com/screenshots/pull_requests_dark.png)|![Diff Review Dark](https://dl.gitea.com/screenshots/review_dark.png)|![Diff Dark](https://dl.gitea.com/screenshots/diff_dark.png)|
+하루의 시작을 데일리 스크럼을 통해 작업 일정을 공유하였고 주간 KPT 회고를 진행하여 작업 효율성 향상을 위한 방법론을 찾아갔습니다.
+
+### 형상 관리 프로세스
+
+<center>
+
+![gitflow](https://www.bitbull.it/blog/git-flow-come-funziona/gitflow-1.png)  
+git-flow 저
+
+</center>
+
+저희 프로젝트 Codection에서는 효율적인 협업 방식을 위해 Git Flow 전략을 적극적으로 도입하였습니다. Git Flow 전략을 통해 팀 전체의 작업 흐름을 명확히 하고, 릴리스와 빠른 버그 수정을 이룰 수 있었습니다. 이를 통해 코드 관리의 복잡도를 줄이고, 협업 속도와 품질을 높일 수 있었습니다. 
+
+### 오픈 소스 컨트리뷰트
+<center>
+
+![issue-32080](https://media.discordapp.net/attachments/1256491927877189693/1286582370991869975/Screenshot_2024-09-20_at_3.58.34_PM.png?ex=66ee6eb4&is=66ed1d34&hm=7196b93e24ca313e76bf44e36baa330a76757d3911bf9ea2ec06e7ecfb8e3dd1&=&format=webp&quality=lossless)
+
+</center>
+
+저희 팀에서는 프로젝트를 진행하던 중 기반이 되는 gitea에서의 버그를 발견하고 이를 제보 및 해결 방안을 제시하여, 
+gitea 1.23 마일스톤에 등록하게끔 하는 성과를 이루었습니다. 
+
+<center>
+
+![pr-32081](https://media.discordapp.net/attachments/1256491927877189693/1286582371361099859/Screenshot_2024-09-20_at_3.58.49_PM.png?ex=66ee6eb4&is=66ed1d34&hm=db788d473ce24b015b3d4b5a88cd7c873b4dbeb2f2a0595f10b30e6ffbaa5e1f&=&format=webp&quality=lossless)
+
+</center>
+
+또한 gitea 메인테이너와 효율적인 의사소통을 통해, 기존의 제안을 개선 및 보강하였습니다. 
+
+
+## 라이센스
+이 프로젝트는 MIT 라이센스를 따릅니다.  
+전체 라이센스 원문을 보기 위해서는 [라이센스 파일을](https://github.com/swm-codection/gitea/blob/main/LICENSE) 참고하세요
