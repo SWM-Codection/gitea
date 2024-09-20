@@ -1,8 +1,8 @@
 <p align="center">
     <img height="220px" src="https://raw.githubusercontent.com/SWM-Codection/gitea/dev/assets/logo.svg"/> 
-    <h1>Codection</h1>
-    <h2 style="font-size: 1.6rem;">코드리뷰에 효과성을 잇다</h2>
 </p>
+    <p align="center" style="font-size: 3rem; font-weight: 700">Codection</p>
+    <p align="center" style="font-size: 1.6rem;">코드리뷰에 효과성을 잇다</p>
 
 <br/> 
 
