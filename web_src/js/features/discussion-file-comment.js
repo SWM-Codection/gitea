@@ -1,3 +1,4 @@
+import { fetchCommentForm } from "../components/dIscussion-file-comment-form.js";
 import { DELETE } from "../modules/fetch.js";
 
 export function initDiscussionCommentEventHandler(comment) {
@@ -30,6 +31,22 @@ function initDiscussionCommentDelete(comment) {
     }
   });
 }
+
+
+function initDiscussionCommentUpdate(comment) {
+  const updateButton = comment.querySelector('.discussion-update-comment');
+
+  if (!updateButton) return;
+
+  updateButton.addEventListener('click', async (event) => {
+    event.preventDefault();
+    const updateUrl = updateButton.getAttribute('data-url');
+
+    fetchCommentForm()
+
+  });
+}
+
 
 function initDiscussionCommentDropDown(comment) {
     
