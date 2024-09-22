@@ -123,6 +123,8 @@ func Discussions(ctx *context.Context) {
 
 func ViewDiscussion(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":index")
+	var assignees = make([]*user_model.User, 0, 10)
+	var participants = make([]*user_model.User, 1, 10)
 
 	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
 	if err != nil {
@@ -148,12 +150,24 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("error on retreiving discussion role descriptor, %v", err)
 		return
 	}
+	for _, assigneeId := range discussionResponse.Assignees {
+		assignee, err := user_model.GetUserByID(ctx, assigneeId)
+		if err != nil {
+			ctx.ServerError("errro on get user by id: err = %v", err)
+		}
+		assignees = append(assignees, assignee)
+		println(len(assignees))
+	}
+	participants[0] = poster
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionTab"] = "conversation"
 	ctx.Data["DiscussionRoleDescriptor"] = rd
+	ctx.Data["DiscussionAssignees"] = assignees
+	ctx.Data["Participants"] = participants
+	ctx.Data["NumParticipants"] = len(participants)
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
