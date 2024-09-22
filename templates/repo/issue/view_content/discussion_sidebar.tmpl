@@ -1,0 +1,224 @@
+<div class="issue-content-right ui segment">
+    {{if true}}
+        <input id="reviewer_id" name="reviewer_id" type="hidden" value="{{.reviewer_id}}">
+
+    <input id="assignee_id" name="assignee_id" type="hidden" value="{{.assignee_id}}">
+    <div class="ui {{if or (not .HasIssuesOrPullsWritePermission) .Repository.IsArchived}}disabled{{end}} floating jump select-assignees-modify dropdown">
+        <a class="text muted flex-text-block">
+            <strong>{{ctx.Locale.Tr "repo.issues.new.assignees"}}</strong>
+            {{if and .HasIssuesOrPullsWritePermission (not .Repository.IsArchived)}}
+                {{svg "octicon-gear" 16 "tw-ml-1"}}
+            {{end}}
+        </a>
+        <div class="filter menu" data-action="update" data-issue-id="{{$.Issue.ID}}" data-update-url="{{$.RepoLink}}/issues/assignee">
+            <div class="ui icon search input">
+                <i class="icon">{{svg "octicon-search" 16}}</i>
+                <input type="text" placeholder="{{ctx.Locale.Tr "repo.issues.filter_assignees"}}">
+            </div>
+            <div class="no-select item">{{ctx.Locale.Tr "repo.issues.new.clear_assignees"}}</div>
+            {{range .Assignees}}
+
+                {{$AssigneeID := .ID}}
+                <a class="item{{range $.Issue.Assignees}}{{if eq .ID $AssigneeID}} checked{{end}}{{end}}" href="#" data-id="{{.ID}}" data-id-selector="#assignee_{{.ID}}">
+                    {{$checked := false}}
+                    {{range $.Issue.Assignees}}
+                        {{if eq .ID $AssigneeID}}
+                            {{$checked = true}}
+                        {{end}}
+                    {{end}}
+                    <span class="octicon-check {{if not $checked}}tw-invisible{{end}}">{{svg "octicon-check"}}</span>
+                    <span class="text">
+                        {{ctx.AvatarUtils.Avatar . 20 "tw-mr-2"}}{{template "repo/search_name" .}}
+                    </span>
+                </a>
+            {{end}}
+        </div>
+    </div>
+    <div class="ui assignees list">
+        <span class="no-select item {{if .Issue.Assignees}}tw-hidden{{end}}">{{ctx.Locale.Tr "repo.issues.new.no_assignees"}}</span>
+        <div class="selected">
+            {{range .Issue.Assignees}}
+                <div class="item">
+                    <a class="muted sidebar-item-link" href="{{$.RepoLink}}/{{if $.Issue.IsPull}}pulls{{else}}issues{{end}}?assignee={{.ID}}">
+                        {{ctx.AvatarUtils.Avatar . 28 "tw-mr-2"}}
+                        {{.GetDisplayName}}
+                    </a>
+                </div>
+            {{end}}
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    {{if .Participants}}
+        <span class="text"><strong>{{ctx.Locale.Tr "repo.issues.num_participants" .NumParticipants}}</strong></span>
+        <div class="ui list tw-flex tw-flex-wrap">
+            {{range .Participants}}
+                <a {{if gt .ID 0}}href="{{.HomeLink}}"{{end}} data-tooltip-content="{{.GetDisplayName}}">
+                    {{ctx.AvatarUtils.Avatar . 28 "tw-my-0.5 tw-mr-1"}}
+                </a>
+            {{end}}
+        </div>
+    {{end}}
+
+    {{if and $.IssueWatch (not .Repository.IsArchived)}}
+        <div class="divider"></div>
+
+        <div class="ui watching">
+            <span class="text"><strong>{{ctx.Locale.Tr "notification.notifications"}}</strong></span>
+            <div class="tw-mt-2">
+                {{template "repo/issue/view_content/watching" .}}
+            </div>
+        </div>
+    {{end}}
+        {{if .WorkingUsers}}
+            <div class="divider"></div>
+            <div class="ui comments">
+                <span class="text"><strong>{{ctx.Locale.Tr "repo.issues.time_spent_from_all_authors" ($.Issue.TotalTrackedTime | Sec2Time)}}</strong></span>
+                <div>
+                    {{range $user, $trackedtime := .WorkingUsers}}
+                        <div class="comment tw-mt-2">
+                            <a class="avatar">
+                                {{ctx.AvatarUtils.Avatar $user}}
+                            </a>
+                            <div class="content">
+                                {{template "shared/user/authorlink" $user}}
+                                <div class="text">
+                                    {{$trackedtime|Sec2Time}}
+                                </div>
+                            </div>
+                        </div>
+                    {{end}}
+                </div>
+            </div>
+        {{end}}
+    {{end}}
+
+    <div class="divider"></div>
+    <span class="text"><strong>{{ctx.Locale.Tr "repo.issues.due_date"}}</strong></span>
+    <div class="ui form" id="deadline-loader">
+        <div class="ui negative message tw-hidden" id="deadline-err-invalid-date">
+            {{svg "octicon-x" 16 "close icon"}}
+            {{ctx.Locale.Tr "repo.issues.due_date_invalid"}}
+        </div>
+        {{if ne .Issue.DeadlineUnix 0}}
+            <p>
+                <div class="tw-flex tw-justify-between tw-items-center">
+                    <div class="due-date {{if .Issue.IsOverdue}}text red{{end}}" {{if .Issue.IsOverdue}}data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_overdue"}}"{{end}}>
+                        {{svg "octicon-calendar" 16 "tw-mr-2"}}
+                        {{DateTime "long" .Issue.DeadlineUnix.FormatDate}}
+                    </div>
+                    <div>
+                        {{if and .HasIssuesOrPullsWritePermission (not .Repository.IsArchived)}}
+                            <a class="issue-due-edit muted" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_form_edit"}}">{{svg "octicon-pencil" 16 "tw-mr-1"}}</a>
+                            <a class="issue-due-remove muted" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_form_remove"}}">{{svg "octicon-trash"}}</a>
+                        {{end}}
+                    </div>
+                </div>
+            </p>
+        {{else}}
+            <p>{{ctx.Locale.Tr "repo.issues.due_date_not_set"}}</p>
+        {{end}}
+
+        {{if and .HasIssuesOrPullsWritePermission (not .Repository.IsArchived)}}
+            <div {{if ne .Issue.DeadlineUnix 0}} class="tw-hidden"{{end}} id="deadlineForm">
+                <form class="ui fluid action input issue-due-form" action="{{AppSubUrl}}/{{PathEscape .Repository.Owner.Name}}/{{PathEscape .Repository.Name}}/issues/{{.Issue.Index}}/deadline" method="post" id="update-issue-deadline-form">
+                    {{$.CsrfTokenHtml}}
+                    <input required placeholder="{{ctx.Locale.Tr "repo.issues.due_date_form"}}" {{if gt .Issue.DeadlineUnix 0}}value="{{.Issue.DeadlineUnix.FormatDate}}"{{end}} type="date" name="deadlineDate" id="deadlineDate">
+                    <button class="ui icon button">
+                        {{if ne .Issue.DeadlineUnix 0}}
+                            {{svg "octicon-pencil"}}
+                        {{else}}
+                            {{svg "octicon-check"}}
+                        {{end}}
+                    </button>
+                </form>
+            </div>
+        {{end}}
+    </div>
+
+
+    <div class="divider"></div>
+    <div class="ui equal width compact grid">
+        {{$issueReferenceLink := printf "%s#%d" .Issue.Repo.FullName .Issue.Index}}
+        <div class="row tw-items-center" data-tooltip-content="{{$issueReferenceLink}}">
+            <span class="text column truncate">{{ctx.Locale.Tr "repo.issues.reference_link" $issueReferenceLink}}</span>
+            <button class="ui two wide button column tw-p-2" data-clipboard-text="{{$issueReferenceLink}}">{{svg "octicon-copy" 14}}</button>
+        </div>
+    </div>
+
+    {{if and .IsRepoAdmin (not .Repository.IsArchived)}}
+        <div class="divider"></div>
+
+        {{if or .PinEnabled .Issue.IsPinned}}
+            <form class="tw-mt-1 form-fetch-action single-button-form" method="post" {{if $.NewPinAllowed}}action="{{.Issue.Link}}/pin"{{else}}data-tooltip-content="{{ctx.Locale.Tr "repo.issues.max_pinned"}}"{{end}}>
+                {{$.CsrfTokenHtml}}
+                <button class="fluid ui button {{if not $.NewPinAllowed}}disabled{{end}}">
+                    {{if not .Issue.IsPinned}}
+                        {{svg "octicon-pin" 16 "tw-mr-2"}}
+                        {{ctx.Locale.Tr "pin"}}
+                    {{else}}
+                        {{svg "octicon-pin-slash" 16 "tw-mr-2"}}
+                        {{ctx.Locale.Tr "unpin"}}
+                    {{end}}
+                </button>
+            </form>
+        {{end}}
+
+                    <div class="text right actions">
+                        <button class="ui cancel button">{{ctx.Locale.Tr "settings.cancel"}}</button>
+                        <button class="ui red button">
+                            {{if .Issue.IsLocked}}
+                                {{ctx.Locale.Tr "repo.issues.unlock_confirm"}}
+                            {{else}}
+                                {{ctx.Locale.Tr "repo.issues.lock_confirm"}}
+                            {{end}}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <button class="tw-mt-1 fluid ui show-modal button" data-modal="#sidebar-delete-issue">
+            {{svg "octicon-trash"}}
+            {{ctx.Locale.Tr "repo.issues.delete"}}
+        </button>
+        <div class="ui g-modal-confirm modal" id="sidebar-delete-issue">
+            <div class="header">
+                {{if .Issue.IsPull}}
+                    {{ctx.Locale.Tr "repo.pulls.delete.title"}}
+                {{else}}
+                    {{ctx.Locale.Tr "repo.issues.delete.title"}}
+                {{end}}
+            </div>
+            <div class="content">
+                <p>
+                    {{if .Issue.IsPull}}
+                        {{ctx.Locale.Tr "repo.pulls.delete.text"}}
+                    {{else}}
+                        {{ctx.Locale.Tr "repo.issues.delete.text"}}
+                    {{end}}
+                </p>
+            </div>
+            <form action="{{.Issue.Link}}/delete" method="post">
+                {{.CsrfTokenHtml}}
+                {{template "base/modal_actions_confirm" .}}
+            </form>
+        </div>
+    {{end}}
+
+    {{if and .Issue.IsPull .IsIssuePoster (not .Issue.IsClosed) .Issue.PullRequest.HeadRepo}}
+        {{if and (not (eq .Issue.PullRequest.HeadRepo.FullName .Issue.PullRequest.BaseRepo.FullName)) .CanWriteToHeadRepo}}
+            <div class="divider"></div>
+            <div class="inline field">
+                <div class="ui checkbox loading-icon-2px" id="allow-edits-from-maintainers"
+                        data-url="{{.Issue.Link}}"
+                        data-tooltip-content="{{ctx.Locale.Tr "repo.pulls.allow_edits_from_maintainers_desc"}}"
+                        data-prompt-error="{{ctx.Locale.Tr "repo.pulls.allow_edits_from_maintainers_err"}}"
+                    >
+                    <label><strong>{{ctx.Locale.Tr "repo.pulls.allow_edits_from_maintainers"}}</strong></label>
+                    <input type="checkbox" {{if .Issue.PullRequest.AllowMaintainerEdit}}checked{{end}}>
+                </div>
+            </div>
+        {{end}}
+    {{end}}
+</div>
