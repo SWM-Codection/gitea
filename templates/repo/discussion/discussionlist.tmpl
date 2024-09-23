@@ -47,7 +47,7 @@
 
 					{{if ne .DeadlineUnix 0}}
 						<span class="due-date flex-text-inline" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date"}}">
-							<span{{if .IsOverdue}} class="text red"{{end}}>
+							<span>
 								{{svg "octicon-calendar" 14}}
 								{{DateTime "short" (.DeadlineUnix.FormatDate)}}
 							</span>
