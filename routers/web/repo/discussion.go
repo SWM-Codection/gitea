@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	stdCtx "context"
+	api "code.gitea.io/gitea/modules/structs"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	issues_model "code.gitea.io/gitea/models/issues"
@@ -355,6 +357,30 @@ func SetDiscussionClosedState(ctx *context.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+func SetDiscussionDeadline(ctx *context.Context) {
+	form := web.GetForm(ctx).(*api.EditDeadlineOption)
+	discussionId := ctx.ParamsInt64(":discussionId")
+	println("here")
+	println(discussionId)
+
+	var deadlineUnix int64 // Unix 타임스탬프를 저장할 int64 변수
+	var deadline time.Time
+	if form.Deadline != nil && !form.Deadline.IsZero() {
+    	deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
+        	23, 59, 59, 0, time.Local)
+    	// deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
+	}
+	println(deadlineUnix)
+
+	err := discussion_client.SetDiscussionDeadline(discussionId, deadlineUnix)
+	if err != nil {
+		ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, discussion_client.DiscussionDeadline{Deadline: &deadline})
 }
 
 func getActionDiscussionIds(ctx *context.Context) []int64 {

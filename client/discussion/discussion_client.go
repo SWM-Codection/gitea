@@ -164,6 +164,10 @@ type DiscussionContentResponse struct {
 	GlobalReactions []DiscussionReaction        `json:"discussionReaction"`
 }
 
+type DiscussionDeadline struct {
+	Deadline *time.Time `json:"due_date"`
+}
+
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
 	log.Info("PostDiscussion request : %v", request)
 	resp, err := client.Request().SetBody(request).Post("/discussion")
@@ -337,6 +341,19 @@ func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 
 	if resp.StatusCode() != 204 {
 		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+func SetDiscussionDeadline(discussionId int64, deadline int64) error {
+	resp, err := client.Request().Patch(fmt.Sprintf("discussion/deadline/%d?dealine=%d", discussionId, deadline))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("failed to set deadline, got %d", resp.StatusCode())
 	}
 
 	return nil

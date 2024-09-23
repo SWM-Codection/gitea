@@ -1200,6 +1200,7 @@ func registerRoutes(m *web.Route) {
 			})
 			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
 			m.Patch("/state/{discussionId}", repo.SetDiscussionClosedState)
+			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
 			m.Post("/status", repo.UpdateDiscussionStatus)
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))

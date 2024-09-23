@@ -15,7 +15,7 @@
             </div>
             <div class="no-select item">{{ctx.Locale.Tr "repo.issues.new.clear_assignees"}}</div>
             {{range .Assignees}}
-                {{$AssigneeID := .Id}}
+                {{$AssigneeID := .ID}}
                 <a class="item{{range $.Discussion.Assignees}}{{if eq .ID $AssigneeID}} checked{{end}}{{end}}" href="#" data-id="{{.Id}}" data-id-selector="#assignee_{{.Id}}">
                     {{$checked := false}}
                     {{range $.Discussion.Assignees}}
@@ -108,8 +108,8 @@
                     <div>
 						<!-- {{if and .HasIssuesOrPullsWritePermission (not .Repository.IsArchived)}} -->
                         <!-- {{end}} 아래 로직 권한 추가 -->
-						<a class="issue-due-edit muted" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_form_edit"}}">{{svg "octicon-pencil" 16 "tw-mr-1"}}</a>
-                        <a class="issue-due-remove muted" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_form_remove"}}">{{svg "octicon-trash"}}</a>
+						<a class="discussion-due-edit muted" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_form_edit"}}">{{svg "octicon-pencil" 16 "tw-mr-1"}}</a>
+                        <a class="discussion-due-remove muted" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date_form_remove"}}">{{svg "octicon-trash"}}</a>
                     </div>
                 </div>
             </p>
@@ -120,7 +120,7 @@
 		<!-- {{if and .HasIssuesOrPullsWritePermission (not .Repository.IsArchived)}} -->
         <!-- {{end}} 아래 코드 권한 체크 로직 추가 -->
 		<div {{if ne .Discussion.Deadline 0}} class="tw-hidden"{{end}} id="deadlineForm">
-			<form class="ui fluid action input issue-due-form" action="{{AppSubUrl}}/{{PathEscape .Repository.Owner.Name}}/{{PathEscape .Repository.Name}}/issues/{{.Issue.Index}}/deadline" method="post" id="update-issue-deadline-form">
+			<form class="ui fluid action input discussion-due-form" action="{{AppSubUrl}}/{{PathEscape .Repository.Owner.Name}}/{{PathEscape .Repository.Name}}/discussions/{{.Discussion.Id}}/deadline" method="patch" id="update-discussion-deadline-form">
 				{{$.CsrfTokenHtml}}
 				<input required placeholder="{{ctx.Locale.Tr "repo.issues.due_date_form"}}" {{if gt .Discussion.Deadline 0}}value="{{.Discussion.Deadline.FormatDate}}"{{end}} type="date" name="deadlineDate" id="deadlineDate">
 				<button class="ui icon button">
