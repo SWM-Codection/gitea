@@ -146,16 +146,42 @@ func findCodeComments(ctx context.Context, opts FindCommentsOptions, issue *Issu
 	return comments[:n], nil
 }
 
-// FetchCodeCommentsByLine fetches the code comments for a given treePath and line number
 func FetchCodeCommentsByLine(ctx context.Context, issue *Issue, currentUser *user_model.User, treePath string, line int64, showOutdatedComments bool) (CommentList, error) {
-	opts := FindCommentsOptions{
-		Type:     CommentTypeCode,
-		IssueID:  issue.ID,
-		TreePath: treePath,
-		Line:     line,
-	}
-	return findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
+    opts := FindCommentsOptions{
+        Type:     CommentTypeCode,
+        IssueID:  issue.ID,
+        TreePath: treePath,
+        Line:     line,
+    }
+
+    codeComments, err := findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
+    if err != nil {
+        return nil, err
+    }
+
+    var allComments CommentList
+
+    for _, comment := range codeComments {
+        allComments = append(allComments, comment)
+
+        aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
+        if err != nil {
+            return nil, err
+        }
+
+        if aiSampleCode != nil {
+            aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
+            if err != nil {
+                return nil, err
+            }
+
+            allComments = append(allComments, aiComment)
+        }
+    }
+
+    return allComments, nil
 }
+
 
 func FetchCodeAiComments(ctx context.Context, issue *Issue, fileLines map[string]int64) (CodeComments, error) {
 	return fetchCodeAiCommentsByReview(ctx, issue, fileLines)

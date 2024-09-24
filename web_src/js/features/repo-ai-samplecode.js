@@ -119,6 +119,7 @@ export function initAiSampleCodeModal() {
 
   aiCodeModalInsert.addEventListener('click', async () => {
     const data = {
+      origin_data: 'diff',
       target_comment_id: commentId.toString(),
       sample_code_content: selectedCodeContainer.textContent,
       type: 'pull',

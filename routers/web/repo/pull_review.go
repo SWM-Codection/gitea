@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	api "code.gitea.io/gitea/modules/structs"
 	issues_model "code.gitea.io/gitea/models/issues"
+	ai_service "code.gitea.io/gitea/services/ai"
 	pull_model "code.gitea.io/gitea/models/pull"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
@@ -164,6 +167,39 @@ func UpdateResolveConversation(ctx *context.Context) {
 
 	renderConversation(ctx, comment, origin)
 }
+
+func CreateAiPullSampleCode(ctx *context.Context) {
+	// TODOC swagger 추가
+	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
+	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
+
+	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": "Invalid TargetCommentId format",
+		})
+		return
+	}
+
+	sampleCode, err := ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	targetComment, err := issues_model.GetCommentByID(ctx, targetCommentId)
+	if err != nil {
+		ctx.ServerError("GetIssueByID", err)
+		return
+	}
+
+	renderConversation(ctx, targetComment, form.OriginData)
+	ctx.JSON(http.StatusAccepted, sampleCode)
+}
+
+
 // 체크 코멘트가 만들어졌을 때 렌더링 되는 곳
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {
 	ctx.Data["PageIsPullFiles"] = origin == "diff"
