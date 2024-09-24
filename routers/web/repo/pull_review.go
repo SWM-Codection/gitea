@@ -195,6 +195,11 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 		return
 	}
 
+	if err = targetComment.LoadIssue(ctx); err != nil {
+		ctx.ServerError("comment.LoadIssue", err)
+		return
+	}
+
 	renderConversation(ctx, targetComment, form.OriginData)
 	ctx.JSON(http.StatusAccepted, sampleCode)
 }
@@ -202,9 +207,15 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 
 // 체크 코멘트가 만들어졌을 때 렌더링 되는 곳
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {
+	println(origin)
+	println(ctx.Doer.LowerName)
+	println(comment.TreePath)
+	println(comment.Issue.ID)
+	println("here")
 	ctx.Data["PageIsPullFiles"] = origin == "diff"
 
-	showOutdatedComments := origin == "timeline" || ctx.Data["ShowOutdatedComments"].(bool)
+	// showOutdatedComments := origin == "timeline" || ctx.Data["ShowOutdatedComments"].(bool)
+	showOutdatedComments := false
 	comments, err := issues_model.FetchCodeCommentsByLine(ctx, comment.Issue, ctx.Doer, comment.TreePath, comment.Line, showOutdatedComments)
 	if err != nil {
 		ctx.ServerError("FetchCodeCommentsByLine", err)
