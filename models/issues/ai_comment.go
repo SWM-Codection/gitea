@@ -186,22 +186,22 @@ func UpdateAiPullComment(ctx context.Context, opts *UpdateAiPullCommentOption) (
 
 type AiPullCommentList []*AiPullComment
 
-func fetchAiPullComments(ctx context.Context, issue *Issue) ([]*AiPullComment, error) {
+func fetchAiPullComments(ctx context.Context, pullRequest *PullRequest) ([]*AiPullComment, error) {
 	var aiPullComments []*AiPullComment
 
 	e := db.GetEngine(ctx)
-	if err := e.Where("pull_id = ?", issue.ID).Find(&aiPullComments); err != nil {
+	if err := e.Where("pull_id = ?", pullRequest.ID).Find(&aiPullComments); err != nil {
 		return nil, err
 	}
 
 	return aiPullComments, nil
 }
 
-func fetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string, line int64) (*AiPullComment, error) {
+func fetchAiPullCommentByLine(ctx context.Context, pullRequest *PullRequest, treePath string, line int64) (*AiPullComment, error) {
 	var aiPullComment AiPullComment
 
 	e := db.GetEngine(ctx)
-	if has, err := e.Where("pull_id = ? AND tree_path = ? AND line = ?", issue.ID, treePath, line).Get(&aiPullComment); err != nil {
+	if has, err := e.Where("pull_id = ? AND tree_path = ? AND line = ?", pullRequest.ID, treePath, line).Get(&aiPullComment); err != nil {
 		return nil, err
 	} else if !has {
 		return nil, nil
