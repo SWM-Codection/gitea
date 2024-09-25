@@ -467,3 +467,21 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 
 	return result, nil
 }
+
+func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
+	resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
+	if err != nil {
+		return err
+	}
+
+	if err := handleResponse(resp); err != nil {
+		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+
+func (dr DiscussionResponse) IsPoster(id int64) bool {
+	return dr.PosterId == id
+}
