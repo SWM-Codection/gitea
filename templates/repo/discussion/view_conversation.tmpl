@@ -7,11 +7,12 @@
         <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
             <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between" role="heading">
                 <div class="comment-header-left tw-flex tw-items-center">
-                    <a class="inline-timeline-avatar" href="#">discussion author's avatar</a>
                     <span class="text-grey muted-linkes">
-                        <a class="author text black tw-font-semibold muted" href="#">
-                            commented locale string on here
-                        </a>
+                        {{$hashTag := printf "discussion-%d" .Discussion.Id }}
+                        {{$createdStr:= TimeSinceUnix .Discussion.CreatedUnix ctx.Locale}}
+
+                        {{template "shared/user/authorlink" .Discussion.Poster}}
+                        {{ctx.Locale.Tr "repo.issues.commented_at" $hashTag $createdStr}}
                     </span>
                 </div>
                 <div class="comment-header-right actions tw-flex tw-items-center"></div>
@@ -21,7 +22,9 @@
                     {{if .Discussion.Content }}
                         {{.Discussion.Content}}
                     {{ else }}
-                        no description provided in locale string...
+                        <span style="font-style: italic; color: #5b6167; font-size: 14px;">  
+                            {{ctx.Locale.Tr "repo.issues.no_content"}}
+                        </span>
                     {{end}}
                 </div>
             </div>
@@ -30,22 +33,43 @@
 
     <!-- discussion comments -->
     {{ range .DiscussionContent.GlobalComments }}
-        <div class="timeline-item comment tw-pb-4" id="discussion-comment-{{ .Id }}" class="timeline-item comment first tw-pb-4" style="position: relative; margin-left: 72px;">
-            <a  class="timeline-avatar" href="#" style="position: absolute; left: -68px;">
-                {{ ctx.AvatarUtils.Avatar -1 40}}
-            </a>
-            <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
-                <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between">
-                    <div class="comment-header-left tw-flex tw-items-center">
-                        <span class="text grey muted-links">commented local string on here</span>
+         <!-- for consistency -->
+        <div>
+            <div class="timeline-item comment tw-pb-4" id="discussioncomment-{{ .Id }}" class="timeline-item comment first tw-pb-4" style="position: relative; margin-left: 72px;">
+                <a  class="timeline-avatar" href="#" style="position: absolute; left: -68px;">
+                    {{ ctx.AvatarUtils.AvatarByUserId .PosterId 40}}
+                </a>
+                <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
+                    <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between">
+                        <div class="comment-header-left tw-flex tw-items-center">
+                            <span class="text grey muted-links">
+                                {{$poster := ctx.ConverterUtils.UserIdToUser .PosterId}}
+                                {{$hashTag := printf "discussioncomment-%d" .Id }}
+                                {{$createdStr:= TimeSinceUnix .CreatedUnix ctx.Locale}}
+                                <span class="text grey muted-links">
+                                    {{template "shared/user/authorlink" $poster}}
+                                    {{ctx.Locale.Tr "repo.issues.commented_at" $hashTag $createdStr}}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="comment-header-right actions tw-flex tw-items-center">
+                            {{template "repo/issue/view_content/show_role" dict "ShowRole" $.DiscussionRoleDescriptor "IgnorePoster" false}}
+
+                            <!-- discussion comment hamburger menu -->
+                            <div class="item action ui dropdown jump pointing top right context-dropdown-active visible" role="menu" >
+                                <a class="context-menu muted">
+                                    {{svg "octicon-kebab-horizontal"}}
+                                </a>
+                                <div class="menu transition visible" role="" tabindex="-1" style="min-width: 180px;">
+                                    <div class="item context js-aria-clickable discussion-delete-comment" data-comment-id="discussioncomment-{{.Id}}" data-url="{{$.RepoLink}}/discussions/{{.Id}}/comment" data-locale="{{ctx.Locale.Tr "repo.issues.delete_comment_confirm"}}">{{ctx.Locale.Tr "repo.issues.context.delete"}}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="comment-header-right actions tw-flex tw-items-center">
-                        meta buttons on here 
-                    </div>
-                </div>
-                <div class="ui attached segment comment-body">
-                    <div class="render-content markup">
-                        {{ .Content }}
+                    <div class="ui attached segment comment-body">
+                        <div class="render-content markup">
+                            {{ .Content }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -71,10 +95,13 @@
                             "DropzoneParentContainer" "form, .ui.form"
                         )}}
                     </div>
-
+                    {{$statusButtonColor := "red"}}
+                    {{if .Discussion.IsClosed}}{{$statusButtonColor = "green"}}{{end}}
+                    {{$statusButtonText := "repo.discussion.close"}}
+                    {{if .Discussion.IsClosed}}{{$statusButtonText = "repo.issues.reopen_issue"}}{{end}}
                     <div class="field footer">
                         <div class="text right">
-                            <!-- <button id="status-button" class="ui red basic button">{{ctx.Locale.Tr "repo.discussion.close"}}</button> -->
+                            <button id="discussion-status-button" class="ui {{$statusButtonColor}} basic button" data-discussion-id="{{.Discussion.Id}}" data-is-closed="{{.Discussion.IsClosed}}">{{ctx.Locale.Tr $statusButtonText}}</button>
                             <button class="ui primary button">{{ctx.Locale.Tr "repo.discussion.create_comment"}}</button>
                         </div>
                     </div>

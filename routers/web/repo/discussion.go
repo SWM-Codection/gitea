@@ -5,8 +5,15 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
+
+	stdCtx "context"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
+	issues_model "code.gitea.io/gitea/models/issues"
+	"code.gitea.io/gitea/models/organization"
+	access_model "code.gitea.io/gitea/models/perm/access"
+	repo_model "code.gitea.io/gitea/models/repo"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/log"
@@ -126,28 +133,27 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.NotFound("discussion not exists", fmt.Errorf("discussion with %v does not exist", discussionResponse.Id))
 		return
 	}
-	log.Info("poster id is %v", discussionResponse.PosterId)
 	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
 	if err != nil {
 		ctx.ServerError("errro on get user by id: err = %v", err)
 	}
 	discussionResponse.Poster = poster
-
 	discussionContentResponse, err := discussion_client.GetDiscussionContents(discussionId)
-
 	if err != nil {
 		ctx.ServerError("error on discussion content response: err = %v", err)
+		return
 	}
-
-	log.Info("discussion content response : %v", discussionContentResponse)
-	log.Info("discussion response : %v", discussionResponse)
-
+	rd, err := discussionRoleDescriptor(ctx, ctx.Repo.Repository, discussionResponse.Poster, discussionResponse)
+	if err != nil {
+		ctx.ServerError("error on retreiving discussion role descriptor, %v", err)
+		return
+	}
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionTab"] = "conversation"
-
+	ctx.Data["DiscussionRoleDescriptor"] = rd
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -158,7 +164,6 @@ func ViewDiscussionFiles(ctx *context.Context) {
 	if err != nil {
 		ctx.ServerError("error on discussion response: err = %v", err)
 	}
-	log.Info("poster id is %v", discussionResponse.PosterId)
 	poster, err := user_model.GetUserByID(ctx, discussionResponse.PosterId)
 	if err != nil {
 		ctx.ServerError("errro on get user by id: err = %v", err)
@@ -206,12 +211,10 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 	}
 	if id == nil {
 		// XXX check reachability later
-		// maybe unreachable..
 		ctx.JSONError("hmm something weird..")
+		return
 	}
-	ctx.JSON(http.StatusOK, map[string]int64{
-		"id": *id,
-	})
+	ctx.JSON(http.StatusOK, map[string]int64{"id": *id})
 
 }
 
@@ -324,6 +327,66 @@ func DiscussionContent(ctx *context.Context) {
 	ctx.JSON(http.StatusOK, discussionContent)
 }
 
+func SetDiscussionClosedState(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64(":discussionId")
+	queryParams := ctx.Req.URL.Query()
+	isClosedStr := queryParams.Get("isClosed")
+
+	isClosed, err := strconv.ParseBool(isClosedStr)
+	if err != nil {
+		ctx.ServerError("Invalid 'isClosed' parameter", err)
+		return
+	}
+
+	err = discussion_client.SetDiscussionClosedState(discussionId, isClosed)
+	if err != nil {
+		ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+func getActionDiscussionIds(ctx *context.Context) []int64 {
+	commaSeparatedDiscussionIDs := ctx.FormString("issue_ids")
+	if len(commaSeparatedDiscussionIDs) == 0 {
+		return nil
+	}
+	discussionIDs := make([]int64, 0, 10)
+	for _, stringDiscussionID := range strings.Split(commaSeparatedDiscussionIDs, ",") {
+		discussionID, err := strconv.ParseInt(stringDiscussionID, 10, 64)
+		if err != nil {
+			ctx.ServerError("ParseInt", err)
+			return nil
+		}
+		discussionIDs = append(discussionIDs, discussionID)
+	}
+	return discussionIDs
+}
+
+func UpdateDiscussionStatus(ctx *context.Context) {
+	discussionIds := getActionDiscussionIds(ctx)
+
+	var isClosed bool
+	switch action := ctx.FormString("action"); action {
+	case "open":
+		isClosed = false
+	case "close":
+		isClosed = true
+	default:
+		log.Warn("Unrecognized action: %s", action)
+	}
+
+	for _, discussionId := range discussionIds {
+		err := discussion_client.SetDiscussionClosedState(discussionId, isClosed)
+		if err != nil {
+			ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+			return
+		}
+	}
+	ctx.JSONOK()
+}
+
 func DeleteDiscussionFileComment(ctx *context.Context) {
 	posterId := ctx.Doer.ID
 
@@ -394,4 +457,46 @@ func ModifyDiscussionFileComment(ctx *context.Context) {
 		"content": renderedContent,
 	})
 
+}
+
+func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, poster *user_model.User, discussionResponse *discussion_client.DiscussionResponse) (issues_model.RoleDescriptor, error) {
+	roleDescriptor := issues_model.RoleDescriptor{}
+	roleDescriptor.IsPoster = discussionResponse.IsPoster(poster.ID)
+
+	perm, err := access_model.GetUserRepoPermission(ctx, repo, poster)
+	if err != nil {
+		return roleDescriptor, err
+	}
+
+	// set owner
+	if perm.IsOwner() {
+		roleDescriptor.RoleInRepo = issues_model.RoleRepoOwner
+	}
+	// set org member
+	if repo.Owner.IsOrganization() {
+		isMember, err := organization.IsOrganizationMember(ctx, repo.OwnerID, poster.ID)
+		if err != nil {
+			return roleDescriptor, err
+		}
+		if isMember {
+			roleDescriptor.RoleInRepo = issues_model.RoleRepoMember
+		}
+	}
+	// set collaborator
+	isCollaborator, err := repo_model.IsCollaborator(ctx, repo.ID, poster.ID)
+	if err != nil {
+		return roleDescriptor, err
+	}
+	if isCollaborator {
+		roleDescriptor.RoleInRepo = issues_model.RoleRepoCollaborator
+	}
+	// set contributor
+	hasMergedPr, err := issues_model.HasMergedPullRequestInRepo(ctx, repo.ID, poster.ID)
+	if err != nil {
+		return roleDescriptor, err
+	}
+	if hasMergedPr {
+		roleDescriptor.RoleInRepo = issues_model.RoleRepoContributor
+	}
+	return roleDescriptor, nil
 }
