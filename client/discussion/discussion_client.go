@@ -107,6 +107,17 @@ type DiscussionListResponse struct {
 	Discussions []*Discussion `json:"discussions"`
 }
 
+type ModifyDiscussionCommentRequest struct {
+	DiscussionId        int64            `json:"discussionId"`
+	DiscussionCommentId int64            `json:"discussionCommentId"`
+	CodeId              *int64           `json:"codeId"`
+	PosterId            int64            `json:"posterId"`
+	Scope               CommentScopeEnum `json:"scope"`
+	StartLine           *int32           `json:"startLine"`
+	EndLine             *int32           `json:"endLine"`
+	Content             string           `json:"content"`
+}
+
 type DiscussionCountResponse struct {
 	OpenCount  int `json:"openCount"`
 	CloseCount int `json:"closeCount"`
@@ -127,14 +138,16 @@ type FileContent struct {
 }
 
 type DiscussionCommentResponse struct {
-	Id          int64                 `json:"id"`
-	PosterId    int64                 `json:"posterId"`
-	Scope       string                `json:"scope"`
-	StartLine   int64                 `json:"startLine"`
-	EndLine     int64                 `json:"endLine"`
-	Content     string                `json:"content"`
-	CreatedUnix timeutil.TimeStamp    `json:"createdUnix"`
-	Reactions   []*DiscussionReaction `json:"reactions"`
+	Id           int64                 `json:"id"`
+	DiscussionId int64                 `json:"discussionId"`
+	PosterId     int64                 `json:"posterId"`
+	CodeId       int64                 `json:"codeId"`
+	Scope        string                `json:"scope"`
+	StartLine    int64                 `json:"startLine"`
+	EndLine      int64                 `json:"endLine"`
+	Content      string                `json:"content"`
+	CreatedUnix  timeutil.TimeStamp    `json:"createdUnix"`
+	Reactions    []*DiscussionReaction `json:"reactions"`
 }
 
 type ReactionTypeEnum = string
@@ -164,42 +177,82 @@ type DiscussionContentResponse struct {
 	GlobalReactions []DiscussionReaction        `json:"discussionReaction"`
 }
 
+type DiscussionErrorResponse struct {
+	TimeStamp timeutil.TimeStamp `json:"timestamp"`
+	Status    int                `json:"status"`
+	Error     string             `json:"error"`
+	message   string
+}
+
+func handleResponse(resp *resty.Response) error {
+	if resp.IsError() {
+		var errResp DiscussionErrorResponse
+		if err := json.Unmarshal(resp.Body(), &errResp); err != nil {
+			log.Error("Failed to parse error response: %v", err)
+			return fmt.Errorf("unexpected error: %s", resp.Status())
+		}
+		log.Error("API Error %d: %s", errResp.Status, errResp.message)
+		return fmt.Errorf("api error %d: %s", errResp.Status, errResp.message)
+	}
+	return nil
+}
+
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
-	log.Info("PostDiscussion request : %v", request)
-	resp, err := client.Request().SetBody(request).Post("/discussion")
+	resp, err := client.Request().
+		SetBody(request).
+		Post("/discussion")
 	if err != nil {
+		return -1, fmt.Errorf("failed to make POST /discussion request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return -1, err
 	}
-	log.Info("resp.string() : %v", resp.String())
-	result, err := strconv.Atoi(resp.String())
-	if err != nil {
-		return -1, err
+
+	var result int
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return -1, fmt.Errorf("failed to parse response body: %w", err)
 	}
-	return result, err
+
+	return result, nil
 }
 
 func GetDiscussion(repoId int64) (*DiscussionResponse, error) {
-	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d", repoId))
+	resp, err := client.Request().
+		Get(fmt.Sprintf("/discussion/%d", repoId))
 	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/%d request: %w", repoId, err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return nil, err
 	}
-	var result = &DiscussionResponse{}
-	if err = json.Unmarshal(resp.Body(), &result); err != nil {
-		return nil, err
+
+	var result DiscussionResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-	return result, nil
+
+	return &result, nil
 }
 
 func GetDiscussionCount(repoId int64) (*DiscussionCountResponse, error) {
-	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/count", repoId))
+	resp, err := client.Request().
+		Get(fmt.Sprintf("/discussion/%d/count", repoId))
 	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/%d/count request: %w", repoId, err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return nil, err
 	}
-	result := &DiscussionCountResponse{}
-	if err = json.Unmarshal(resp.Body(), result); err != nil {
-		return nil, err
+
+	var result DiscussionCountResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-	return result, nil
+
+	return &result, nil
 }
 
 func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListResponse, error) {
@@ -210,61 +263,143 @@ func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListRe
 		SetQueryParam("page", pageAsString).
 		Get(fmt.Sprintf("/discussion/%d/list", repoId))
 	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/%d/list request: %w", repoId, err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return nil, err
 	}
-	result := &DiscussionListResponse{}
-	if err := json.Unmarshal(resp.Body(), result); err != nil {
-		return nil, err
+
+	var result DiscussionListResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-	return result, nil
+
+	return &result, nil
 }
 
 func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error) {
-	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
-
+	resp, err := client.Request().
+		Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
 	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/%d/contents request: %w", discussionId, err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return nil, err
 	}
-	result := &DiscussionContentResponse{}
-	if err = json.Unmarshal(resp.Body(), result); err != nil {
-		return nil, err
+
+	var result DiscussionContentResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-	return result, nil
+
+	return &result, nil
 }
 
 func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse, error) {
-	resp, err := client.Request().SetQueryParam("id", strconv.FormatInt(discussionCommentId, 10)).Get("/discussion/comment")
+	resp, err := client.Request().
+		SetQueryParam("id", strconv.FormatInt(discussionCommentId, 10)).
+		Get("/discussion/comment")
 	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/comment request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return nil, err
 	}
 
-	result := &DiscussionCommentResponse{}
-
-	if err = json.Unmarshal(resp.Body(), result); err != nil {
-		return nil, err
+	var result DiscussionCommentResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-	return result, nil
+
+	return &result, nil
 }
 
 func HandleDiscussionAvailable() (*resty.Response, error) {
-	return client.Request().Post("/discussion/available")
+	resp, err := client.Request().
+		Post("/discussion/available")
+	if err != nil {
+		return nil, fmt.Errorf("failed to make POST /discussion/available request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func PostComment(request *PostCommentRequest) (*int64, error) {
-	resp, err := client.Request().SetBody(request).Post("/discussion/comment")
+	resp, err := client.Request().
+		SetBody(request).
+		Post("/discussion/comment")
 	if err != nil {
+		return nil, fmt.Errorf("failed to make POST /discussion/comment request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
 		return nil, err
 	}
+
 	bodyStr := string(resp.Body())
 	id, err := strconv.ParseInt(bodyStr, 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
+
 	return &id, nil
 }
 
 func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error) {
-	return client.Request().SetBody(request).Put("/discussion")
+	resp, err := client.Request().
+		SetBody(request).
+		Put("/discussion")
+	if err != nil {
+		return nil, fmt.Errorf("failed to make PUT /discussion request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
+	request := &DeleteDiscussionCommentRequest{
+		DiscussionCommentId: discussionCommentId,
+		PosterId:            posterId,
+	}
+	resp, err := client.Request().
+		SetBody(request).
+		Delete("/discussion/comment")
+	if err != nil {
+
+		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
+	resp, err := client.Request().
+		SetBody(request).
+		Put("/discussion/comment")
+	if err != nil {
+		return fmt.Errorf("failed to make PUT /discussion/comment request: %w", err)
+	}
+
+	if err := handleResponse(resp); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /**
@@ -325,37 +460,10 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 	if err := json.Unmarshal(resp.Body(), result); err != nil {
 		return nil, err
 	}
+
+	if err := handleResponse(resp); err != nil {
+		return nil, fmt.Errorf("failed to GetDiscussionContents %w", err)
+	}
+
 	return result, nil
-}
-
-
-func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
-	resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode() != 204 {
-		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
-	}
-
-	return nil
-}
-
-func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
-	request := &DeleteDiscussionCommentRequest{
-		DiscussionCommentId: discussionCommentId,
-		PosterId:            posterId}
-	_, err := client.Request().SetBody(request).Delete("/discussion/comment")
-
-	if err != nil {
-		log.Error("DeleteDiscussionComment failed: %s", err.Error())
-		return fmt.Errorf("%w", err)
-	}
-
-	return nil
-}
-
-func (dr DiscussionResponse) IsPoster(id int64) bool {
-	return dr.PosterId == id
 }
