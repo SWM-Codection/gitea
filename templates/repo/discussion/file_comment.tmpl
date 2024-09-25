@@ -25,9 +25,9 @@
 				<span class="no-content">{{ctx.Locale.Tr "repo.issues.no_content"}}</span>
 			{{end}}
 			</div>
-			<div id="issuecomment-{{.ID}}-raw" class="raw-content tw-hidden">{{.Content}}</div>
+			<div id="discussioncomment-{{.ID}}-raw" class="raw-content tw-hidden">{{.Content}}</div>
 			<!-- 수정 버튼 들어가는 부분 -->
-			<div class="edit-content-zone tw-hidden" data-update-url="{{$.root.RepoLink}}/comments/{{.ID}}" data-context="{{$.root.RepoLink}}" data-attachment-url="{{$.root.RepoLink}}/comments/{{.ID}}/attachments"></div>
+			 {{template "repo/discussion/file_edit_comment_form" dict "root" $.root "item" .}}
 		</div>
 		{{$reactions := .Reactions.GroupByType}}
 		{{if $reactions}}

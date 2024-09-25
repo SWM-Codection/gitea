@@ -338,6 +338,7 @@ export default {
             const result = await response.text();
 
             const commentHolder = convertTextToHTML(result);
+            
 
             return { comment, commentHolder, codeId };
           });
@@ -366,9 +367,7 @@ export default {
       }
     },
 
-    async initDiscussionFileCommentForm(form) {
-      form.addEventListener("submit", this.submitDiscussionFileCommentForm);
-    },
+
   },
 };
 </script>

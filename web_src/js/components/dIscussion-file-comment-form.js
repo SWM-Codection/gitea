@@ -79,6 +79,18 @@ export function removeCommentForm(event) {
   }
 }
 
+function removeEditCommentForm(event) {
+  if (
+    event.target &&
+    event.target.classList.contains("cancel-code-comment")
+  ) {
+    const commentForm = event.target.closest("tr");
+    if (commentForm) {
+      commentForm.remove();
+    }
+  }
+}
+
 export function convertTextToHTML(text) {
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = text;
@@ -107,4 +119,16 @@ export async function fetchCommentForm(requestURL) {
     console.error(err.message);
   }
 }
+
+export async function fetchEditCommentForm() {
+
+  try {
+    const response = await GET()
+  } catch(err) {
+
+  }
+
+}
+
+
 
