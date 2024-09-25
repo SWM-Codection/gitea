@@ -1,4 +1,5 @@
 import {POST} from '../modules/fetch.js';
+import $ from 'jquery';
 
 async function fetchAiSampleCodes(data, aiCodeContainers) {
   try {
@@ -61,9 +62,25 @@ async function saveAiSampleCode(data, aiCodeModal) {
       throw new Error('Failed to save AI sample codes');
     }
 
-    // 데이터 저장 성공 후 모달 닫기 (선택 사항)
-    const isHidden = aiCodeModal.classList.contains('tw-hidden');
-    if (!isHidden) aiCodeModal.classList.add('tw-hidden');
+    const $newConversationHolder = $(await response.text());
+    const {path, side, idx} = $newConversationHolder.data();
+
+    // 현재 코멘트 위치를 새로운 코멘트로 교체
+    const selector = `.conversation-holder[data-path="${path}"][data-side="${side}"][data-idx="${idx}"]`;
+    const $currentCommentHolder = $(selector);
+
+    if ($currentCommentHolder.length) {
+      $currentCommentHolder.replaceWith($newConversationHolder);
+    } else {
+      console.warn('Could not find the comment holder with the given selector.');
+    }
+
+    // 새로 추가된 코멘트에 대한 드롭다운 기능 활성화
+    $newConversationHolder.find('.dropdown').dropdown();
+
+    if (!aiCodeModal.classList.contains('tw-hidden')) {
+      aiCodeModal.classList.add('tw-hidden');
+    }
   } catch (error) {
     console.error('Error saving AI sample codes:', error);
     alert(`Error saving AI sample codes: ${error.message}`);

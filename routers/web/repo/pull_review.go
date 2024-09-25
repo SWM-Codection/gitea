@@ -22,6 +22,8 @@ import (
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/context/upload"
 	"code.gitea.io/gitea/services/forms"
+	"code.gitea.io/gitea/models/repo"
+	"code.gitea.io/gitea/modules/git"
 	pull_service "code.gitea.io/gitea/services/pull"
 	user_service "code.gitea.io/gitea/services/user"
 )
@@ -188,6 +190,7 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 		})
 		return
 	}
+	println(sampleCode.Id)
 
 	targetComment, err := issues_model.GetCommentByID(ctx, targetCommentId)
 	if err != nil {
@@ -200,18 +203,17 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 		return
 	}
 
+	if err = targetComment.Issue.LoadRepo(ctx); err != nil {
+		ctx.ServerError("Issue.LoadRepo", err)
+		return
+	}
+	
+	initializeRepo(ctx, targetComment.Issue.Repo.OwnerName, targetComment.Issue.Repo.Name)
 	renderConversation(ctx, targetComment, form.OriginData)
-	ctx.JSON(http.StatusAccepted, sampleCode)
 }
-
 
 // 체크 코멘트가 만들어졌을 때 렌더링 되는 곳
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {
-	println(origin)
-	println(ctx.Doer.LowerName)
-	println(comment.TreePath)
-	println(comment.Issue.ID)
-	println("here")
 	ctx.Data["PageIsPullFiles"] = origin == "diff"
 
 	// showOutdatedComments := origin == "timeline" || ctx.Data["ShowOutdatedComments"].(bool)
@@ -400,4 +402,24 @@ func UpdateViewedFiles(ctx *context.Context) {
 	if err := pull_model.UpdateReviewState(ctx, ctx.Doer.ID, pull.ID, data.HeadCommitSHA, updatedFiles); err != nil {
 		ctx.ServerError("UpdateReview", err)
 	}
+}
+
+func initializeRepo(ctx *context.Context, ownerName string, repoName string) {
+    if ctx.Repo.Repository == nil {
+        repo, err := repo.GetRepositoryByOwnerAndName(ctx, ownerName, repoName)
+        if err != nil {
+            ctx.ServerError("GetRepositoryByOwnerAndName", err)
+            return
+        }
+        ctx.Repo.Repository = repo
+    }
+
+    if ctx.Repo.GitRepo == nil {
+        gitRepo, err := git.OpenRepository(ctx, ctx.Repo.Repository.RepoPath())
+        if err != nil {
+            ctx.ServerError("OpenRepository", err)
+            return
+        }
+        ctx.Repo.GitRepo = gitRepo
+    }
 }
