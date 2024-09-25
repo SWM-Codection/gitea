@@ -184,7 +184,7 @@ type DiscussionErrorResponse struct {
 	message   string
 }
 
-func handleResponse(resp *resty.Response) error {
+func validateResponse(resp *resty.Response) error {
 	if resp.IsError() {
 		var errResp DiscussionErrorResponse
 		if err := json.Unmarshal(resp.Body(), &errResp); err != nil {
@@ -205,7 +205,7 @@ func PostDiscussion(request *PostDiscussionRequest) (int, error) {
 		return -1, fmt.Errorf("failed to make POST /discussion request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return -1, err
 	}
 
@@ -224,7 +224,7 @@ func GetDiscussion(repoId int64) (*DiscussionResponse, error) {
 		return nil, fmt.Errorf("failed to make GET /discussion/%d request: %w", repoId, err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -243,7 +243,7 @@ func GetDiscussionCount(repoId int64) (*DiscussionCountResponse, error) {
 		return nil, fmt.Errorf("failed to make GET /discussion/%d/count request: %w", repoId, err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -266,7 +266,7 @@ func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListRe
 		return nil, fmt.Errorf("failed to make GET /discussion/%d/list request: %w", repoId, err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -285,7 +285,7 @@ func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error
 		return nil, fmt.Errorf("failed to make GET /discussion/%d/contents request: %w", discussionId, err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -305,7 +305,7 @@ func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse
 		return nil, fmt.Errorf("failed to make GET /discussion/comment request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -324,7 +324,7 @@ func HandleDiscussionAvailable() (*resty.Response, error) {
 		return nil, fmt.Errorf("failed to make POST /discussion/available request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -339,7 +339,7 @@ func PostComment(request *PostCommentRequest) (*int64, error) {
 		return nil, fmt.Errorf("failed to make POST /discussion/comment request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -360,7 +360,7 @@ func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error)
 		return nil, fmt.Errorf("failed to make PUT /discussion request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -380,7 +380,7 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return err
 	}
 
@@ -395,7 +395,7 @@ func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
 		return fmt.Errorf("failed to make PUT /discussion/comment request: %w", err)
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return err
 	}
 
@@ -461,7 +461,7 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 		return nil, err
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return nil, fmt.Errorf("failed to GetDiscussionContents %w", err)
 	}
 
@@ -474,7 +474,7 @@ func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 		return err
 	}
 
-	if err := handleResponse(resp); err != nil {
+	if err := validateResponse(resp); err != nil {
 		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
 	}
 
