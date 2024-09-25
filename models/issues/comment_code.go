@@ -51,12 +51,7 @@ func fetchCodeCommentsByReview(ctx context.Context, issue *Issue, currentUser *u
 		}
 
 		if aiSampleCode != nil {
-			aiComment, err := convertAiSampleCodeToComment(
-				ctx,
-				aiSampleCode,
-				issue,
-				comment,
-			)
+			aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
 			if err != nil {
 				return nil, err
 			}
@@ -298,8 +293,8 @@ func convertAiSampleCodeToComment(ctx context.Context, aiSampleCode *discussion_
 		PosterID:    -3,
 		IssueID:     aiSampleCode.TargetCommentId,
 		Content:     aiSampleCode.Content,
-		CreatedUnix: aiSampleCode.CreatedUnix,
-		UpdatedUnix: aiSampleCode.UpdatedUnix,
+		CreatedUnix: target_comment.CreatedUnix+1,
+		UpdatedUnix: target_comment.UpdatedUnix+1,
 		CommitSHA:   target_comment.CommitSHA,
 		Line:        target_comment.Line,
 	}
