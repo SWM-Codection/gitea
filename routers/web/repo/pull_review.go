@@ -216,8 +216,7 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {
 	ctx.Data["PageIsPullFiles"] = origin == "diff"
 
-	// showOutdatedComments := origin == "timeline" || ctx.Data["ShowOutdatedComments"].(bool)
-	showOutdatedComments := false
+	showOutdatedComments := origin == "timeline" || ctx.Data["ShowOutdatedComments"].(bool)
 	comments, err := issues_model.FetchCodeCommentsByLine(ctx, comment.Issue, ctx.Doer, comment.TreePath, comment.Line, showOutdatedComments)
 	if err != nil {
 		ctx.ServerError("FetchCodeCommentsByLine", err)
