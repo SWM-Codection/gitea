@@ -1232,10 +1232,11 @@ func registerRoutes(m *web.Route) {
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
 				m.Delete("/comment", repo.DeleteDiscussionFileComment)
-
+				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
 
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
+			m.Get("/comment/reply/{id}", repo.RenderNewDiscussionCommentReply)
 			m.Get("/comments/{codeId}", repo.DiscussionComments)
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 

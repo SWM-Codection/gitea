@@ -19,6 +19,11 @@
 			</div>
 			{{template "repo/discussion/file_comment_datahandler" dict "hidden" true "root" $ "comment" $comment}}
 		</div>
+		<input type="hidden" name="groupId" value = {{$comment.GroupId}}>
+		<input type="hidden" name="dId" value = {{$comment.DiscussionId}}> 
+		<input type="hidden" name="startLine" value="{{$comment.StartLine}}">
+		<input type="hidden" name="endLine" value="{{$comment.EndLine}}">
+		<input type="hidden" name="codeId" value = "{{printf "%d" $comment.CodeId}}">
 	</div>
 {{else}}
 

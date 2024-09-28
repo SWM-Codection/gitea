@@ -13,7 +13,7 @@
                 <!-- 사용자 쓰기 권한 추가하기 -->
 				{{if or .ctxData.Permission.IsAdmin .IsCommentPoster}}
 					<div class="divider"></div>
-					<div class="item context js-aria-clickable discussion-edit-content">{{ctx.Locale.Tr "repo.issues.context.edit"}}</div>
+					<div class="item context js-aria-clickable discussion-edit-content" data-comment-id={{.item.HashTag}}  >{{ctx.Locale.Tr "repo.issues.context.edit"}}</div>
 					{{if .delete}}
 						<div class="item context js-aria-clickable discussion-delete-comment" data-comment-id={{.item.HashTag}} data-url="{{.ctxData.RepoLink}}/discussions/{{.item.ID}}/comment" data-locale="{{ctx.Locale.Tr "repo.issues.delete_comment_confirm"}}">{{ctx.Locale.Tr "repo.issues.context.delete"}}</div>
 					{{end}}

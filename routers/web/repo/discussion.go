@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -35,6 +36,7 @@ const (
 	tplDiscussionFileComments   base.TplName = "repo/discussion/file_comments"
 	tplDiscussionFiles          base.TplName = "repo/discussion/view_file"
 	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
+	tplDiscussionFileComment    base.TplName = "repo/discussion/file_comment_holder"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -194,6 +196,7 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 		form.CodeId = nil
 		form.StartLine = nil
 		form.EndLine = nil
+		form.GroupId = nil
 	}
 
 	req := &discussion_client.PostCommentRequest{
@@ -201,6 +204,7 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 		Scope:        commentScope,
 		PosterId:     ctx.Doer.ID,
 		Content:      form.Content,
+		GroupId:      form.GroupId,
 		CodeId:       form.CodeId,
 		StartLine:    form.StartLine,
 		EndLine:      form.EndLine,
@@ -230,10 +234,12 @@ func (list ReactionList) GroupByType() map[string]ReactionList {
 
 type DiscussionComment struct {
 	ID              int64
+	DiscussionId    int64
 	Poster          *user_model.User
 	GroupId         int64
 	Content         string
 	StartLine       int64
+	CodeId          int64
 	EndLine         int64
 	Reactions       ReactionList
 	RenderedContent template.HTML
@@ -266,13 +272,16 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	comments := make([]*DiscussionComment, 0, 1)
 
 	newComment := &DiscussionComment{
-		ID:          comment.Id,
-		StartLine:   comment.StartLine,
-		EndLine:     comment.EndLine,
-		CreatedUnix: comment.CreatedUnix,
-		Reactions:   comment.Reactions,
-		Poster:      poster,
-		Content:     comment.Content,
+		ID:           comment.Id,
+		StartLine:    comment.StartLine,
+		DiscussionId: comment.DiscussionId,
+		GroupId:      comment.GroupId,
+		EndLine:      comment.EndLine,
+		CodeId:       comment.CodeId,
+		CreatedUnix:  comment.CreatedUnix,
+		Reactions:    comment.Reactions,
+		Poster:       poster,
+		Content:      comment.Content,
 	}
 	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
 		Ctx: ctx,
@@ -287,8 +296,61 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 
 	comments = append(comments, newComment)
 	ctx.Data["comments"] = comments
+	ctx.Data["DiscussionId"] = newComment.DiscussionId
+	if newComment.GroupId == newComment.ID {
+		ctx.HTML(http.StatusOK, tplDiscussionFileComments)
+	} else {
+		ctx.HTML(http.StatusOK, tplDiscussionFileComment)
+	}
+}
 
-	ctx.HTML(http.StatusOK, tplDiscussionFileComments)
+// TODO: 추후 NewDiscussionPost 메소드와 통합할지 고려해보기
+func RenderNewDiscussionCommentReply(ctx *context.Context) {
+
+	id := ctx.ParamsInt64("id")
+	comment, err := discussion_client.GetDiscussionComment(id)
+
+	if err != nil {
+		ctx.ServerError("failed to fetch comment: %v", err)
+		return
+	}
+
+	poster, err := user_model.GetUserByID(ctx, comment.PosterId)
+
+	if err != nil {
+		ctx.ServerError("failed to fetch user data: %v", err)
+		return
+	}
+
+	// TODO: 답글 기능 고려해서 넣기
+	comments := make([]*DiscussionComment, 0, 1)
+
+	newComment := &DiscussionComment{
+		ID:           comment.Id,
+		StartLine:    comment.StartLine,
+		DiscussionId: comment.DiscussionId,
+		EndLine:      comment.EndLine,
+		CodeId:       comment.CodeId,
+		CreatedUnix:  comment.CreatedUnix,
+		Reactions:    comment.Reactions,
+		Poster:       poster,
+		Content:      comment.Content,
+	}
+	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+		Ctx: ctx,
+		Links: markup.Links{
+			Base: ctx.Repo.RepoLink,
+		},
+	}, newComment.Content)
+
+	if err != nil {
+		ctx.ServerError("markdown rendering failed : %v", err)
+	}
+
+	comments = append(comments, newComment)
+	ctx.Data["comments"] = comments
+	ctx.Data["DiscussionId"] = newComment.DiscussionId
+	ctx.HTML(http.StatusOK, tplDiscussionFileComment)
 
 }
 
@@ -311,14 +373,16 @@ func groupDiscussionFileCommentsByGroupId(
 		}
 
 		discussionComment := DiscussionComment{
-			ID:          comment.Id,
-			StartLine:   comment.StartLine,
-			GroupId:     comment.GroupId,
-			EndLine:     comment.EndLine,
-			CreatedUnix: comment.CreatedUnix,
-			Reactions:   comment.Reactions,
-			Poster:      poster,
-			Content:     comment.Content,
+			ID:           comment.Id,
+			StartLine:    comment.StartLine,
+			DiscussionId: comment.DiscussionId,
+			CodeId:       comment.CodeId,
+			GroupId:      comment.GroupId,
+			EndLine:      comment.EndLine,
+			CreatedUnix:  comment.CreatedUnix,
+			Reactions:    comment.Reactions,
+			Poster:       poster,
+			Content:      comment.Content,
 		}
 
 		discussionComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
@@ -335,6 +399,7 @@ func groupDiscussionFileCommentsByGroupId(
 		comments[discussionComment.GroupId] = append(comments[discussionComment.GroupId], &discussionComment)
 
 	}
+
 	return comments, nil
 }
 
@@ -343,7 +408,13 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 	resp := make([]*DiscussionFileCommentsResponse, 0, len(commentGroups))
 
 	for _, groupComments := range commentGroups {
+
+		sort.Slice(groupComments, func(i, j int) bool {
+			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
+		})
+
 		ctx.Data["comments"] = groupComments
+		ctx.Data["DiscussionId"] = groupComments[0].DiscussionId
 		html, err := ctx.RenderToHTML(tplDiscussionFileComments, ctx.Data)
 
 		if err != nil {
@@ -493,6 +564,62 @@ func DeleteDiscussionFileComment(ctx *context.Context) {
 	}
 
 	ctx.JSONOK()
+
+}
+
+func ModifyDiscussionFileComment(ctx *context.Context) {
+
+	form := web.GetForm(ctx).(*forms.ModifyDiscussionCommentForm)
+
+	commentScope := util.Iif(
+		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
+		discussion_client.CommentScopeLocal,
+		discussion_client.CommentScopeGlobal,
+	)
+
+	posterId := ctx.Doer.ID
+
+	discussionId := ctx.ParamsInt64(":discussionId")
+
+	request := &discussion_client.ModifyDiscussionCommentRequest{
+		DiscussionId:        discussionId,             // discussionId 변수는 이미 전달된 것으로 가정
+		DiscussionCommentId: form.DiscussionCommentId, // form에서 넘어온 DiscussionCommentId
+		CodeId:              form.CodeId,              // form에서 넘어온 CodeId (포인터)
+		PosterId:            posterId,                 // posterId는 전달된 값 (별도의 변수로 가정)
+		Scope:               commentScope,             // scope는 전달된 값 (별도의 변수로 가정, CommentScopeEnum 타입)
+		StartLine:           form.StartLine,           // form에서 넘어온 StartLine (포인터)
+		EndLine:             form.EndLine,             // form에서 넘어온 EndLine (포인터)
+		Content:             form.Content,             // form에서 넘어온 Content
+	}
+
+	err := discussion_client.ModifyDiscussionComment(request)
+
+	if err != nil {
+		ctx.ServerError("modify request failed %v", err)
+		return
+	}
+
+	var renderedContent template.HTML
+	if request.Content != "" {
+		renderedContent, err = markdown.RenderString(&markup.RenderContext{
+			Ctx: ctx,
+			Links: markup.Links{
+				Base: ctx.Repo.RepoLink,
+			},
+		}, request.Content)
+		if err != nil {
+			ctx.ServerError("RenderString", err)
+			return
+		}
+
+	} else {
+		contentEmpty := fmt.Sprintf(`<span class="no-content">%s</span>`, ctx.Tr("repo.issues.no_content"))
+		renderedContent = template.HTML(contentEmpty)
+	}
+
+	ctx.JSON(http.StatusOK, map[string]any{
+		"content": renderedContent,
+	})
 
 }
 
