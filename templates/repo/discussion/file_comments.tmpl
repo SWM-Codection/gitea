@@ -11,7 +11,7 @@
 				<div class="ui buttons tw-mr-1">
 				</div>
 				{{if and $.SignedUserID (not $.Repository.IsArchived)}}
-					<button class="comment-form-reply ui primary tiny labeled icon button tw-ml-1 tw-mr-0">
+					<button class="discussion-file-comment-form-reply ui primary tiny labeled icon button tw-ml-1 tw-mr-0">
 						{{svg "octicon-reply" 16 "reply icon tw-mr-1"}}{{ctx.Locale.Tr "repo.diff.comment.reply"}}
 					</button>
 				{{end}}

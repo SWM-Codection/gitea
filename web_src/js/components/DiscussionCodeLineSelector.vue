@@ -32,7 +32,7 @@ import {
   validateTextareaNonEmpty,
 } from "../features/comp/ComboMarkdownEditor";
 import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
-import {initDiscussionCommentEventHandler} from "../features/discussion-file-comment";
+import { initDiscussionCommentEventHandler } from "../features/discussion-file-comment";
 
 const { pageData } = window.config;
 
@@ -246,8 +246,6 @@ export default {
       }
     },
 
-    
-
     beginDrag() {
       if (!this.currentDraggedPosition) {
         return;
@@ -403,8 +401,8 @@ export default {
         );
         const commentHolderText = await resp.text();
 
-        const commentHolder = this.convertTextToHTML(commentHolderText)
-        initDiscussionCommentEventHandler(commentHolder)
+        const commentHolder = this.convertTextToHTML(commentHolderText);
+        initDiscussionCommentEventHandler(commentHolder);
 
         form
           .closest(".discussion-file-comment-holder")
@@ -426,38 +424,41 @@ export default {
     async fetchDiscussionComments() {
       try {
         const codeBlocks = this.content.codeBlocks;
-        const commentPromises = codeBlocks.flatMap((codeBlock) => {
-          const { codeId, comments } = codeBlock;
-          return comments.map(async (comment) => {
-            const response = await GET(
-              `${this.repoLink}/discussions/comment/${comment.id}`,
-            );
-            const result = await response.text();
+        const commentPromises = codeBlocks.map(async (codeBlock) => {
+          const { codeId } = codeBlock;
+          const response = await GET(
+            `${this.repoLink}/discussions/comments/${codeId}`,
+          );
 
-            const commentHolder = this.convertTextToHTML(result);
+          const commentGroups = await response.json();
 
-            return { comment, commentHolder, codeId };
+          return commentGroups.map((result) => {
+            const line = result.endLine;
+            const commentHolder = result.html;
+
+            return { line, commentHolder, codeId };
           });
         });
 
-        const allComments = await Promise.all(commentPromises);
+        const allCommentsNested = await Promise.all(commentPromises);
+        const allComments = allCommentsNested.flat();
 
-        allComments.forEach(({ comment, commentHolder, codeId }) => {
+        allComments.forEach(({ line, commentHolder, codeId }) => {
           const targetLine = this.$refs.codeTable.querySelector(
-            `#line-${codeId}-${comment.endLine}`,
+            `#line-${codeId}-${line}`,
           );
+          commentHolder = this.convertTextToHTML(commentHolder)
 
           if (targetLine) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
             td.setAttribute("colspan", "3");
             td.appendChild(commentHolder);
-            initDiscussionCommentEventHandler(commentHolder)
+            initDiscussionCommentEventHandler(commentHolder);
             tr.appendChild(td);
             targetLine.insertAdjacentElement("afterend", tr);
           }
         });
-        
       } catch (e) {
         console.error("Error processing code blocks:", e);
       }

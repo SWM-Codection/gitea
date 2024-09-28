@@ -1,8 +1,13 @@
 import { DELETE } from "../modules/fetch.js";
 
-export function initDiscussionCommentEventHandler(comment) {
-  initDiscussionCommentDropDown(comment);
-  initDiscussionCommentDelete(comment);
+export function initDiscussionCommentEventHandler(commentsHolder) {
+
+  const comments = commentsHolder.querySelectorAll(".comment")
+
+  comments.forEach(comment => {
+    initDiscussionCommentDropDown(comment);
+    initDiscussionCommentDelete(comment);
+  });
 }
 
 function initDiscussionCommentDelete(comment) {
@@ -22,8 +27,8 @@ function initDiscussionCommentDelete(comment) {
         const response = await DELETE(deleteUrl);
         if (!response.ok) throw new Error('Failed to delete comment');
 
-        const commentElement = comment.querySelector(`#${commentId}`);
-        commentElement?.parentElement.remove();
+        comment.remove()
+
       } catch (error) {
         console.error(error);
       }
@@ -58,4 +63,38 @@ function initDiscussionCommentDropDown(comment) {
         }
     });
 
+}
+
+function initDiscussionCommentReply(commentHolder) {
+  const replyButton = commentHolder.querySelector(".discussion-file-comment-form-reply")
+}
+
+
+async function fetchReplyForm(queryParams) {
+
+  const requestURL = new URL(`${this.repoLink}/discussions/comment`);
+  Object.entries(queryParams).forEach(([key, value]) => {
+    requestURL.searchParams.set(key, value);
+  });
+
+  try {
+    const response = await GET(requestURL.toString());
+    if (!response.ok) {
+      this.errorText = response.statusText;
+      return;
+    }
+    const body = await response.text();
+
+    const placeholder = await this.createCommentPlaceHolder(body);
+
+    const targetLine = event.target.closest("tr");
+    targetLine.insertAdjacentElement("afterend", placeholder);
+
+    placeholder.addEventListener("click", this.removeCommentForm, {
+      capture: true,
+    });
+  } catch (err) {
+    this.errorText = err.message;
+    console.error(this.errorText);
+  }
 }

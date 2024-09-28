@@ -128,6 +128,7 @@ type FileContent struct {
 
 type DiscussionCommentResponse struct {
 	Id          int64                 `json:"id"`
+	GroupId     int64                 `json:"groupId"`
 	PosterId    int64                 `json:"posterId"`
 	Scope       string                `json:"scope"`
 	StartLine   int64                 `json:"startLine"`
@@ -246,6 +247,19 @@ func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse
 	return result, nil
 }
 
+func GetDiscussionCommentsByCodeId(codeId int64) ([]*DiscussionCommentResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/comments/%d", codeId))
+
+	result := make([]*DiscussionCommentResponse, 0)
+
+	if err = json.Unmarshal(resp.Body(), &result); err != nil {
+	 	return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+
+	}
+
+	return result, nil
+}
+
 func HandleDiscussionAvailable() (*resty.Response, error) {
 	return client.Request().Post("/discussion/available")
 }
@@ -327,7 +341,6 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 	}
 	return result, nil
 }
-
 
 func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 	resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
