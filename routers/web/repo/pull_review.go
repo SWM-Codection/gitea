@@ -420,5 +420,6 @@ func initializeRepo(ctx *context.Context, ownerName string, repoName string) {
             return
         }
         ctx.Repo.GitRepo = gitRepo
+		defer ctx.Repo.GitRepo.Close()
     }
 }
