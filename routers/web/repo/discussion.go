@@ -370,7 +370,7 @@ func SetDiscussionDeadline(ctx *context.Context) {
 	if form.Deadline != nil && !form.Deadline.IsZero() {
     	deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
         	23, 59, 59, 0, time.Local)
-    	// deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
+    	deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
 	}
 	println(deadlineUnix)
 

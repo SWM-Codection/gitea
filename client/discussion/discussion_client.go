@@ -347,7 +347,8 @@ func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 }
 
 func SetDiscussionDeadline(discussionId int64, deadline int64) error {
-	resp, err := client.Request().Patch(fmt.Sprintf("discussion/deadline/%d?dealine=%d", discussionId, deadline))
+	resp, err := client.Request().SetQueryParam("deadline", strconv.FormatInt(deadline, 10)).Patch(fmt.Sprintf("/discussion/deadline/%d", discussionId))
+
 	if err != nil {
 		return err
 	}
