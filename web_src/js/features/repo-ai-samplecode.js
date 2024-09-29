@@ -26,8 +26,9 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
     if (Array.isArray(result) && result.length === 3) {
       for (const [index, sampleCodeObj] of result.entries()) {
         if (aiCodeContainers[index]) {
-          // sample_code에 하이라이트된 HTML이 포함되므로, innerHTML로 설정
-          aiCodeContainers[index].innerHTML = `<pre><code>${sampleCodeObj.sample_code}</code></pre>`;
+          // innerHTML을 사용하여 마크다운이 적용된 HTML을 표시하고, 원본 마크다운도 저장
+          aiCodeContainers[index].innerHTML = sampleCodeObj.sample_code;
+          aiCodeContainers[index].setAttribute('data-original-markdown', sampleCodeObj.original_markdown);
         }
       }
     } else {
@@ -118,9 +119,16 @@ export function initAiSampleCodeModal() {
   }
 
   aiCodeModalInsert.addEventListener('click', async () => {
+    if (!selectedCodeContainer) {
+      alert('코드 영역을 선택하세요.');
+      return;
+    }
+
+    const originalMarkdown = selectedCodeContainer.getAttribute('data-original-markdown');
+
     const data = {
       target_comment_id: commentId.toString(),
-      sample_code_content: selectedCodeContainer.textContent,
+      sample_code_content: originalMarkdown, // original_markdown 값을 sample_code_content로 전달
       type: 'pull',
     };
     await saveAiSampleCode(data, aiCodeModal);
