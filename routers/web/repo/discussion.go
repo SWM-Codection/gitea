@@ -160,6 +160,14 @@ func ViewDiscussion(ctx *context.Context) {
 		assignees = append(assignees, assignee)
 		println(len(assignees))
 	}
+	repo := ctx.Repo.Repository
+	assigneeUsers, err := repo_model.GetRepoAssignees(ctx, repo)
+	if err != nil {
+		ctx.ServerError("GetRepoAssignees", err)
+		return
+	}
+	println(len(assignees))
+
 	participants[0] = poster
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
@@ -170,6 +178,7 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["DiscussionAssignees"] = assignees
 	ctx.Data["Participants"] = participants
 	ctx.Data["NumParticipants"] = len(participants)
+	ctx.Data["Assignees"] = MakeSelfOnTop(ctx.Doer, assigneeUsers)
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 

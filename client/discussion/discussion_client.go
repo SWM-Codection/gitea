@@ -347,11 +347,11 @@ func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 }
 
 func SetDiscussionDeadline(discussionId int64, deadline int64) error {
-	resp, err := client.Request().SetQueryParam("deadline", strconv.FormatInt(deadline, 10)).Patch(fmt.Sprintf("/discussion/deadline/%d", discussionId))
+	resp, _ := client.Request().SetQueryParam("deadline", strconv.FormatInt(deadline, 10)).Patch(fmt.Sprintf("/discussion/deadline/%d", discussionId))
 
-	if err != nil {
+	if err := json.Unmarshal(resp.Body(), resp); err != nil {
 		return err
-	}
+	}	
 
 	if resp.StatusCode() != 204 {
 		return fmt.Errorf("failed to set deadline, got %d", resp.StatusCode())
