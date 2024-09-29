@@ -304,56 +304,6 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	}
 }
 
-// TODO: 추후 NewDiscussionPost 메소드와 통합할지 고려해보기
-func RenderNewDiscussionCommentReply(ctx *context.Context) {
-
-	id := ctx.ParamsInt64("id")
-	comment, err := discussion_client.GetDiscussionComment(id)
-
-	if err != nil {
-		ctx.ServerError("failed to fetch comment: %v", err)
-		return
-	}
-
-	poster, err := user_model.GetUserByID(ctx, comment.PosterId)
-
-	if err != nil {
-		ctx.ServerError("failed to fetch user data: %v", err)
-		return
-	}
-
-	// TODO: 답글 기능 고려해서 넣기
-	comments := make([]*DiscussionComment, 0, 1)
-
-	newComment := &DiscussionComment{
-		ID:           comment.Id,
-		StartLine:    comment.StartLine,
-		DiscussionId: comment.DiscussionId,
-		EndLine:      comment.EndLine,
-		CodeId:       comment.CodeId,
-		CreatedUnix:  comment.CreatedUnix,
-		Reactions:    comment.Reactions,
-		Poster:       poster,
-		Content:      comment.Content,
-	}
-	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
-		Ctx: ctx,
-		Links: markup.Links{
-			Base: ctx.Repo.RepoLink,
-		},
-	}, newComment.Content)
-
-	if err != nil {
-		ctx.ServerError("markdown rendering failed : %v", err)
-	}
-
-	comments = append(comments, newComment)
-	ctx.Data["comments"] = comments
-	ctx.Data["DiscussionId"] = newComment.DiscussionId
-	ctx.HTML(http.StatusOK, tplDiscussionFileComment)
-
-}
-
 type DiscussionFileCommentsResponse struct {
 	Html    *template.HTML `json:"html"`
 	EndLine int64          `json:"endLine"`
