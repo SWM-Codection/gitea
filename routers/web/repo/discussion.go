@@ -230,9 +230,11 @@ func (list ReactionList) GroupByType() map[string]ReactionList {
 
 type DiscussionComment struct {
 	ID              int64
+	DiscussionId    int64
 	Poster          *user_model.User
 	Content         string
 	StartLine       int64
+	CodeId          int64
 	EndLine         int64
 	Reactions       ReactionList
 	RenderedContent template.HTML
@@ -265,13 +267,15 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	comments := make([]*DiscussionComment, 0, 1)
 
 	newComment := &DiscussionComment{
-		ID:          comment.Id,
-		StartLine:   comment.StartLine,
-		EndLine:     comment.EndLine,
-		CreatedUnix: comment.CreatedUnix,
-		Reactions:   comment.Reactions,
-		Poster:      poster,
-		Content:     comment.Content,
+		ID:           comment.Id,
+		StartLine:    comment.StartLine,
+		DiscussionId: comment.DiscussionId,
+		EndLine:      comment.EndLine,
+		CodeId:       comment.CodeId,
+		CreatedUnix:  comment.CreatedUnix,
+		Reactions:    comment.Reactions,
+		Poster:       poster,
+		Content:      comment.Content,
 	}
 	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
 		Ctx: ctx,
@@ -286,7 +290,7 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 
 	comments = append(comments, newComment)
 	ctx.Data["comments"] = comments
-
+	ctx.Data["DiscussionId"] = newComment.DiscussionId
 	ctx.HTML(http.StatusOK, tplDiscussionFileComments)
 
 }
@@ -396,6 +400,62 @@ func DeleteDiscussionFileComment(ctx *context.Context) {
 	}
 
 	ctx.JSONOK()
+
+}
+
+func ModifyDiscussionFileComment(ctx *context.Context) {
+
+	form := web.GetForm(ctx).(*forms.ModifyDiscussionCommentForm)
+
+	commentScope := util.Iif(
+		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
+		discussion_client.CommentScopeLocal,
+		discussion_client.CommentScopeGlobal,
+	)
+
+	posterId := ctx.Doer.ID
+
+	discussionId := ctx.ParamsInt64(":discussionId")
+
+	request := &discussion_client.ModifyDiscussionCommentRequest{
+		DiscussionId:        discussionId,             // discussionId 변수는 이미 전달된 것으로 가정
+		DiscussionCommentId: form.DiscussionCommentId, // form에서 넘어온 DiscussionCommentId
+		CodeId:              form.CodeId,              // form에서 넘어온 CodeId (포인터)
+		PosterId:            posterId,                 // posterId는 전달된 값 (별도의 변수로 가정)
+		Scope:               commentScope,             // scope는 전달된 값 (별도의 변수로 가정, CommentScopeEnum 타입)
+		StartLine:           form.StartLine,           // form에서 넘어온 StartLine (포인터)
+		EndLine:             form.EndLine,             // form에서 넘어온 EndLine (포인터)
+		Content:             form.Content,             // form에서 넘어온 Content
+	}
+
+	err := discussion_client.ModifyDiscussionComment(request)
+
+	if err != nil {
+		ctx.ServerError("modify request failed %v", err)
+		return
+	}
+
+	var renderedContent template.HTML
+	if request.Content != "" {
+		renderedContent, err = markdown.RenderString(&markup.RenderContext{
+			Ctx: ctx,
+			Links: markup.Links{
+				Base: ctx.Repo.RepoLink,
+			},
+		}, request.Content)
+		if err != nil {
+			ctx.ServerError("RenderString", err)
+			return
+		}
+
+	} else {
+		contentEmpty := fmt.Sprintf(`<span class="no-content">%s</span>`, ctx.Tr("repo.issues.no_content"))
+		renderedContent = template.HTML(contentEmpty)
+	}
+
+	ctx.JSON(http.StatusOK, map[string]any{
+		"content": renderedContent,
+	})
 
 }
 

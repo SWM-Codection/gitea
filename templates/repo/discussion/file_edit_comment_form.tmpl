@@ -1,0 +1,31 @@
+{{if and $.root.SignedUserID (not $.Repository.IsArchived)}}
+<form class="ui form tw-hidden edit-comment-form" action="{{$.root.RepoLink}}/discussions/{{$.root.DiscussionId}}/comment" method="put" data-get-url="{{$.root.RepoLink}}/discussions/comment">
+
+	{{$.root.CsrfTokenHtml}}
+		<input type="hidden" name="id" value="{{.item.ID}}">
+		<input type="hiden" name="discussionId"> 
+        <input type="hidden" name="startLine" value="{{.item.StartLine}}">
+        <input type="hidden" name="endLine" value="{{.item.EndLine}}">
+        <input type="hidden" name="codeId" value = "{{.item.CodeId}}">
+
+		{{template "shared/combomarkdowneditor" (dict
+			"MarkdownPreviewUrl" (print $.root.Repository.Link "/markup")
+			"MarkdownPreviewContext" $.root.RepoLink
+			"TextareaName" "content"
+			"TextareaPlaceholder" (ctx.Locale.Tr "repo.diff.comment.placeholder")
+			"DropzoneParentContainer" "form"
+			"DisableAutosize" "true"
+		)}}
+
+		<div class="field footer tw-mx-2">
+			<span class="markup-info">{{svg "octicon-markdown"}} {{ctx.Locale.Tr "repo.diff.comment.markdown_info"}}</span>
+			<div class="tw-text-right">
+				<button name="edit_comment" value="true" type="submit" class="ui submit primary tiny basic button btn-edit-comment">{{ctx.Locale.Tr "repo.diff.comment.add_single_comment"}}</button>
+	
+				{{if or (not $.HasComments) $.hidden}}
+					<button type="button" class="ui submit tiny basic button btn-cancel cancel-edit-code-comment">{{ctx.Locale.Tr "cancel"}}</button>
+				{{end}}
+			</div>
+		</div>
+</form>
+{{end}}

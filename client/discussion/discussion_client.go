@@ -107,6 +107,17 @@ type DiscussionListResponse struct {
 	Discussions []*Discussion `json:"discussions"`
 }
 
+type ModifyDiscussionCommentRequest struct {
+	DiscussionId        int64            `json:"discussionId"`
+	DiscussionCommentId int64            `json:"discussionCommentId"`
+	CodeId              *int64           `json:"codeId"`
+	PosterId            int64            `json:"posterId"`
+	Scope               CommentScopeEnum `json:"scope"`
+	StartLine           *int32           `json:"startLine"`
+	EndLine             *int32           `json:"endLine"`
+	Content             string           `json:"content"`
+}
+
 type DiscussionCountResponse struct {
 	OpenCount  int `json:"openCount"`
 	CloseCount int `json:"closeCount"`
@@ -127,14 +138,16 @@ type FileContent struct {
 }
 
 type DiscussionCommentResponse struct {
-	Id          int64                 `json:"id"`
-	PosterId    int64                 `json:"posterId"`
-	Scope       string                `json:"scope"`
-	StartLine   int64                 `json:"startLine"`
-	EndLine     int64                 `json:"endLine"`
-	Content     string                `json:"content"`
-	CreatedUnix timeutil.TimeStamp    `json:"createdUnix"`
-	Reactions   []*DiscussionReaction `json:"reactions"`
+	Id           int64                 `json:"id"`
+	DiscussionId int64                 `json:"discussionId"`
+	PosterId     int64                 `json:"posterId"`
+	CodeId       int64                 `json:"codeId"`
+	Scope        string                `json:"scope"`
+	StartLine    int64                 `json:"startLine"`
+	EndLine      int64                 `json:"endLine"`
+	Content      string                `json:"content"`
+	CreatedUnix  timeutil.TimeStamp    `json:"createdUnix"`
+	Reactions    []*DiscussionReaction `json:"reactions"`
 }
 
 type ReactionTypeEnum = string
@@ -162,6 +175,13 @@ type DiscussionContentResponse struct {
 	Contents        []FileContent               `json:"contents"`
 	GlobalComments  []DiscussionCommentResponse `json:"globalComments"`
 	GlobalReactions []DiscussionReaction        `json:"discussionReaction"`
+}
+
+type DiscussionResponseError struct {
+	TimeStamp timeutil.TimeStamp `json:"timestamp"`
+	Status    int                `json:"status"`
+	Error     string             `json:"error"`
+	message   string             `json:"message"`
 }
 
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
@@ -358,4 +378,24 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 
 func (dr DiscussionResponse) IsPoster(id int64) bool {
 	return dr.PosterId == id
+}
+
+func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
+
+	resp, err := client.Request().SetBody(request).Put("/discussion/comment")
+
+	if resp.IsError() {
+		result := &DiscussionResponseError{}
+		if err := json.Unmarshal(resp.Body(), result); err != nil {
+			return err
+		}
+		log.Error("modify discussion comment failed: %s", err.Error())
+		return fmt.Errorf("modify discussion comment failed: %s", err.Error())
+
+	}
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

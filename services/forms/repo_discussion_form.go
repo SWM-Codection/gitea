@@ -34,3 +34,16 @@ func (dc *CreateDiscussionCommentForm) Validate(req *http.Request, errs binding.
 	return middleware.Validate(errs, ctx.Data, dc, ctx.Locale)
 }
 
+type ModifyDiscussionCommentForm struct {
+	DiscussionCommentId int64  `form:"id"`
+	Content             string `form:"content"`
+
+	CodeId    *int64 `form:"codeId"`
+	StartLine *int32 `form:"startLine"`
+	EndLine   *int32 `form:"endLine"`
+}
+
+func (mc *ModifyDiscussionCommentForm) Validate(req *http.Request, errs binding.Errors) binding.Errors {
+	ctx := context.GetValidateContext(req)
+	return middleware.Validate(errs, ctx.Data, mc, ctx.Locale)
+}
