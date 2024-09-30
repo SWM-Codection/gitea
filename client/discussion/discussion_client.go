@@ -168,9 +168,9 @@ type DiscussionDeadline struct {
 	Deadline *time.Time `json:"due_date"`
 }
 
-type ModifyAssigneesRequest struct {
-	DiscussionId	int64	`json:"discussion_id"`
-	Assignees		[]int64 `json:"assinees"`
+type UpdateAssigneeRequest struct {
+	DiscussionId	int64	`json:"discussionId"`
+	AssigneeId		int64 	`json:"assigneeId"`
 }
 
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
@@ -381,4 +381,30 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 
 func (dr DiscussionResponse) IsPoster(id int64) bool {
 	return dr.PosterId == id
+}
+
+func UpdateDiscussionAssignee(request *UpdateAssigneeRequest) error {
+	resp, err := client.Request().SetBody(request).Patch("/discussion/assignees")
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("failed to update assignee, got %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+func ClearDiscussionAssignee(discussionId int64) error {
+	resp, err := client.Request().Delete(fmt.Sprintf("/discussion/assignees?discussionId=%d", discussionId))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("failed to clear assignee, got %d", resp.StatusCode())
+	}
+
+	return nil
 }

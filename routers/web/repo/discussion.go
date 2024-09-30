@@ -371,9 +371,6 @@ func SetDiscussionClosedState(ctx *context.Context) {
 func SetDiscussionDeadline(ctx *context.Context) {
 	form := web.GetForm(ctx).(*api.EditDeadlineOption)
 	discussionId := ctx.ParamsInt64(":discussionId")
-	println("here")
-	println(discussionId)
-
 	var deadlineUnix int64 // Unix 타임스탬프를 저장할 int64 변수
 	var deadline time.Time
 	if form.Deadline != nil && !form.Deadline.IsZero() {
@@ -381,7 +378,6 @@ func SetDiscussionDeadline(ctx *context.Context) {
         	23, 59, 59, 0, time.Local)
     	deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
 	}
-	println(deadlineUnix)
 
 	err := discussion_client.SetDiscussionDeadline(discussionId, deadlineUnix)
 	if err != nil {
@@ -490,7 +486,28 @@ func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, p
 	return roleDescriptor, nil
 }
 
-func UpdateDiscussionAssignee(ctx *context.Context) {
-	/*req := &discussion_client.ModifyAssigneesRequest{
-	}*/
+func UpdateDiscussionAssignee(ctx *context.Context)  {
+	assigneeId := ctx.FormInt64("id")
+	discussionId := ctx.FormInt64("issue_ids")
+	action := ctx.FormString("action")
+	println(assigneeId)
+	println(discussionId)
+	println(action)
+
+	switch action {
+	case "clear":
+		err := discussion_client.ClearDiscussionAssignee(discussionId)
+		if err != nil {
+			ctx.ServerError("error on discussion response: err = %v", err)
+		}
+	default:
+		req := &discussion_client.UpdateAssigneeRequest{
+			DiscussionId:	discussionId,
+			AssigneeId: 	assigneeId,
+		}
+		err := discussion_client.UpdateDiscussionAssignee(req)
+		if err != nil {
+			ctx.ServerError("error on discussion response: err = %v", err)
+		}
+	}
 }

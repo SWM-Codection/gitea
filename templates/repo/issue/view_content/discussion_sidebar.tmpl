@@ -8,7 +8,7 @@
             <!-- {{end}} 아래 svg 활성화 -->
 			{{svg "octicon-gear" 16 "tw-ml-1"}}
         </a>
-        <div class="filter menu" data-action="update" data-discussion-id="{{$.Discussion.Id}}" data-update-url="{{$.RepoLink}}/discussions/assignee">
+        <div class="filter menu" data-action="update" data-issue-id="{{$.Discussion.Id}}" data-update-url="{{$.RepoLink}}/discussions/assignee">
             <div class="ui icon search input">
                 <i class="icon">{{svg "octicon-search" 16}}</i>
                 <input type="text" placeholder="{{ctx.Locale.Tr "repo.issues.filter_assignees"}}">
