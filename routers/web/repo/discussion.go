@@ -489,3 +489,8 @@ func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, p
 	}
 	return roleDescriptor, nil
 }
+
+func UpdateDiscussionAssignee(ctx *context.Context) {
+	/*req := &discussion_client.ModifyAssigneesRequest{
+	}*/
+}

@@ -168,6 +168,11 @@ type DiscussionDeadline struct {
 	Deadline *time.Time `json:"due_date"`
 }
 
+type ModifyAssigneesRequest struct {
+	DiscussionId	int64	`json:"discussion_id"`
+	Assignees		[]int64 `json:"assinees"`
+}
+
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
 	log.Info("PostDiscussion request : %v", request)
 	resp, err := client.Request().SetBody(request).Post("/discussion")
