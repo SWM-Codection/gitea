@@ -222,12 +222,13 @@ func GetDiscussionCount(repoId int64) (*DiscussionCountResponse, error) {
 	return result, nil
 }
 
-func GetDiscussionList(repoId int64, isClosed bool, page int) (*DiscussionListResponse, error) {
+func GetDiscussionList(repoId int64, isClosed bool, page int, sort string) (*DiscussionListResponse, error) {
 	isClosedAsString := strconv.FormatBool(isClosed)
 	pageAsString := strconv.Itoa(page)
 	resp, err := client.Request().
 		SetQueryParam("isClosed", isClosedAsString).
 		SetQueryParam("page", pageAsString).
+		SetQueryParam("sort", sort).
 		Get(fmt.Sprintf("/discussion/%d/list", repoId))
 	if err != nil {
 		return nil, err
@@ -347,7 +348,6 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 	}
 	return result, nil
 }
-
 
 func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 	resp, err := client.Request().Patch(fmt.Sprintf("discussion/state/%d?isClosed=%t", discussionId, isClosed))
