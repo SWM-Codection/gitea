@@ -165,8 +165,16 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 	pathToLineToComment := make(CodeComments)
 	var comments CommentList
 
+	pullRequest, err := GetPullRequestByIssueID(ctx, issue.ID)
+	if err != nil || pullRequest == nil {
+		return nil, err
+	}
+
+	println(issue.ID)
+	println(pullRequest.ID)
+
 	// AiPullComment 리스트를 가져옴
-	aiPullComments, err := fetchAiPullComments(ctx, issue)
+	aiPullComments, err := fetchAiPullComments(ctx, pullRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +208,12 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 }
 
 func FetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string, line int64) (*Comment, error) {
-	aiPullComment, err := fetchAiPullCommentByLine(ctx, issue, treePath, line)
+	pullRequest, err := GetPullRequestByIssueID(ctx, issue.ID)
+	if err != nil || pullRequest == nil {
+		return nil, err
+	}
+	
+	aiPullComment, err := fetchAiPullCommentByLine(ctx, pullRequest, treePath, line)
 	if err != nil || aiPullComment == nil {
 		return nil, err
 	}
