@@ -384,7 +384,7 @@ func (dr DiscussionResponse) IsPoster(id int64) bool {
 }
 
 func UpdateDiscussionAssignee(request *UpdateAssigneeRequest) error {
-	resp, err := client.Request().SetBody(request).Patch("/discussion/assignees")
+	resp, err := client.Request().SetBody(request).Put("/discussion/assignees")
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func UpdateDiscussionAssignee(request *UpdateAssigneeRequest) error {
 }
 
 func ClearDiscussionAssignee(discussionId int64) error {
-	resp, err := client.Request().Delete(fmt.Sprintf("/discussion/assignees?discussionId=%d", discussionId))
+	resp, err := client.Request().Delete(fmt.Sprintf("/discussion/assignees/%d", discussionId))
 	if err != nil {
 		return err
 	}
