@@ -1,5 +1,5 @@
 {{if and $.root.SignedUserID (not $.Repository.IsArchived)}}
-<form class="ui form {{if $.hidden}}tw-hidden comment-form{{end}}" action="{{$.root.RepoLink}}/discussions/{{$.root.DiscussionId}}/comment" method="post">
+<form class="ui form {{if $.hidden}}tw-hidden comment-form{{end}}" action="{{$.root.RepoLink}}/discussions/{{$.root.DiscussionId}}/comment" method="post" data-get-url="{{$.root.RepoLink}}/discussions/comment">
 
 	{{$.root.CsrfTokenHtml}}
         <input type="hidden" name="startLine" value="{{$.root.StartLine}}">

@@ -387,20 +387,20 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 	return nil
 }
 
-func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
-	resp, err := client.Request().
-		SetBody(request).
-		Put("/discussion/comment")
-	if err != nil {
-		return fmt.Errorf("failed to make PUT /discussion/comment request: %w", err)
-	}
+// func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
+// 	resp, err := client.Request().
+// 		SetBody(request).
+// 		Put("/discussion/comment")
+// 	if err != nil {
+// 		return fmt.Errorf("failed to make PUT /discussion/comment request: %w", err)
+// 	}
 
-	if err := validateResponse(resp); err != nil {
-		return err
-	}
+// 	if err := validateResponse(resp); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 /**
  * discussion methods
@@ -481,7 +481,21 @@ func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 	return nil
 }
 
-
 func (dr DiscussionResponse) IsPoster(id int64) bool {
 	return dr.PosterId == id
+}
+
+func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
+
+	resp, err := client.Request().SetBody(request).Put("/discussion/comment")
+
+	if err != nil {
+		return err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+
+	return nil
 }
