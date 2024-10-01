@@ -28,7 +28,7 @@
 <script>
 import { GET, POST } from "../modules/fetch";
 import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
-import {initDiscussionCommentEventHandler} from "../features/discussion-file-comment.js";
+import {initDiscussionCommentsEventHandler} from "../features/discussion-file-comment.js";
 import { convertTextToHTML, createCommentPlaceHolder, fetchCommentForm, initDiscussionFileCommentForm} from "./dIscussion-file-comment-form.js";
 
 const { pageData } = window.config;
@@ -309,7 +309,7 @@ export default {
       const { codeId, startPosition, endPosition } = this.currentDraggedRange;
       const queryParams = {
         discussionId: this.discussionId,
-        codeId,
+        codeId : codeId,
         startLine: startPosition.lineNumber,
         endLine: endPosition.lineNumber,
       };
@@ -329,39 +329,41 @@ export default {
     async fetchDiscussionComments() {
       try {
         const codeBlocks = this.content.codeBlocks;
-        const commentPromises = codeBlocks.flatMap((codeBlock) => {
-          const { codeId, comments } = codeBlock;
-          return comments.map(async (comment) => {
-            const response = await GET(
-              `${this.repoLink}/discussions/comment/${comment.id}`,
-            );
-            const result = await response.text();
+        const commentPromises = codeBlocks.map(async (codeBlock) => {
+          const { codeId } = codeBlock;
+          const response = await GET(
+            `${this.repoLink}/discussions/comments/${codeId}`,
+          );
 
-            const commentHolder = convertTextToHTML(result);
-            
+          const commentGroups = await response.json();
 
-            return { comment, commentHolder, codeId };
+          return commentGroups.map((result) => {
+            const line = result.endLine;
+            const commentHolder = result.html;
+
+            return { line, commentHolder, codeId };
           });
         });
 
-        const allComments = await Promise.all(commentPromises);
+        const allCommentsNested = await Promise.all(commentPromises);
+        const allComments = allCommentsNested.flat();
 
-        allComments.forEach(({ comment, commentHolder, codeId }) => {
+        allComments.forEach(({ line, commentHolder, codeId }) => {
           const targetLine = this.$refs.codeTable.querySelector(
-            `#line-${codeId}-${comment.endLine}`,
+            `#line-${codeId}-${line}`,
           );
+          commentHolder = convertTextToHTML(commentHolder)
 
           if (targetLine) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
             td.setAttribute("colspan", "3");
             td.appendChild(commentHolder);
-            initDiscussionCommentEventHandler(commentHolder)
+            initDiscussionCommentsEventHandler(commentHolder);
             tr.appendChild(td);
             targetLine.insertAdjacentElement("afterend", tr);
           }
         });
-        
       } catch (e) {
         console.error("Error processing code blocks:", e);
       }

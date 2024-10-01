@@ -1,6 +1,11 @@
 import { initComboMarkdownEditor, validateTextareaNonEmpty } from "../features/comp/ComboMarkdownEditor.js";
-import { initDiscussionCommentEventHandler } from "../features/discussion-file-comment.js";
+import { initDiscussionCommentEventHandler, initDiscussionCommentsEventHandler } from "../features/discussion-file-comment.js";
 import { GET, POST } from "../modules/fetch.js";
+import { hideElem, showElem } from "../utils/dom.js";
+
+
+const { pageData } = window.config;
+
 
 export async function createCommentPlaceHolder(commentText) {
   const placeholder = document.createElement("tr");
@@ -54,11 +59,11 @@ async function submitDiscussionFileCommentForm(event) {
     const commentHolderText = await resp.text();
 
     const commentHolder = convertTextToHTML(commentHolderText)
-    initDiscussionCommentEventHandler(commentHolder)
 
     form
-      .closest(".discussion-file-comment-holder")
       .replaceWith(commentHolder);
+    initDiscussionCommentsEventHandler(commentHolder)
+
   } catch (e) {
 
     console.error(e.message);
@@ -120,13 +125,68 @@ export async function fetchCommentForm(requestURL) {
   }
 }
 
-export async function fetchEditCommentForm() {
+export async function fetchCommentReplyForm(requestURL) {
 
   try {
-    const response = await GET()
-  } catch(err) {
+    const response = await GET(requestURL.toString());
+    if (!response.ok) {
+      
+      return;
+    }
+    const body = await response.text();
+    const placeholder = convertTextToHTML(body);
+    await initComboMarkdownEditor(placeholder.querySelector(".combo-markdown-editor"));
 
+    placeholder.addEventListener("click", removeCommentForm, {
+      capture: true,
+    });
+
+    return placeholder
+
+  } catch (err) {
+    console.error(err.message);
   }
+}
+
+
+export async function renderReplyCommentForm(event) {
+
+  try {
+    const button = event.target;
+    const commentHolder = button.closest(".discussion-file-comment-holder");
+    const commentsList = commentHolder.querySelector(".comments")
+    const discussionId = commentHolder.querySelector("input[name='dId']").value;
+    const codeId = commentHolder.querySelector("input[name='codeId']").value;
+    const startLine = commentHolder.querySelector("input[name='startLine']").value;
+    const endLine = commentHolder.querySelector("input[name='endLine']").value;
+
+    const queryParams = {
+      discussionId: discussionId,
+      codeId : codeId,
+      startLine: startLine,
+      endLine: endLine,
+    };
+
+    const requestURL = new URL(`${pageData.RepoLink}/discussions/comment`);
+    Object.entries(queryParams).forEach(([key, value]) => {
+      requestURL.searchParams.set(key, value);
+    });
+
+    const commentForm = await fetchCommentReplyForm(requestURL);
+    initDiscussionFileCommentForm(commentForm);
+    const groupId = commentHolder.querySelector("input[name='groupId']").value;
+    const groupIdInput = document.createElement("input");
+    groupIdInput.setAttribute("type", "hidden");
+    groupIdInput.setAttribute("name", "groupId");
+    groupIdInput.setAttribute("value", groupId);
+    commentForm.appendChild(groupIdInput);
+    commentsList.appendChild(commentForm);
+
+
+  } catch (err) {
+    console.error(err.message);
+  }
+
 
 }
 

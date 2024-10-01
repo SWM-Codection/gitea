@@ -1,4 +1,5 @@
-import { fetchCommentForm } from "../components/dIscussion-file-comment-form.js";
+import { comment } from "postcss";
+import { fetchCommentForm, renderReplyCommentForm } from "../components/dIscussion-file-comment-form.js";
 import { DELETE, PUT } from "../modules/fetch.js";
 import { hideElem, showElem } from "../utils/dom.js";
 import {
@@ -6,7 +7,24 @@ import {
   initComboMarkdownEditor,
 } from "./comp/ComboMarkdownEditor.js";
 
-export function initDiscussionCommentEventHandler(comment) {
+export function initDiscussionCommentsEventHandler(commentsHolder) {
+
+  const comments = commentsHolder.querySelectorAll(".comment")
+
+  if (comments.length === 0) {
+    initDiscussionCommentEventHandler(commentsHolder)
+    return
+  }
+
+  comments.forEach(comment => {
+    initDiscussionCommentEventHandler(comment)
+  });
+  initDiscussionCommentReply(commentsHolder);
+
+
+}
+
+export async function initDiscussionCommentEventHandler(comment) {
   initDiscussionCommentDropDown(comment);
   initDiscussionCommentDelete(comment);
   initDiscussionCommentUpdate(comment);
@@ -29,8 +47,12 @@ function initDiscussionCommentDelete(comment) {
         const response = await DELETE(deleteUrl);
         if (!response.ok) throw new Error("Failed to delete comment");
 
-        const commentElement = comment.querySelector(`#${commentId}`);
-        commentElement?.parentElement.remove();
+        if (comment.parentElement.children.length === 1) {
+          comment.closest(".discussion-file-comment-holder").remove();
+          return
+        }
+        comment.remove()
+
       } catch (error) {
         console.error(error);
       }
@@ -132,3 +154,11 @@ function initDiscussionCommentDropDown(comment) {
     }
   });
 }
+
+function initDiscussionCommentReply(commentHolder) {
+  const replyButton = commentHolder.querySelector(".discussion-file-comment-form-reply")
+  if (!replyButton) return;
+  replyButton.addEventListener("click", renderReplyCommentForm) 
+
+}
+

@@ -22,8 +22,8 @@ func (d *CreateDiscussionForm) Validate(req *http.Request, errs binding.Errors) 
 }
 
 type CreateDiscussionCommentForm struct {
-	Content string `form:"content"`
-
+	Content   string `form:"content"`
+	GroupId   *int64 `form:"groupId"`
 	CodeId    *int64 `form:"codeId"`
 	StartLine *int32 `form:"startLine"`
 	EndLine   *int32 `form:"endLine"`

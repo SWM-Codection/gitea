@@ -53,6 +53,7 @@ const (
 type PostCommentRequest struct {
 	DiscussionId int64            `json:"discussionId"`
 	CodeId       *int64           `json:"codeId"`
+	GroupId      *int64            `json:"groupId"`
 	PosterId     int64            `json:"posterId"`
 	Scope        CommentScopeEnum `json:"scope"`
 	StartLine    *int32           `json:"startLine"`
@@ -139,6 +140,7 @@ type FileContent struct {
 
 type DiscussionCommentResponse struct {
 	Id           int64                 `json:"id"`
+	GroupId      int64                 `json:"groupId"`
 	DiscussionId int64                 `json:"discussionId"`
 	PosterId     int64                 `json:"posterId"`
 	CodeId       int64                 `json:"codeId"`
@@ -315,6 +317,19 @@ func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse
 	}
 
 	return &result, nil
+}
+
+func GetDiscussionCommentsByCodeId(codeId int64) ([]*DiscussionCommentResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/comments/%d", codeId))
+
+	result := make([]*DiscussionCommentResponse, 0)
+
+	if err = json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+
+	}
+
+	return result, nil
 }
 
 func HandleDiscussionAvailable() (*resty.Response, error) {

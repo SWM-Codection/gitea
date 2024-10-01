@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -35,6 +36,7 @@ const (
 	tplDiscussionFileComments   base.TplName = "repo/discussion/file_comments"
 	tplDiscussionFiles          base.TplName = "repo/discussion/view_file"
 	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
+	tplDiscussionFileComment    base.TplName = "repo/discussion/file_comment_holder"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -194,6 +196,7 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 		form.CodeId = nil
 		form.StartLine = nil
 		form.EndLine = nil
+		form.GroupId = nil
 	}
 
 	req := &discussion_client.PostCommentRequest{
@@ -201,6 +204,7 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 		Scope:        commentScope,
 		PosterId:     ctx.Doer.ID,
 		Content:      form.Content,
+		GroupId:      form.GroupId,
 		CodeId:       form.CodeId,
 		StartLine:    form.StartLine,
 		EndLine:      form.EndLine,
@@ -232,6 +236,7 @@ type DiscussionComment struct {
 	ID              int64
 	DiscussionId    int64
 	Poster          *user_model.User
+	GroupId         int64
 	Content         string
 	StartLine       int64
 	CodeId          int64
@@ -270,6 +275,7 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 		ID:           comment.Id,
 		StartLine:    comment.StartLine,
 		DiscussionId: comment.DiscussionId,
+		GroupId:      comment.GroupId,
 		EndLine:      comment.EndLine,
 		CodeId:       comment.CodeId,
 		CreatedUnix:  comment.CreatedUnix,
@@ -291,7 +297,115 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	comments = append(comments, newComment)
 	ctx.Data["comments"] = comments
 	ctx.Data["DiscussionId"] = newComment.DiscussionId
-	ctx.HTML(http.StatusOK, tplDiscussionFileComments)
+	if newComment.GroupId == newComment.ID {
+		ctx.HTML(http.StatusOK, tplDiscussionFileComments)
+	} else {
+		ctx.HTML(http.StatusOK, tplDiscussionFileComment)
+	}
+}
+
+type DiscussionFileCommentsResponse struct {
+	Html    *template.HTML `json:"html"`
+	EndLine int64          `json:"endLine"`
+}
+
+func groupDiscussionFileCommentsByGroupId(
+	ctx *context.Context,
+	commentsResp []*discussion_client.DiscussionCommentResponse) (map[int64][]*DiscussionComment, error) {
+
+	comments := make(map[int64][]*DiscussionComment)
+
+	for _, comment := range commentsResp {
+		poster, err := user_model.GetUserByID(ctx, comment.PosterId)
+
+		if err != nil {
+			return nil, err
+		}
+
+		discussionComment := DiscussionComment{
+			ID:           comment.Id,
+			StartLine:    comment.StartLine,
+			DiscussionId: comment.DiscussionId,
+			CodeId:       comment.CodeId,
+			GroupId:      comment.GroupId,
+			EndLine:      comment.EndLine,
+			CreatedUnix:  comment.CreatedUnix,
+			Reactions:    comment.Reactions,
+			Poster:       poster,
+			Content:      comment.Content,
+		}
+
+		discussionComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+			Ctx: ctx,
+			Links: markup.Links{
+				Base: ctx.Repo.RepoLink,
+			},
+		}, discussionComment.Content)
+
+		if err != nil {
+			return nil, err
+		}
+
+		comments[discussionComment.GroupId] = append(comments[discussionComment.GroupId], &discussionComment)
+
+	}
+
+	return comments, nil
+}
+
+func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64][]*DiscussionComment) ([]*DiscussionFileCommentsResponse, error) {
+
+	resp := make([]*DiscussionFileCommentsResponse, 0, len(commentGroups))
+
+	for _, groupComments := range commentGroups {
+
+		sort.Slice(groupComments, func(i, j int) bool {
+			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
+		})
+
+		ctx.Data["comments"] = groupComments
+		ctx.Data["DiscussionId"] = groupComments[0].DiscussionId
+		html, err := ctx.RenderToHTML(tplDiscussionFileComments, ctx.Data)
+
+		if err != nil {
+			return nil, err
+		}
+
+		endLine := groupComments[0].EndLine
+
+		resp = append(resp, &DiscussionFileCommentsResponse{
+			Html:    &html,
+			EndLine: endLine,
+		})
+
+	}
+
+	return resp, nil
+
+}
+
+func DiscussionComments(ctx *context.Context) {
+	codeId := ctx.ParamsInt64("codeId")
+
+	commentsResp, err := discussion_client.GetDiscussionCommentsByCodeId(codeId)
+
+	if err != nil {
+		ctx.JSONError(err)
+	}
+
+	commentGroups, err := groupDiscussionFileCommentsByGroupId(ctx, commentsResp)
+
+	if err != nil {
+		ctx.JSONError(err)
+	}
+
+	resp, err := renderDiscussionFileComments(ctx, commentGroups)
+
+	if err != nil {
+		ctx.JSONError(err)
+	}
+
+	ctx.JSON(http.StatusOK, resp)
 
 }
 
