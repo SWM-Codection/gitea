@@ -859,11 +859,10 @@ func registerRoutes(m *web.Route) {
 	m.Group("/ai", func() {
 		m.Post("/pull/review", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
 		m.Post("/discussion/samples", bind(structs.GenerateAiSampleCodesForm{}), api_repo_router.GenerateAiSampleCodes)
-		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), api_repo_router.CreateAiSampleCode)
+		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), repo.SetShowOutdatedComments, repo.CreateAiPullSampleCode)
 		m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
 		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
-
-	})
+	}, ignSignIn)	
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
@@ -1234,10 +1233,11 @@ func registerRoutes(m *web.Route) {
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
 				m.Delete("/comment", repo.DeleteDiscussionFileComment)
-
+				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
 
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
+			m.Get("/comments/{codeId}", repo.DiscussionComments)
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.

@@ -89,24 +89,6 @@ func GenerateAiSampleCodes(ctx *context.Context) {
 	ctx.JSON(http.StatusAccepted, sampleCodes)
 }
 
-func CreateAiSampleCode(ctx *context.Context) {
-
-	// TODOC swagger 추가
-	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
-	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
-
-	sampleCode, err := ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
-
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]any{
-			"message": err.Error(),
-		})
-	}
-
-	ctx.JSON(http.StatusAccepted, sampleCode)
-
-}
-
 func DeleteAiSampleCode(ctx *context.Context) {
 
 	form := web.GetForm(ctx).(*api.DeleteSampleCodesForm)

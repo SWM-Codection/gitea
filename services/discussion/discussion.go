@@ -33,9 +33,10 @@ func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListR
 		page = 1
 	}
 	page-- // gitea uses 1-based paginiation methodology, but discussion backend uses 0-based pagination methodology
+	sort := ctx.FormString("sort")
 
 	log.Info("calling get discussion list with repoId: %v, isClosed: %v, page: %v", repoId, isClosed, page)
-	discussionListResponse, err := discussion_client.GetDiscussionList(repoId, isClosed, page)
+	discussionListResponse, err := discussion_client.GetDiscussionList(repoId, isClosed, page, sort)
 	if err != nil {
 		log.Info("discusisonClient.getdiscussionList failed1")
 		return nil, err

@@ -12,12 +12,12 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 	issues_model "code.gitea.io/gitea/models/issues"
 	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/modules/highlight"
+	"code.gitea.io/gitea/modules/markup"
 )
 
 type SampleCodeService interface {
 	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, sampleType string) (*api.AiSampleCodeResponse, error)
-	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error)
+	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*GenerateSampleCodeResponse, error)
 	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm) (*discussion_model.AiSampleCode, error)
 	DeleteAiSampleCode(ctx *context.Context, id int64) error
 }
@@ -91,7 +91,7 @@ func GetFileContentFromCommit(ctx *context.Context, repoPath, commitHash, filePa
 
 // TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
-func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error) {
+func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*GenerateSampleCodeResponse, error) {
 	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid TargetCommentId: %v", err)
@@ -126,13 +126,13 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 	wg := new(sync.WaitGroup)
 	wg.Add(AI_SAMPLE_CODE_UNIT)
 
-	resultQueue := make(chan *AiSampleCodeResponse, AI_SAMPLE_CODE_UNIT)
+	resultQueue := make(chan *GenerateSampleCodeResponse, AI_SAMPLE_CODE_UNIT)
 
 	for i := 0; i < AI_SAMPLE_CODE_UNIT; i++ {
 		go func(codeContent, commentContent string) {
 			defer wg.Done()
 
-			result, err := AiSampleCodeRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
+			response, err := AiSampleCodeRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
 				CodeContent:    codeContent,
 				CommentContent: commentContent,
 			})
@@ -142,8 +142,17 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 				resultQueue <- nil
 				return
 			}
+			
+			result := &GenerateSampleCodeResponse{
+				SampleCode:       "",
+				OriginalMarkdown: response.SampleCode,
+			}
 
-			highlightedCode, _ := highlight.Code(comment.TreePath, "", result.SampleCode)
+			highlightedCode, _ := markup.RenderString(&markup.RenderContext{
+				Ctx:  git.DefaultContext,
+				Type: "markdown",
+			}, result.OriginalMarkdown)
+
 			result.SampleCode = string(highlightedCode)
 
 			resultQueue <- result
@@ -153,7 +162,7 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 	wg.Wait()
 	close(resultQueue)
 
-	sampleCodes := make([]*AiSampleCodeResponse, 0, AI_SAMPLE_CODE_UNIT)
+	sampleCodes := make([]*GenerateSampleCodeResponse, 0, AI_SAMPLE_CODE_UNIT)
 	for result := range resultQueue {
 		sampleCodes = append(sampleCodes, result)
 	}

@@ -16,7 +16,7 @@
           <DiscussionFileCodeLine
             :lines="codeBlock.lines"
             :codeId="codeBlock.codeId"
-            @show-comment-form="showCommentForm"
+            @show-comment-form="renderCreateCommentForm"
             @handle-mouse-down="handleMouseDown"
           />
         </tbody>
@@ -27,12 +27,9 @@
 
 <script>
 import { GET, POST } from "../modules/fetch";
-import {
-  initComboMarkdownEditor,
-  validateTextareaNonEmpty,
-} from "../features/comp/ComboMarkdownEditor";
 import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
-import {initDiscussionCommentEventHandler} from "../features/discussion-file-comment";
+import {initDiscussionCommentsEventHandler} from "../features/discussion-file-comment.js";
+import { convertTextToHTML, createCommentPlaceHolder, fetchCommentForm, initDiscussionFileCommentForm} from "./dIscussion-file-comment-form.js";
 
 const { pageData } = window.config;
 
@@ -176,12 +173,12 @@ export default {
         return;
       }
 
-      this.addCommentDragSelectionEvent(table);
+      this.addCodeDragSelectionEvent(table);
       this.currentDraggedPosition = lineNumberElement;
       this.isDraggingForComment = true;
 
       const mouseUpHandler = () => {
-        this.removeCommentDragSelectionEvent(table);
+        this.removeCodeDragSelectionEvent(table);
         this.currentDraggedPosition = null;
         this.isDraggingForComment = false;
       };
@@ -196,7 +193,7 @@ export default {
       }
     },
 
-    commentDragSelectionIfMouseEnterToCode(codeElement) {
+    codeDragSelectionIfMouseEnterToCode(codeElement) {
       const target = this.prevLinkableLine(codeElement);
       if (!target || !this.isFileSelecting(codeElement)) {
         return;
@@ -204,17 +201,17 @@ export default {
       this.setSelection(target, true);
     },
 
-    commentDragSelectionIfMouseEnterToLineNumber(lineNumberElement) {
+    codeDragSelectionIfMouseEnterToLineNumber(lineNumberElement) {
       this.setSelection(lineNumberElement, true);
     },
 
-    addCommentDragSelectionEvent(table) {
+    addCodeDragSelectionEvent(table) {
       table.addEventListener("mouseenter", this.handleDragMouseEvent, {
         capture: true,
       });
     },
 
-    removeCommentDragSelectionEvent(table) {
+    removeCodeDragSelectionEvent(table) {
       this.isDraggingForComment = false;
       table.removeEventListener("mouseenter", this.handleDragMouseEvent, {
         capture: true,
@@ -240,13 +237,11 @@ export default {
       const linesCode = target.querySelector(".lines-code");
 
       if (linesNum && linesNum.classList.contains("lines-num")) {
-        this.commentDragSelectionIfMouseEnterToLineNumber(linesNum);
+        this.codeDragSelectionIfMouseEnterToLineNumber(linesNum);
       } else if (linesCode && linesCode.classList.contains("lines-code")) {
-        this.commentDragSelectionIfMouseEnterToCode(linesCode);
+        this.codeDragSelectionIfMouseEnterToCode(linesCode);
       }
     },
-
-    
 
     beginDrag() {
       if (!this.currentDraggedPosition) {
@@ -264,7 +259,7 @@ export default {
           this.showMultiLineCommentForm();
           this.showMultiLineCommentForm = null;
         }
-        this.removeCommentDragSelectionEvent(table);
+        this.removeCodeDragSelectionEvent(table);
         event.preventDefault();
       };
 
@@ -297,22 +292,11 @@ export default {
       return { codeId, lineNumber };
     },
 
-    async createCommentPlaceHolder(commentText) {
-      const placeholder = document.createElement("tr");
-      const td = document.createElement("td");
-      td.innerHTML = commentText;
-      td.setAttribute("colspan", "3");
-      placeholder.appendChild(td);
-      await initComboMarkdownEditor(td.querySelector(".combo-markdown-editor"));
-      await this.initDiscussionFileCommentForm(td.querySelector("form"));
-      return placeholder;
-    },
-
-    async showCommentForm(event) {
+    async renderCreateCommentForm(event) {
+      const targetLine = event.target.closest("tr");
       if (!this.isDraggingForComment) {
-        const line = event.target.closest("tr");
-
-        const { codeId, lineNumber } = this.extractDataFromLine(line);
+        
+        const { codeId, lineNumber } = this.extractDataFromLine(targetLine);
 
         const codeLinePosition = this.createCodePosition(codeId, lineNumber);
         this.currentDraggedRange = this.createCodeLineRange(
@@ -325,7 +309,7 @@ export default {
       const { codeId, startPosition, endPosition } = this.currentDraggedRange;
       const queryParams = {
         discussionId: this.discussionId,
-        codeId,
+        codeId : codeId,
         startLine: startPosition.lineNumber,
         endLine: endPosition.lineNumber,
       };
@@ -335,137 +319,57 @@ export default {
         requestURL.searchParams.set(key, value);
       });
 
-      try {
-        const response = await GET(requestURL.toString());
-        if (!response.ok) {
-          this.errorText = response.statusText;
-          return;
-        }
-        const body = await response.text();
+      const commentForm = await fetchCommentForm(requestURL)  
 
-        const placeholder = await this.createCommentPlaceHolder(body);
+      initDiscussionFileCommentForm(commentForm);
 
-        const targetLine = event.target.closest("tr");
-        targetLine.insertAdjacentElement("afterend", placeholder);
-
-        placeholder.addEventListener("click", this.removeCommentForm, {
-          capture: true,
-        });
-      } catch (err) {
-        this.errorText = err.message;
-        console.error(this.errorText);
-      }
-    },
-
-    removeCommentForm(event) {
-      if (
-        event.target &&
-        event.target.classList.contains("cancel-code-comment")
-      ) {
-        const commentForm = event.target.closest("tr");
-        if (commentForm) {
-          commentForm.remove();
-        }
-      }
-    },
-
-    async submitDiscussionFileCommentForm(event) {
-      event.preventDefault();
-      const form = event.target;
-
-      const textarea = form.querySelector("textarea");
-      if (!validateTextareaNonEmpty(textarea)) {
-        return;
-      }
-
-      if (form.classList.contains("is-loading")) {
-        return;
-      }
-
-      try {
-        form.classList.add("is-loading");
-        const formData = new FormData(form);
-
-        const response = await POST(
-          `${this.repoLink}/discussions/${this.discussionId}/comment`,
-          { data: formData },
-        );
-
-        if (!response.ok) {
-          this.errorText = response.statusText;
-          return;
-        }
-
-        const body = await response.json();
-
-        const resp = await GET(
-          `${this.repoLink}/discussions/comment/${body.id}`,
-        );
-        const commentHolderText = await resp.text();
-
-        const commentHolder = this.convertTextToHTML(commentHolderText)
-        initDiscussionCommentEventHandler(commentHolder)
-
-        form
-          .closest(".discussion-file-comment-holder")
-          .replaceWith(commentHolder);
-      } catch (e) {
-        this.errorText = e.message;
-        console.error(this.errorText);
-      } finally {
-        form.classList.remove("is-loading");
-      }
-    },
-
-    convertTextToHTML(text) {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = text;
-      return tempDiv.firstElementChild;
+      targetLine.insertAdjacentElement("afterend", commentForm);
     },
 
     async fetchDiscussionComments() {
       try {
         const codeBlocks = this.content.codeBlocks;
-        const commentPromises = codeBlocks.flatMap((codeBlock) => {
-          const { codeId, comments } = codeBlock;
-          return comments.map(async (comment) => {
-            const response = await GET(
-              `${this.repoLink}/discussions/comment/${comment.id}`,
-            );
-            const result = await response.text();
+        const commentPromises = codeBlocks.map(async (codeBlock) => {
+          const { codeId } = codeBlock;
+          const response = await GET(
+            `${this.repoLink}/discussions/comments/${codeId}`,
+          );
 
-            const commentHolder = this.convertTextToHTML(result);
+          const commentGroups = await response.json();
 
-            return { comment, commentHolder, codeId };
+          return commentGroups.map((result) => {
+            const line = result.endLine;
+            const commentHolder = result.html;
+
+            return { line, commentHolder, codeId };
           });
         });
 
-        const allComments = await Promise.all(commentPromises);
+        const allCommentsNested = await Promise.all(commentPromises);
+        const allComments = allCommentsNested.flat();
 
-        allComments.forEach(({ comment, commentHolder, codeId }) => {
+        allComments.forEach(({ line, commentHolder, codeId }) => {
           const targetLine = this.$refs.codeTable.querySelector(
-            `#line-${codeId}-${comment.endLine}`,
+            `#line-${codeId}-${line}`,
           );
+          commentHolder = convertTextToHTML(commentHolder)
 
           if (targetLine) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
             td.setAttribute("colspan", "3");
             td.appendChild(commentHolder);
-            initDiscussionCommentEventHandler(commentHolder)
+            initDiscussionCommentsEventHandler(commentHolder);
             tr.appendChild(td);
             targetLine.insertAdjacentElement("afterend", tr);
           }
         });
-        
       } catch (e) {
         console.error("Error processing code blocks:", e);
       }
     },
 
-    async initDiscussionFileCommentForm(form) {
-      form.addEventListener("submit", this.submitDiscussionFileCommentForm);
-    },
+
   },
 };
 </script>

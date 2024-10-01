@@ -1,5 +1,5 @@
 <p align="center">
-    <img height="360px" src="https://media.discordapp.net/attachments/1256491927877189693/1286599206353633401/Screenshot_2024-09-20_at_5.05.45_PM.png?ex=66ee7e62&is=66ed2ce2&hm=cf5f9ab984f6ad5c19c84da854ac4d7fcf98fa5c9fee09feab3c5ff2961ff51e&=&format=webp&quality=lossless&width=900&height=1200"/> 
+    <img height="360px" src="https://github.com/user-attachments/assets/c0e1a377-b180-40af-b02d-405389f7c296"/> 
 </p>
 
 <br/> 
@@ -42,7 +42,7 @@
 ## 프로젝트 개요 
 
 ### 프로젝트 소개
-![](https://media.discordapp.net/attachments/1256491927877189693/1286591486158307349/image.png?ex=66ee7732&is=66ed25b2&hm=c7f158e0b8c196f2ebeb21cd9de53a459c7f50b71deb9ed6595ff05a47c2f19f&=&format=webp&quality=lossless)
+![](https://github.com/user-attachments/assets/909346cc-22d6-46a0-b4e6-a1e0c7730c9c)
 
 Codection은 코드리뷰 효율성의 향상을 돕는 소프트웨어로서, 오픈 소스 프로젝트인 Gitea를 기반으로 동작하고 있습니다. 
 
@@ -51,13 +51,13 @@ Codection은 코드리뷰 효율성의 향상을 돕는 소프트웨어로서, �
 ### 시스템 구성도
 <center>
 
-![system-archiecture](https://media.discordapp.net/attachments/1265563286506569758/1268839428311220314/codection-gitea-diagram.png?ex=66edd30d&is=66ec818d&hm=1c3de5b48a73744cc49bc989655e4c4b1e792b67c2bf15d4a9ca43a0cc40fb6b&=&format=webp&quality=lossless)
+![system-archiecture](https://github.com/user-attachments/assets/a31c67a3-3fa2-4eb6-abe6-db4d9f9b889e)
 
 </center>
 
 <center>
 
-![application-architecture](https://media.discordapp.net/attachments/1256491927877189693/1286589234576363570/image.png?ex=66ee7519&is=66ed2399&hm=ec82ed4921877565ee5f0830b60bec037f615436ab20a05752a7836e3e40d9d6&=&format=webp&quality=lossless)
+![application-architecture](https://github.com/user-attachments/assets/bef5d209-5538-4d96-b74f-d11123c1e04c)
 
 </center>
 
@@ -65,7 +65,7 @@ Codection은 코드리뷰 효율성의 향상을 돕는 소프트웨어로서, �
 
 <center>
 
-![main-feature](https://media.discordapp.net/attachments/1256491927877189693/1286590303788339315/2024-09-20_4.30.15.png?ex=66ee7618&is=66ed2498&hm=c16320c99bbb40eac32dc11f2c331f7c9c8cec0d3bcb7d9241e5fd1fbe5261fb&=&format=webp&quality=lossless)
+![main-feature](https://github.com/user-attachments/assets/a6c3bbd0-80ee-4f1a-bb73-8821609713fe)
 
 </center>
 
@@ -84,7 +84,7 @@ WIP
 
 <center>
 
-![api-documentation](https://cdn.discordapp.com/attachments/1256491927877189693/1286581113585930281/image.png?ex=66ee6d89&is=66ed1c09&hm=40bd53cc799a21169e9297374eada50699b513cac33dffeafacdcda7fca56c56)
+![api-documentation](https://github.com/user-attachments/assets/7acffc5a-e7bf-4169-ae4b-a52e08f8f898)
 
 </center>
 
@@ -98,7 +98,7 @@ WIP
 
 <center>
 
-![ci](https://media.discordapp.net/attachments/1256491927877189693/1286587824136523786/Screenshot_2024-09-20_at_4.20.23_PM.png?ex=66ee73c8&is=66ed2248&hm=a0bfa1b96f40d1d1fa2ea4f0e3778e0eba4bf8833a885d730519859be069e72c&=&format=webp&quality=lossless)
+![ci](https://github.com/user-attachments/assets/70019a62-5669-4cdc-892e-694c1a8240e2)
 
 </center>
 
@@ -110,7 +110,7 @@ Github Actions 를 이용하여, CICD 파이프라인을 구축하였습니다.
 ### 개발 프로세스 
 <center>
 
-![jira-kanban](https://media.discordapp.net/attachments/1256491927877189693/1286577899234918470/image.png?ex=66ee6a8a&is=66ed190a&hm=c153abe913fc33c44f9dd621487cdcfe7216bcc0061cbdf62e6d3497db7f3b6c&=&format=webp&quality=lossless)
+![jira-kanban](https://github.com/user-attachments/assets/5397cd52-7082-47a6-9e5b-e3db872733df)
 
 </center>
 
@@ -121,7 +121,7 @@ Github Actions 를 이용하여, CICD 파이프라인을 구축하였습니다.
 
 <p align="center">
 
-<img src="https://cdn.discordapp.com/attachments/1256491927877189693/1286594749259583559/2024-09-20_4.47.40.png?ex=66ee7a3b&is=66ed28bb&hm=9e867f7062e9e2aca27b8465cd5a8a4a9d6987c8c8669b42e3ef850fbde5f06b"  height="1200"/>
+<img src="https://github.com/user-attachments/assets/4e4072a5-f340-4ff0-b80e-e203e7005238"  height="1200"/>
 
 
 </p>
@@ -132,8 +132,8 @@ Github Actions 를 이용하여, CICD 파이프라인을 구축하였습니다.
 
 <center>
 
-![gitflow](https://www.bitbull.it/blog/git-flow-come-funziona/gitflow-1.png)  
-git-flow 저
+![gitflow](https://github.com/user-attachments/assets/f89b2815-0add-4011-bc02-a7362a7f2438)  
+git-flow 전략
 
 </center>
 
@@ -142,7 +142,7 @@ git-flow 저
 ### 오픈 소스 컨트리뷰트
 <center>
 
-![issue-32080](https://media.discordapp.net/attachments/1256491927877189693/1286582370991869975/Screenshot_2024-09-20_at_3.58.34_PM.png?ex=66ee6eb4&is=66ed1d34&hm=7196b93e24ca313e76bf44e36baa330a76757d3911bf9ea2ec06e7ecfb8e3dd1&=&format=webp&quality=lossless)
+![issue-32080](https://github.com/user-attachments/assets/18ef0089-1f16-4e51-aa4e-b88776e17bfc)
 
 </center>
 
@@ -151,7 +151,7 @@ gitea 1.23 마일스톤에 등록하게끔 하는 성과를 이루었습니다.
 
 <center>
 
-![pr-32081](https://media.discordapp.net/attachments/1256491927877189693/1286582371361099859/Screenshot_2024-09-20_at_3.58.49_PM.png?ex=66ee6eb4&is=66ed1d34&hm=db788d473ce24b015b3d4b5a88cd7c873b4dbeb2f2a0595f10b30e6ffbaa5e1f&=&format=webp&quality=lossless)
+![pr-32081](https://github.com/user-attachments/assets/cb5a8c8a-6880-4640-bc24-6134beb8d081)
 
 </center>
 
