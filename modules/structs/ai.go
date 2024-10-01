@@ -18,6 +18,7 @@ type GenerateAiSampleCodesForm struct {
 }
 
 type CreateAiSampleCodesForm struct {
+	OriginData		  string `json:"origin_data"`
 	TargetCommentId   string `json:"target_comment_id"`
 	SampleCodeContent string `json:"sample_code_content"`
 	Type			  string `json:"type"`
