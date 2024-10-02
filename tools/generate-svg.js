@@ -45,7 +45,7 @@ async function processFile(file, {prefix, fullName} = {}) {
     ],
   });
 
-  await writeFile(fileURLToPath(new URL(`../public/assets/img/svg/${name}.svg`, import.meta.url)), data);
+  await writeFile(fileURLToPath(new URL(`https://d21gfi7kzrpyzn.cloudfront.net/public/assets/img/svg/${name}.svg`, import.meta.url)), data);
 }
 
 function processFiles(pattern, opts) {
