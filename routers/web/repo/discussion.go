@@ -37,6 +37,7 @@ const (
 	tplDiscussionFiles          base.TplName = "repo/discussion/view_file"
 	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
 	tplDiscussionFileComment    base.TplName = "repo/discussion/file_comment_holder"
+	tplDiscussionReactions      base.TplName = "repo/discussion/reactions"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -222,16 +223,6 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 
 }
 
-type ReactionList []*discussion_client.DiscussionReaction
-
-func (list ReactionList) GroupByType() map[string]ReactionList {
-	reactions := make(map[string]ReactionList)
-	for _, reaction := range list {
-		reactions[reaction.Type] = append(reactions[reaction.Type], reaction)
-	}
-	return reactions
-}
-
 type DiscussionComment struct {
 	ID              int64
 	DiscussionId    int64
@@ -241,7 +232,7 @@ type DiscussionComment struct {
 	StartLine       int64
 	CodeId          int64
 	EndLine         int64
-	Reactions       ReactionList
+	Reactions       discussion_client.ReactionList
 	RenderedContent template.HTML
 	CreatedUnix     timeutil.TimeStamp
 }
@@ -571,6 +562,70 @@ func ModifyDiscussionFileComment(ctx *context.Context) {
 		"content": renderedContent,
 	})
 
+}
+
+func ChangeDiscussionCommentReaction(ctx *context.Context) {
+	form := web.GetForm(ctx).(*forms.ReactionForm)
+	if ctx.Written() {
+		return
+	}
+	discussionId, err := strconv.ParseInt(ctx.Params(":discussionId"), 10, 64)
+	if err != nil {
+		ctx.Error(http.StatusBadRequest, "Invalid DiscussionId")
+	}
+	commentId, err := strconv.ParseInt(ctx.Params(":commentId"), 10, 64)
+	if err != nil {
+		ctx.Error(http.StatusBadRequest, "Invalid CommentId")
+	}
+	action := ctx.Params(":action")
+
+	req := discussion_client.DiscussionReactionRequest{
+		Type:         form.Content,
+		DiscussionId: discussionId,
+		CommentId:    commentId,
+		UserId:       ctx.Doer.ID,
+	}
+
+	switch action {
+	case "react":
+		// XXX: backend returns newly created reaction id, but that is useless..
+		_, err := discussion_client.GiveReaction(req)
+		if err != nil {
+			ctx.ServerError("Failed to Give Reaction", err)
+		}
+		log.Info("react on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
+	case "unreact":
+		err := discussion_client.RemoveReaction(req)
+		if err != nil {
+			ctx.ServerError("Failed to Remove Reaction", err)
+		}
+		log.Info("unreact on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
+	}
+
+	// FIXME: I know this job is clumsy, but because of current backend implementation. without rewriting backend code this is the lesser of two evil..
+	d, err := discussion_client.GetDiscussionContent(discussionId)
+	if err != nil {
+		ctx.ServerError("Failed to Get Discussion Content", err)
+	}
+	var reactions discussion_client.ReactionList
+	for _, gc := range d.GlobalComments {
+		if gc.Id == commentId {
+			reactions = gc.Reactions
+		}
+	}
+
+	// i can't ensure null safety ;0
+	html, err := ctx.RenderToHTML(tplDiscussionReactions, map[string]any{
+		"ActionURL": fmt.Sprintf("%s/discussions/%d/comment/%d/reactions", ctx.Repo.RepoLink, discussionId, commentId),
+		"Reactions": reactions.GroupByType(),
+	})
+	if err != nil {
+		ctx.ServerError("Failed to Render Reactions..", err)
+		return
+	}
+	ctx.JSON(http.StatusOK, map[string]any{
+		"html": html,
+	})
 }
 
 func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, poster *user_model.User, discussionResponse *discussion_client.DiscussionResponse) (issues_model.RoleDescriptor, error) {
