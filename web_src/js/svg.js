@@ -1,7 +1,8 @@
+/* eslint-disable i/no-unused-modules */
 import {h} from 'vue';
 import {parseDom, serializeXml} from './utils.js';
-const cloudfrontBaseURL = 'https://d21gfi7kzrpyzn.cloudfront.net/';
 
+const cloudfrontBaseURL = 'https://d21gfi7kzrpyzn.cloudfront.net/';
 const svgs = {
   'octicon-three-bars': `${cloudfrontBaseURL}public/assets/img/svg/octicon-three-bars.svg`,
   'octicon-cloud': `${cloudfrontBaseURL}public/assets/img/svg/octicon-cloud.svg`,
@@ -390,29 +391,34 @@ const svgs = {
 //  most of the SVG icons in assets couldn't be used directly.
 
 // retrieve an HTML string for given SVG icon name, size and additional classes
-export function svg(name, size = 16, className = '') {
-  if (!(name in svgs)) throw new Error(`Unknown SVG icon: ${name}`);
-  if (size === 16 && !className) return svgs[name];
 
-  const document = parseDom(svgs[name], 'image/svg+xml');
-  const svgNode = document.firstChild;
-  if (size !== 16) {
-    svgNode.setAttribute('width', String(size));
-    svgNode.setAttribute('height', String(size));
+export function svg(name, size = 16, className = '') {
+  if (!(name in svgs)) {
+    throw new Error(`Unknown SVG icon: ${name}`);
   }
-  if (className) svgNode.classList.add(...className.split(/\s+/).filter(Boolean));
-  return serializeXml(svgNode);
+
+  // SVG 파일 URL을 가져옴
+  const svgUrl = svgs[name];
+
+  // 이미지 태그를 만들어서 반환
+  const img = document.createElement('img');
+  img.src = svgUrl;
+  img.setAttribute('width', String(size));
+  img.setAttribute('height', String(size));
+
+  img.classList.add('svg', name);
+
+  if (className) {
+    img.classList.add(...className.split(/\s+/).filter(Boolean));
+  }
+
+  return img.outerHTML;
 }
 
 export function svgParseOuterInner(name) {
   const svgStr = svgs[name];
   if (!svgStr) throw new Error(`Unknown SVG icon: ${name}`);
 
-  // parse the SVG string to 2 parts
-  // * svgInnerHtml: the inner part of the SVG, will be used as the content of the <svg> VNode
-  // * svgOuter: the outer part of the SVG, including attributes
-  // the builtin SVG contents are clean, so it's safe to use `indexOf` to split the content:
-  // eg: <svg outer-attributes>${svgInnerHtml}</svg>
   const p1 = svgStr.indexOf('>'), p2 = svgStr.lastIndexOf('<');
   if (p1 === -1 || p2 === -1) throw new Error(`Invalid SVG icon: ${name}`);
   const svgInnerHtml = svgStr.slice(p1 + 1, p2);
@@ -428,38 +434,22 @@ export const SvgIcon = {
     name: {type: String, required: true},
     size: {type: Number, default: 16},
     className: {type: String, default: ''},
-    symbolId: {type: String},
   },
   render() {
-    let {svgOuter, svgInnerHtml} = svgParseOuterInner(this.name);
-    // https://vuejs.org/guide/extras/render-function.html#creating-vnodes
-    // the `^` is used for attr, set SVG attributes like 'width', `aria-hidden`, `viewBox`, etc
-    const attrs = {};
-    for (const attr of svgOuter.attributes) {
-      if (attr.name === 'class') continue;
-      attrs[`^${attr.name}`] = attr.value;
+    if (!(this.name in svgs)) {
+      throw new Error(`Unknown SVG icon: ${this.name}`);
     }
-    attrs[`^width`] = this.size;
-    attrs[`^height`] = this.size;
 
-    // make the <SvgIcon class="foo" class-name="bar"> classes work together
-    const classes = [];
-    for (const cls of svgOuter.classList) {
-      classes.push(cls);
-    }
-    // TODO: drop the `className/class-name` prop in the future, only use "class" prop
-    if (this.className) {
-      classes.push(...this.className.split(/\s+/).filter(Boolean));
-    }
-    if (this.symbolId) {
-      classes.push('tw-hidden', 'svg-symbol-container');
-      svgInnerHtml = `<symbol id="${this.symbolId}" viewBox="${attrs['^viewBox']}">${svgInnerHtml}</symbol>`;
-    }
-    // create VNode
-    return h('svg', {
-      ...attrs,
-      class: classes,
-      innerHTML: svgInnerHtml,
+    const svgUrl = svgs[this.name];
+    const imgAttrs = {
+      src: svgUrl,
+      width: this.size,
+      height: this.size,
+      class: this.className,
+    };
+
+    return h('img', {
+      ...imgAttrs,
     });
   },
 };

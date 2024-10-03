@@ -40,7 +40,7 @@ func MockIcon(icon string) func() {
 func RenderHTML(icon string, others ...any) template.HTML {
 	size, class := gitea_html.ParseSizeAndClass(defaultSize, "", others...)
 	if svgURL, ok := svgIcons[icon]; ok {
-		return template.HTML(fmt.Sprintf(`<img src="%s" class="svg %s" width="%d" height="%d" />`, svgURL, class, size, size))
+		return template.HTML(fmt.Sprintf(`<img src="%s" class="svg %s" width="%d" height="%d" />`, fmt.Sprintf(`https://d21gfi7kzrpyzn.cloudfront.net/%s`, svgURL), class, size, size))
 	}
 	return template.HTML(fmt.Sprintf("<span>%s(%d/%s)</span>", template.HTMLEscapeString(icon), size, template.HTMLEscapeString(class)))
 }
