@@ -2,6 +2,16 @@
 <div role="main" aria-label="{{.Title}}" class="page-content repository view discussion">
     {{template "repo/header" .}}
     <div class="ui container">
+        <div class="loading-overlay tw-hidden">
+            <div class="loading-overlay " style="flex-direction: column; justify-content: center;">
+                <h2>AI 샘플 코드 생성 중입니다</h2>
+                <div class="tw-inline-block tw-h-8 tw-w-8 tw-animate-spin tw-rounded-full tw-border-4 tw-border-solid tw-border-current tw-border-e-transparent tw-align-[-0.125em] tw-text-info motion-reduce:tw-animate-[spin_1.5s_linear_infinite]" role="status">
+                    <span class="!tw-absolute !tw--m-px !tw-h-px !tw-w-px !tw-overflow-hidden !tw-whitespace-nowrap !tw-border-0 !tw-p-0 ![tw-clip:rect(0,0,0,0)]">
+                        Loading...
+                    </span>
+                </div>
+            </div>
+        </div>
         <div class="discussion-title-header">
             <div class="discussion-title">
                 <h1 class="tw-break-anywhere">
@@ -68,4 +78,6 @@
 
     </div>
 </div>
+{{template "repo/issue/ai_sample_code_modal" .}}
+
 {{template "base/footer" .}}

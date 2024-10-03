@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"code.gitea.io/gitea/models/discussion"
+
 	stdCtx "context"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
@@ -21,6 +23,7 @@ import (
 	"code.gitea.io/gitea/modules/markup"
 	"code.gitea.io/gitea/modules/markup/markdown"
 	"code.gitea.io/gitea/modules/setting"
+	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/timeutil"
 	"code.gitea.io/gitea/modules/util"
 	"code.gitea.io/gitea/modules/web"
@@ -348,6 +351,24 @@ func groupDiscussionFileCommentsByGroupId(
 
 		comments[discussionComment.GroupId] = append(comments[discussionComment.GroupId], &discussionComment)
 
+		sampleCode, err := discussion.GetAiSampleCodeByCommentID(ctx, comment.Id, "discussion")
+		if err != nil {
+			return nil, err
+		}
+		if sampleCode == nil {
+			continue
+		}
+
+		aiComment, err := convertAiSampleCodeToDiscussionComment(ctx, sampleCode, comment)
+
+		aiComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+			Ctx: ctx,
+			Links: markup.Links{
+				Base: ctx.Repo.RepoLink,
+			},
+		}, aiComment.Content)
+
+		comments[aiComment.GroupId] = append(comments[aiComment.GroupId], aiComment)
 	}
 
 	return comments, nil
@@ -613,4 +634,73 @@ func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, p
 		roleDescriptor.RoleInRepo = issues_model.RoleRepoContributor
 	}
 	return roleDescriptor, nil
+}
+
+func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
+
+	form := web.GetForm(ctx).(*structs.CreateAiSampleCodesForm)
+
+	commentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
+	if err != nil {
+		ctx.ServerError("잘못된 CommentId 형식", err)
+	}
+
+	aiSampleCode, err := discussion.CreateAiSampleCode(
+		ctx,
+		&discussion.CreateDiscussionAiCommentOpt{
+			Type:            form.Type,
+			TargetCommentId: commentId,
+			Content:         &form.SampleCodeContent,
+			GenearaterId:    ctx.Doer.ID,
+		})
+
+	if err != nil {
+		ctx.ServerError("ai 코드 생성 실패: %v", err)
+		return
+	}
+
+	comments := make([]*DiscussionComment, 0, 1)
+	// TODO converAiSampleCodeToDiscussionCommentFormat
+	comment, err := discussion_client.GetDiscussionComment(aiSampleCode.TargetCommentId)
+
+	newComment, err := convertAiSampleCodeToDiscussionComment(ctx, aiSampleCode, comment)
+	if err != nil {
+		ctx.ServerError("문제가 발생", err)
+	}
+
+	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+		Ctx: ctx,
+		Links: markup.Links{
+			Base: ctx.Repo.RepoLink,
+		},
+	}, newComment.Content)
+
+	comments = append(comments, newComment)
+	ctx.Data["DiscussionId"] = newComment.DiscussionId
+	ctx.Data["comments"] = comments
+	ctx.HTML(http.StatusOK, tplDiscussionFileComment)
+}
+
+func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode, comment *discussion_client.DiscussionCommentResponse) (*DiscussionComment, error) {
+
+	poster, err := user_model.GetPossibleUserByID(ctx, -3)
+
+	if err != nil {
+		return nil, err
+	}
+
+	newComment := &DiscussionComment{
+		ID:           -comment.Id,
+		StartLine:    comment.StartLine,
+		DiscussionId: comment.DiscussionId,
+		GroupId:      comment.GroupId,
+		EndLine:      comment.EndLine,
+		CodeId:       comment.CodeId,
+		CreatedUnix:  comment.CreatedUnix - 1,
+		Reactions:    nil, // TODO: 뱃지 형식으로 변경하기
+		Poster:       poster,
+		Content:      sampleCode.Content,
+	}
+
+	return newComment, err
 }

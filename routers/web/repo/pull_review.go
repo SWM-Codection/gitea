@@ -9,21 +9,21 @@ import (
 	"net/http"
 	"strconv"
 
-	api "code.gitea.io/gitea/modules/structs"
 	issues_model "code.gitea.io/gitea/models/issues"
-	ai_service "code.gitea.io/gitea/services/ai"
 	pull_model "code.gitea.io/gitea/models/pull"
+	"code.gitea.io/gitea/models/repo"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
+	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/json"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/setting"
+	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/web"
+	ai_service "code.gitea.io/gitea/services/ai"
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/context/upload"
 	"code.gitea.io/gitea/services/forms"
-	"code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/modules/git"
 	pull_service "code.gitea.io/gitea/services/pull"
 	user_service "code.gitea.io/gitea/services/user"
 )
@@ -170,7 +170,7 @@ func UpdateResolveConversation(ctx *context.Context) {
 	renderConversation(ctx, comment, origin)
 }
 
-func CreateAiPullSampleCode(ctx *context.Context) {
+func CreateAiSampleCode(ctx *context.Context) {
 	// TODOC swagger 추가
 	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
 	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
@@ -207,7 +207,7 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 		ctx.ServerError("Issue.LoadRepo", err)
 		return
 	}
-	
+
 	initializeRepo(ctx, targetComment.Issue.Repo.OwnerName, targetComment.Issue.Repo.Name)
 	renderConversation(ctx, targetComment, form.OriginData)
 }
@@ -404,22 +404,22 @@ func UpdateViewedFiles(ctx *context.Context) {
 }
 
 func initializeRepo(ctx *context.Context, ownerName string, repoName string) {
-    if ctx.Repo.Repository == nil {
-        repo, err := repo.GetRepositoryByOwnerAndName(ctx, ownerName, repoName)
-        if err != nil {
-            ctx.ServerError("GetRepositoryByOwnerAndName", err)
-            return
-        }
-        ctx.Repo.Repository = repo
-    }
+	if ctx.Repo.Repository == nil {
+		repo, err := repo.GetRepositoryByOwnerAndName(ctx, ownerName, repoName)
+		if err != nil {
+			ctx.ServerError("GetRepositoryByOwnerAndName", err)
+			return
+		}
+		ctx.Repo.Repository = repo
+	}
 
-    if ctx.Repo.GitRepo == nil {
-        gitRepo, err := git.OpenRepository(ctx, ctx.Repo.Repository.RepoPath())
-        if err != nil {
-            ctx.ServerError("OpenRepository", err)
-            return
-        }
-        ctx.Repo.GitRepo = gitRepo
+	if ctx.Repo.GitRepo == nil {
+		gitRepo, err := git.OpenRepository(ctx, ctx.Repo.Repository.RepoPath())
+		if err != nil {
+			ctx.ServerError("OpenRepository", err)
+			return
+		}
+		ctx.Repo.GitRepo = gitRepo
 		defer ctx.Repo.GitRepo.Close()
-    }
+	}
 }

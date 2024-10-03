@@ -1,18 +1,21 @@
 package ai
 
 import (
-	"strconv"
-	discussion_model "code.gitea.io/gitea/models/discussion"
-	api "code.gitea.io/gitea/modules/structs"
-	"code.gitea.io/gitea/services/context"
 	"fmt"
-	"github.com/spf13/cast"
+	"strconv"
+	"strings"
 	"sync"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/setting"
+
+	"code.gitea.io/gitea/client/discussion"
+	discussion_model "code.gitea.io/gitea/models/discussion"
 	issues_model "code.gitea.io/gitea/models/issues"
 	repo_model "code.gitea.io/gitea/models/repo"
+	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/markup"
+	"code.gitea.io/gitea/modules/setting"
+	api "code.gitea.io/gitea/modules/structs"
+	"code.gitea.io/gitea/services/context"
+	"github.com/spf13/cast"
 )
 
 type SampleCodeService interface {
@@ -46,7 +49,7 @@ func (is *SampleCodeServiceImpl) CreateAiSampleCode(ctx *context.Context, form *
 	aiSampleCode, err := AiSampleCodeDbAdapter.InsertAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
 		TargetCommentId: cast.ToInt64(form.TargetCommentId),
 		GenearaterId:    ctx.Doer.ID,
-		Type: form.Type,
+		Type:            form.Type,
 		Content:         &form.SampleCodeContent,
 	})
 
@@ -88,6 +91,65 @@ func GetFileContentFromCommit(ctx *context.Context, repoPath, commitHash, filePa
 	return content, nil
 }
 
+func getContentForFull(ctx *context.Context, targetCommentId int64, form *api.GenerateAiSampleCodesForm) (*string, *string, error) {
+
+	// TODO: 디스커션 댓글 가져오는 경우 분기 추가
+	comment, err := issues_model.GetCommentByID(ctx, targetCommentId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Comment not found: %v", err)
+	}
+	// 존재 여부만 확인하는 걸로 모두 바꿔야 할듯
+	issue, err := issues_model.GetIssueByID(ctx, comment.IssueID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Issue not found: %v", err)
+	}
+
+	repo, err := repo_model.GetRepositoryByID(ctx, issue.RepoID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Repository not found: %v", err)
+	}
+
+	codeContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), comment.CommitSHA, comment.TreePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+	}
+
+	return &codeContent, &comment.Content, nil
+}
+
+func getContentForDiscussion(ctx *context.Context, targetCommentId int64, form *api.GenerateAiSampleCodesForm) (*string, *string, error) {
+	comment, err := discussion.GetDiscussionComment(targetCommentId)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("Comment found error: %v", err)
+	}
+
+	discussion, err := discussion.GetDiscussion(comment.DiscussionId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Discussion found error: %v", err)
+	}
+	repo, err := repo_model.GetRepositoryByID(ctx, discussion.RepoId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("repo found error: %v", err)
+	}
+
+	// TODO: 디스커션 starLine endLine으로 코드 내용을 가져오는 거 추가
+
+	fileContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), discussion.CommitHash, comment.FilePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+	}
+
+	lines := strings.Split(fileContent, "\n")
+
+	if comment.StartLine < 1 || comment.StartLine > comment.EndLine {
+		return nil, nil, fmt.Errorf("Invalid start or end line")
+	}
+
+	codeContent := strings.Join(lines[comment.StartLine-1:comment.EndLine], "\n")
+
+	return &codeContent, &comment.Content, nil
+}
 
 // TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
@@ -97,30 +159,26 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 		return nil, fmt.Errorf("Invalid TargetCommentId: %v", err)
 	}
 
+	// 기존에 ai 샘플 코드가 있는지 없는지 확인함.
 	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, targetCommentId, form.Type)
 
 	if err != nil || response.SampleCodeContent != nil {
 		return nil, fmt.Errorf("already Ai comment: %v", err)
 	}
 
-	comment, err := issues_model.GetCommentByID(ctx, targetCommentId)
-	if err != nil {
-		return nil, fmt.Errorf("Comment not found: %v", err)
+	var codeContent, commentContent *string
+
+	if form.Type == "pull" {
+		codeContent, commentContent, err = getContentForFull(ctx, targetCommentId, form)
+
+	} else if form.Type == "discussion" {
+
+		codeContent, commentContent, err = getContentForDiscussion(ctx, targetCommentId, form)
+
 	}
 
-	issue, err := issues_model.GetIssueByID(ctx, comment.IssueID)
 	if err != nil {
-		return nil, fmt.Errorf("Issue not found: %v", err)
-	}
-
-	repo, err := repo_model.GetRepositoryByID(ctx, issue.RepoID)
-	if err != nil {
-		return nil, fmt.Errorf("Repository not found: %v", err)
-	}
-
-	codeContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), comment.CommitSHA, comment.TreePath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+		return nil, err
 	}
 
 	wg := new(sync.WaitGroup)
@@ -138,11 +196,12 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 			})
 
 			if err != nil {
+
 				fmt.Errorf("request sample to ai server fail")
 				resultQueue <- nil
 				return
 			}
-			
+
 			result := &GenerateSampleCodeResponse{
 				SampleCode:       "",
 				OriginalMarkdown: response.SampleCode,
@@ -156,7 +215,7 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 			result.SampleCode = string(highlightedCode)
 
 			resultQueue <- result
-		}(codeContent, comment.Content)
+		}(*codeContent, *commentContent)
 	}
 
 	wg.Wait()

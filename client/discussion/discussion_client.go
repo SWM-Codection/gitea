@@ -53,7 +53,7 @@ const (
 type PostCommentRequest struct {
 	DiscussionId int64            `json:"discussionId"`
 	CodeId       *int64           `json:"codeId"`
-	GroupId      *int64            `json:"groupId"`
+	GroupId      *int64           `json:"groupId"`
 	PosterId     int64            `json:"posterId"`
 	Scope        CommentScopeEnum `json:"scope"`
 	StartLine    *int32           `json:"startLine"`
@@ -140,6 +140,7 @@ type FileContent struct {
 
 type DiscussionCommentResponse struct {
 	Id           int64                 `json:"id"`
+	FilePath     string                `json:"filePath"`
 	GroupId      int64                 `json:"groupId"`
 	DiscussionId int64                 `json:"discussionId"`
 	PosterId     int64                 `json:"posterId"`
@@ -301,9 +302,11 @@ func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error
 }
 
 func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse, error) {
+
 	resp, err := client.Request().
 		SetQueryParam("id", strconv.FormatInt(discussionCommentId, 10)).
 		Get("/discussion/comment")
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET /discussion/comment request: %w", err)
 	}

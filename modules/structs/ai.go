@@ -24,6 +24,7 @@ type CreateAiSampleCodesForm struct {
 	Type			  string `json:"type"`
 }
 
+
 type DeleteSampleCodesForm struct {
 	TargetCommentId string `json:"target_comment_id"`
 }
