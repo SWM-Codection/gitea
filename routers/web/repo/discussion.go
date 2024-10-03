@@ -7,8 +7,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	stdCtx "context"
+	api "code.gitea.io/gitea/modules/structs"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	issues_model "code.gitea.io/gitea/models/issues"
@@ -126,6 +128,8 @@ func Discussions(ctx *context.Context) {
 
 func ViewDiscussion(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":index")
+	var assignees = make([]*user_model.User, 0, 10)
+	var participants = make([]*user_model.User, 1, 10)
 
 	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
 	if err != nil {
@@ -151,12 +155,33 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("error on retreiving discussion role descriptor, %v", err)
 		return
 	}
+	for _, assigneeId := range discussionResponse.Assignees {
+		assignee, err := user_model.GetUserByID(ctx, assigneeId)
+		if err != nil {
+			ctx.ServerError("errro on get user by id: err = %v", err)
+		}
+		assignees = append(assignees, assignee)
+		println(len(assignees))
+	}
+	repo := ctx.Repo.Repository
+	assigneeUsers, err := repo_model.GetRepoAssignees(ctx, repo)
+	if err != nil {
+		ctx.ServerError("GetRepoAssignees", err)
+		return
+	}
+	println(len(assignees))
+
+	participants[0] = poster
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionTab"] = "conversation"
 	ctx.Data["DiscussionRoleDescriptor"] = rd
+	ctx.Data["DiscussionAssignees"] = assignees
+	ctx.Data["Participants"] = participants
+	ctx.Data["NumParticipants"] = len(participants)
+	ctx.Data["Assignees"] = MakeSelfOnTop(ctx.Doer, assigneeUsers)
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -452,6 +477,26 @@ func SetDiscussionClosedState(ctx *context.Context) {
 	ctx.Status(http.StatusOK)
 }
 
+func SetDiscussionDeadline(ctx *context.Context) {
+	form := web.GetForm(ctx).(*api.EditDeadlineOption)
+	discussionId := ctx.ParamsInt64(":discussionId")
+	var deadlineUnix int64 // Unix 타임스탬프를 저장할 int64 변수
+	var deadline time.Time
+	if form.Deadline != nil && !form.Deadline.IsZero() {
+    	deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
+        	23, 59, 59, 0, time.Local)
+    	deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
+	}
+
+	err := discussion_client.SetDiscussionDeadline(discussionId, deadlineUnix)
+	if err != nil {
+		ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, discussion_client.DiscussionDeadline{Deadline: &deadline})
+}
+
 func getActionDiscussionIds(ctx *context.Context) []int64 {
 	commaSeparatedDiscussionIDs := ctx.FormString("issue_ids")
 	if len(commaSeparatedDiscussionIDs) == 0 {
@@ -668,4 +713,30 @@ func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, p
 		roleDescriptor.RoleInRepo = issues_model.RoleRepoContributor
 	}
 	return roleDescriptor, nil
+}
+
+func UpdateDiscussionAssignee(ctx *context.Context)  {
+	assigneeId := ctx.FormInt64("id")
+	discussionId := ctx.FormInt64("issue_ids")
+	action := ctx.FormString("action")
+	println(assigneeId)
+	println(discussionId)
+	println(action)
+
+	switch action {
+	case "clear":
+		err := discussion_client.ClearDiscussionAssignee(discussionId)
+		if err != nil {
+			ctx.ServerError("error on discussion response: err = %v", err)
+		}
+	default:
+		req := &discussion_client.UpdateAssigneeRequest{
+			DiscussionId:	discussionId,
+			AssigneeId: 	assigneeId,
+		}
+		err := discussion_client.UpdateDiscussionAssignee(req)
+		if err != nil {
+			ctx.ServerError("error on discussion response: err = %v", err)
+		}
+	}
 }
