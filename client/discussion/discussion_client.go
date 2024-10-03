@@ -536,7 +536,9 @@ func GiveReaction(request DiscussionReactionRequest) (int64, error) {
 	if err := validateResponse(resp); err != nil {
 		return result, err
 	}
-	json.Unmarshal(resp.Body(), &result)
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return result, err
+	}
 	return result, err
 }
 
