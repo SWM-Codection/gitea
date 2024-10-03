@@ -862,7 +862,7 @@ func registerRoutes(m *web.Route) {
 		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), repo.SetShowOutdatedComments, repo.CreateAiPullSampleCode)
 		m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
 		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
-	}, ignSignIn)	
+	}, ignSignIn)
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
