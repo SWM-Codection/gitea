@@ -421,7 +421,6 @@ func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error)
 	return resp, nil
 }
 
-
 func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 	request := &DeleteDiscussionCommentRequest{
 		DiscussionCommentId: discussionCommentId,
@@ -441,7 +440,6 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 
 	return nil
 }
-
 
 /**
  * discussion methods
@@ -533,23 +531,6 @@ func SetDiscussionDeadline(discussionId int64, deadline int64) error {
 		return fmt.Errorf("failed to set deadline, got %d", resp.StatusCode())
 	}
 
-	return nil
-}
-
-func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
-	request := &DeleteDiscussionCommentRequest{
-		DiscussionCommentId: discussionCommentId,
-		PosterId:            posterId,
-	}
-	resp, err := client.Request().
-		SetBody(request).
-		Delete("/discussion/comment")
-	if err != nil {
-		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
-	}
-	if err := validateResponse(resp); err != nil {
-		return err
-	}
 	return nil
 }
 
