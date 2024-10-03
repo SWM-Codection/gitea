@@ -60,9 +60,11 @@
                 </script>
             </div>
 
-            <!--
-                <div class="discussion-content-right ui segment"></div>
-            -->
+            {{ if eq .DiscussionTab "conversation" }}
+                <div style="width: 300px; margin-left: 15px;">
+                    {{ template "repo/issue/view_content/discussion_sidebar" . }}
+                </div>
+            {{end}}
         </div>
 
 

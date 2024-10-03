@@ -53,7 +53,7 @@ const (
 type PostCommentRequest struct {
 	DiscussionId int64            `json:"discussionId"`
 	CodeId       *int64           `json:"codeId"`
-	GroupId      *int64            `json:"groupId"`
+	GroupId      *int64           `json:"groupId"`
 	PosterId     int64            `json:"posterId"`
 	Scope        CommentScopeEnum `json:"scope"`
 	StartLine    *int32           `json:"startLine"`
@@ -177,6 +177,15 @@ type DiscussionContentResponse struct {
 	Contents        []FileContent               `json:"contents"`
 	GlobalComments  []DiscussionCommentResponse `json:"globalComments"`
 	GlobalReactions []DiscussionReaction        `json:"discussionReaction"`
+}
+
+type DiscussionDeadline struct {
+	Deadline *time.Time `json:"due_date"`
+}
+
+type UpdateAssigneeRequest struct {
+	DiscussionId int64 `json:"discussionId"`
+	AssigneeId   int64 `json:"assigneeId"`
 }
 
 type DiscussionErrorResponse struct {
@@ -383,41 +392,6 @@ func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error)
 	return resp, nil
 }
 
-func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
-	request := &DeleteDiscussionCommentRequest{
-		DiscussionCommentId: discussionCommentId,
-		PosterId:            posterId,
-	}
-	resp, err := client.Request().
-		SetBody(request).
-		Delete("/discussion/comment")
-	if err != nil {
-
-		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
-	}
-
-	if err := validateResponse(resp); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
-// 	resp, err := client.Request().
-// 		SetBody(request).
-// 		Put("/discussion/comment")
-// 	if err != nil {
-// 		return fmt.Errorf("failed to make PUT /discussion/comment request: %w", err)
-// 	}
-
-// 	if err := validateResponse(resp); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
 /**
  * discussion methods
  * the `discussion` struct could be moved to a separate file later
@@ -497,20 +471,70 @@ func SetDiscussionClosedState(discussionId int64, isClosed bool) error {
 	return nil
 }
 
-func (dr DiscussionResponse) IsPoster(id int64) bool {
-	return dr.PosterId == id
-}
-
-func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
-
-	resp, err := client.Request().SetBody(request).Put("/discussion/comment")
-
+func SetDiscussionDeadline(discussionId int64, deadline int64) error {
+	resp, err := client.Request().SetQueryParam("deadline", strconv.FormatInt(deadline, 10)).Patch(fmt.Sprintf("/discussion/deadline/%d", discussionId))
 	if err != nil {
 		return err
 	}
 
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("failed to set deadline, got %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
+	request := &DeleteDiscussionCommentRequest{
+		DiscussionCommentId: discussionCommentId,
+		PosterId:            posterId,
+	}
+	resp, err := client.Request().
+		SetBody(request).
+		Delete("/discussion/comment")
+	if err != nil {
+		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
+	}
 	if err := validateResponse(resp); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (dr DiscussionResponse) IsPoster(id int64) bool {
+	return dr.PosterId == id
+}
+
+func UpdateDiscussionAssignee(request *UpdateAssigneeRequest) error {
+	resp, err := client.Request().SetBody(request).Put("/discussion/assignees")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("failed to update assignee, got %d", resp.StatusCode())
+	}
+	return nil
+}
+
+func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
+	resp, err := client.Request().SetBody(request).Put("/discussion/comment")
+	if err != nil {
+		return err
+	}
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ClearDiscussionAssignee(discussionId int64) error {
+	resp, err := client.Request().Delete(fmt.Sprintf("/discussion/assignees/%d", discussionId))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("failed to clear assignee, got %d", resp.StatusCode())
 	}
 
 	return nil
