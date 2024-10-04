@@ -10,8 +10,11 @@ import {
 export function initDiscussionCommentsEventHandler(commentsHolder) {
 
   const comments = commentsHolder.querySelectorAll(".comment")
-
-  if (comments.length === 0) {
+  const isReply = () => {
+    return comments.length == 0
+  }
+  
+  if (isReply()) {
     initDiscussionCommentEventHandler(commentsHolder)
     return
   }
@@ -19,8 +22,43 @@ export function initDiscussionCommentsEventHandler(commentsHolder) {
   comments.forEach(comment => {
     initDiscussionCommentEventHandler(comment)
   });
+  initDiscussionFileCommentSelectHighlight(commentsHolder)
   initDiscussionCommentReply(commentsHolder);
 
+
+}
+
+
+function initDiscussionFileCommentSelectHighlight(commentHolder) {
+  
+  commentHolder.addEventListener("click", (event) => {
+    event.stopPropagation(); 
+
+    removeSelectedLines();
+    
+    const startLine = parseInt(event.currentTarget.querySelector("input[name='startLine']").value, 10);
+    const endLine = parseInt(event.currentTarget.querySelector("input[name='endLine']").value, 10);
+    const codeId = event.currentTarget.querySelector("input[name='codeId']").value;
+
+    for (let lineNumber = startLine; lineNumber <= endLine; lineNumber++) {
+      const lineElement = document.querySelector(`#line-${codeId}-${lineNumber}`);
+      
+      if (lineElement) {
+        lineElement.classList.add("selected-line");
+      }
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!commentHolder.contains(event.target)) {
+      removeSelectedLines();
+    }
+  });
+
+  function removeSelectedLines() {
+    const selectedLines = document.querySelectorAll(".selected-line");
+    selectedLines.forEach(line => line.classList.remove("selected-line"));
+  }
 
 }
 
