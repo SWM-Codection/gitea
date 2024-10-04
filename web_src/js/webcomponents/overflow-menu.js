@@ -121,7 +121,9 @@ window.customElements.define('overflow-menu', class extends HTMLElement {
     const btn = document.createElement('button');
     btn.classList.add('overflow-menu-button');
     btn.setAttribute('aria-label', window.config.i18n.more_items);
-    btn.innerHTML = octiconKebabHorizontal;
+
+    btn.innerHTML = `<img src="${octiconKebabHorizontal}" alt="Icon" />`;
+
     this.append(btn);
     this.button = btn;
 
