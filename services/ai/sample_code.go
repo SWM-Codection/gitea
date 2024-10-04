@@ -93,12 +93,11 @@ func GetFileContentFromCommit(ctx *context.Context, repoPath, commitHash, filePa
 
 func getContentForFull(ctx *context.Context, targetCommentId int64, form *api.GenerateAiSampleCodesForm) (*string, *string, error) {
 
-	// TODO: 디스커션 댓글 가져오는 경우 분기 추가
 	comment, err := issues_model.GetCommentByID(ctx, targetCommentId)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Comment not found: %v", err)
 	}
-	// 존재 여부만 확인하는 걸로 모두 바꿔야 할듯
+
 	issue, err := issues_model.GetIssueByID(ctx, comment.IssueID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Issue not found: %v", err)
@@ -133,8 +132,6 @@ func getContentForDiscussion(ctx *context.Context, targetCommentId int64, form *
 		return nil, nil, fmt.Errorf("repo found error: %v", err)
 	}
 
-	// TODO: 디스커션 starLine endLine으로 코드 내용을 가져오는 거 추가
-
 	fileContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), discussion.CommitHash, comment.FilePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Failed to get file content from commit: %v", err)
@@ -151,15 +148,12 @@ func getContentForDiscussion(ctx *context.Context, targetCommentId int64, form *
 	return &codeContent, &comment.Content, nil
 }
 
-// TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
-// TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
 func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*GenerateSampleCodeResponse, error) {
 	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid TargetCommentId: %v", err)
 	}
 
-	// 기존에 ai 샘플 코드가 있는지 없는지 확인함.
 	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, targetCommentId, form.Type)
 
 	if err != nil || response.SampleCodeContent != nil {
@@ -228,12 +222,6 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 
 	return sampleCodes, nil
 }
-
-// TODOC ai 샘플코드 저장
-
-// TODOC ai 샘플코드 삭제
-
-// TODOC a
 
 func (is *SampleCodeServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64) error {
 
