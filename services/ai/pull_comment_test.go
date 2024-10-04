@@ -95,4 +95,3 @@ func TestCreateAiPullComment(t *testing.T) {
 	mockDbAdapter.AssertExpectations(t)
 }
 
-// TODOC delete 테스트
