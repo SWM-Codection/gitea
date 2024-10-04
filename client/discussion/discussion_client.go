@@ -86,6 +86,28 @@ type DiscussionResponse struct {
 	Poster      *user_model.User   `json:"-"`
 }
 
+type ReactionList []*DiscussionReaction
+
+func (list ReactionList) GroupByType() map[string]ReactionList {
+	reactions := make(map[string]ReactionList)
+	for _, reaction := range list {
+		reactions[reaction.Type] = append(reactions[reaction.Type], reaction)
+	}
+	return reactions
+}
+
+func (list ReactionList) HasUser(userId int64) bool {
+	if userId == 0 {
+		return false
+	}
+	for _, reaction := range list {
+		if reaction.UserId == userId {
+			return true
+		}
+	}
+	return false
+}
+
 type Discussion struct {
 	Id           int64                  `json:"id"`
 	Name         string                 `json:"name"`
@@ -139,17 +161,17 @@ type FileContent struct {
 }
 
 type DiscussionCommentResponse struct {
-	Id           int64                 `json:"id"`
-	GroupId      int64                 `json:"groupId"`
-	DiscussionId int64                 `json:"discussionId"`
-	PosterId     int64                 `json:"posterId"`
-	CodeId       int64                 `json:"codeId"`
-	Scope        string                `json:"scope"`
-	StartLine    int64                 `json:"startLine"`
-	EndLine      int64                 `json:"endLine"`
-	Content      string                `json:"content"`
-	CreatedUnix  timeutil.TimeStamp    `json:"createdUnix"`
-	Reactions    []*DiscussionReaction `json:"reactions"`
+	Id           int64              `json:"id"`
+	GroupId      int64              `json:"groupId"`
+	DiscussionId int64              `json:"discussionId"`
+	PosterId     int64              `json:"posterId"`
+	CodeId       int64              `json:"codeId"`
+	Scope        string             `json:"scope"`
+	StartLine    int64              `json:"startLine"`
+	EndLine      int64              `json:"endLine"`
+	Content      string             `json:"content"`
+	CreatedUnix  timeutil.TimeStamp `json:"createdUnix"`
+	Reactions    ReactionList       `json:"reactions"`
 }
 
 type ReactionTypeEnum = string
@@ -206,6 +228,13 @@ func validateResponse(resp *resty.Response) error {
 		return fmt.Errorf("api error %d: %s", errResp.Status, errResp.message)
 	}
 	return nil
+}
+
+type DiscussionReactionRequest struct {
+	Type         ReactionTypeEnum `json:"type"`
+	DiscussionId int64            `json:"discussionId"`
+	CommentId    int64            `json:"commentId"`
+	UserId       int64            `json:"userId"`
 }
 
 func PostDiscussion(request *PostDiscussionRequest) (int, error) {
@@ -392,6 +421,26 @@ func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error)
 	return resp, nil
 }
 
+func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
+	request := &DeleteDiscussionCommentRequest{
+		DiscussionCommentId: discussionCommentId,
+		PosterId:            posterId,
+	}
+	resp, err := client.Request().
+		SetBody(request).
+		Delete("/discussion/comment")
+	if err != nil {
+
+		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 /**
  * discussion methods
  * the `discussion` struct could be moved to a separate file later
@@ -447,6 +496,7 @@ func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, erro
 		return nil, err
 	}
 	result := &DiscussionContentResponse{}
+
 	if err := json.Unmarshal(resp.Body(), result); err != nil {
 		return nil, err
 	}
@@ -481,23 +531,6 @@ func SetDiscussionDeadline(discussionId int64, deadline int64) error {
 		return fmt.Errorf("failed to set deadline, got %d", resp.StatusCode())
 	}
 
-	return nil
-}
-
-func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
-	request := &DeleteDiscussionCommentRequest{
-		DiscussionCommentId: discussionCommentId,
-		PosterId:            posterId,
-	}
-	resp, err := client.Request().
-		SetBody(request).
-		Delete("/discussion/comment")
-	if err != nil {
-		return fmt.Errorf("failed to make DELETE /discussion/comment request: %w", err)
-	}
-	if err := validateResponse(resp); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -538,4 +571,30 @@ func ClearDiscussionAssignee(discussionId int64) error {
 	}
 
 	return nil
+}
+
+func GiveReaction(request DiscussionReactionRequest) (int64, error) {
+	var result int64 = -1
+	resp, err := client.Request().SetBody(request).Post("/discussion/reaction")
+	if err != nil {
+		return result, err
+	}
+	if err := validateResponse(resp); err != nil {
+		return result, err
+	}
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return result, err
+	}
+	return result, err
+}
+
+func RemoveReaction(request DiscussionReactionRequest) error {
+	resp, err := client.Request().SetBody(request).Delete("/discussion/reaction")
+	if err != nil {
+		return err
+	}
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+	return err
 }

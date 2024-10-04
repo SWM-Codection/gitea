@@ -54,7 +54,21 @@
                         </div>
                         <div class="comment-header-right actions tw-flex tw-items-center">
                             {{template "repo/issue/view_content/show_role" dict "ShowRole" $.DiscussionRoleDescriptor "IgnorePoster" false}}
-
+                            <div class="item action ui dropdown jump pointing top right select-reaction" data-action-url="/chlwodud0123/asdfqq/comments/25/reactions" role="menu" aria-haspopup="" aria-controls="_aria_auto_id_28" aria-expanded="false" tabindex="0">
+                                <a class="muted">
+                                    {{svg "octicon-smiley"}}
+                                </a>
+                                <div class="menu transition hidden discussion-comment-reactions" role="" tabindex="-1">
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="+1"  data-reaction-content="+1" id="_aria_auto_id_29" role="menuitem" tabindex="-1">👍</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="-1" data-reaction-content="-1" id="_aria_auto_id_30" role="menuitem" tabindex="-1">👎</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="laugh" data-reaction-content="laugh" id="_aria_auto_id_31" role="menuitem" tabindex="-1">😆</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="hooray" data-reaction-content="hooray" id="_aria_auto_id_32" role="menuitem" tabindex="-1">🎉</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="confused" data-reaction-content="confused" id="_aria_auto_id_33" role="menuitem" tabindex="-1">😕</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="heart" data-reaction-content="heart" id="_aria_auto_id_34" role="menuitem" tabindex="-1">❤️</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="rocket" data-reaction-content="rocket" id="_aria_auto_id_35" role="menuitem" tabindex="-1">🚀</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="eyes" data-reaction-content="eyes" id="_aria_auto_id_36" role="menuitem" tabindex="-1">👀</a>
+                                </div>
+                            </div>
                             <!-- discussion comment hamburger menu -->
                             <div class="item action ui dropdown jump pointing top right context-dropdown-active visible" role="menu" >
                                 <a class="context-menu muted">
@@ -71,6 +85,14 @@
                             {{ .Content }}
                         </div>
                     </div>
+                    {{$comment := .}}
+                    {{if .Reactions}}
+                        {{$reactions := .Reactions.GroupByType}}
+                        {{$actionUrl := printf "%s/discussions/%d/comment/%d/reactions" $.RepoLink $.Discussion.Id $comment.Id}}
+                        {{template "repo/discussion/reactions" dict "Reactions" $reactions "ActionURL" $actionUrl}}
+                    {{else}}
+                        <div class="bottom-reactions"></div>
+                    {{end}}
                 </div>
             </div>
         </div>

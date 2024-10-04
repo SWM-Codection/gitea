@@ -89,12 +89,14 @@ import {initDirAuto} from './modules/dirauto.js';
 import {initRepositorySearch} from './features/repo-search.js';
 import {initColorPickers} from './features/colorpicker.js';
 import {initAdminSelfCheck} from './features/admin/selfcheck.js';
-import { initDiscussionForm } from './features/repo-discussion-form.js';
-import { initDiscussionFileView } from './features/repo-discussion-view.js';
-import { initHomeMarquee } from './features/home-marquee.js';
-import { initDiscussionCommentDelete } from './features/discussion-general-comment.js';
+import {initDiscussionForm} from './features/repo-discussion-form.js';
+import {initDiscussionFileView} from './features/repo-discussion-view.js';
+import {initHomeMarquee} from './features/home-marquee.js';
+import {initDiscussionCommentDelete} from './features/discussion-general-comment.js';
 import {initDiscussionStatusButton} from './features/discussion-conversation.js';
+import {initDiscussionCommentReaction} from './features/discussion-general-comment.js';
 import {initDiscussionDue} from './features/discussion-setting.js';
+
 
 // Init Gitea's Fomantic settings
 initGiteaFomantic();
@@ -205,5 +207,6 @@ onDomReady(() => {
   initDiscussionFileView();
   initDiscussionCommentDelete();
   initDiscussionStatusButton();
+  initDiscussionCommentReaction();
   initDiscussionDue();
 });

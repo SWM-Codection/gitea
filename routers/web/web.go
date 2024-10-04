@@ -1235,6 +1235,7 @@ func registerRoutes(m *web.Route) {
 				m.Delete("/comment", repo.DeleteDiscussionFileComment)
 				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
 
+				m.Post("/comment/{commentId}/reactions/{action}", web.Bind(forms.ReactionForm{}), repo.ChangeDiscussionCommentReaction)
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
 			m.Get("/comments/{codeId}", repo.DiscussionComments)
