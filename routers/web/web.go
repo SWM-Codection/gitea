@@ -1200,7 +1200,9 @@ func registerRoutes(m *web.Route) {
 			})
 			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
 			m.Patch("/state/{discussionId}", repo.SetDiscussionClosedState)
+			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
 			m.Post("/status", repo.UpdateDiscussionStatus)
+			m.Post("/assignee", repo.UpdateDiscussionAssignee)
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 
@@ -1234,6 +1236,7 @@ func registerRoutes(m *web.Route) {
 				m.Delete("/comment", repo.DeleteDiscussionFileComment)
 				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
 
+				m.Post("/comment/{commentId}/reactions/{action}", web.Bind(forms.ReactionForm{}), repo.ChangeDiscussionCommentReaction)
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
 			m.Get("/comments/{codeId}", repo.DiscussionComments)

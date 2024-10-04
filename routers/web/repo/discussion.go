@@ -7,10 +7,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"code.gitea.io/gitea/models/discussion"
 
 	stdCtx "context"
+	api "code.gitea.io/gitea/modules/structs"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	issues_model "code.gitea.io/gitea/models/issues"
@@ -40,6 +42,7 @@ const (
 	tplDiscussionFiles          base.TplName = "repo/discussion/view_file"
 	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
 	tplDiscussionFileComment    base.TplName = "repo/discussion/file_comment_holder"
+	tplDiscussionReactions      base.TplName = "repo/discussion/reactions"
 )
 
 func NewDiscussion(ctx *context.Context) {
@@ -128,6 +131,8 @@ func Discussions(ctx *context.Context) {
 
 func ViewDiscussion(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":index")
+	var assignees = make([]*user_model.User, 0, 10)
+	var participants = make([]*user_model.User, 1, 10)
 
 	discussionResponse, err := discussion_client.GetDiscussion(discussionId)
 	if err != nil {
@@ -153,12 +158,33 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("error on retreiving discussion role descriptor, %v", err)
 		return
 	}
+	for _, assigneeId := range discussionResponse.Assignees {
+		assignee, err := user_model.GetUserByID(ctx, assigneeId)
+		if err != nil {
+			ctx.ServerError("errro on get user by id: err = %v", err)
+		}
+		assignees = append(assignees, assignee)
+		println(len(assignees))
+	}
+	repo := ctx.Repo.Repository
+	assigneeUsers, err := repo_model.GetRepoAssignees(ctx, repo)
+	if err != nil {
+		ctx.ServerError("GetRepoAssignees", err)
+		return
+	}
+	println(len(assignees))
+
+	participants[0] = poster
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
 	ctx.Data["DiscussionTab"] = "conversation"
 	ctx.Data["DiscussionRoleDescriptor"] = rd
+	ctx.Data["DiscussionAssignees"] = assignees
+	ctx.Data["Participants"] = participants
+	ctx.Data["NumParticipants"] = len(participants)
+	ctx.Data["Assignees"] = MakeSelfOnTop(ctx.Doer, assigneeUsers)
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -225,16 +251,6 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 
 }
 
-type ReactionList []*discussion_client.DiscussionReaction
-
-func (list ReactionList) GroupByType() map[string]ReactionList {
-	reactions := make(map[string]ReactionList)
-	for _, reaction := range list {
-		reactions[reaction.Type] = append(reactions[reaction.Type], reaction)
-	}
-	return reactions
-}
-
 type DiscussionComment struct {
 	ID              int64
 	DiscussionId    int64
@@ -244,7 +260,7 @@ type DiscussionComment struct {
 	StartLine       int64
 	CodeId          int64
 	EndLine         int64
-	Reactions       ReactionList
+	Reactions       discussion_client.ReactionList
 	RenderedContent template.HTML
 	CreatedUnix     timeutil.TimeStamp
 }
@@ -482,6 +498,26 @@ func SetDiscussionClosedState(ctx *context.Context) {
 	ctx.Status(http.StatusOK)
 }
 
+func SetDiscussionDeadline(ctx *context.Context) {
+	form := web.GetForm(ctx).(*api.EditDeadlineOption)
+	discussionId := ctx.ParamsInt64(":discussionId")
+	var deadlineUnix int64 // Unix 타임스탬프를 저장할 int64 변수
+	var deadline time.Time
+	if form.Deadline != nil && !form.Deadline.IsZero() {
+    	deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
+        	23, 59, 59, 0, time.Local)
+    	deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
+	}
+
+	err := discussion_client.SetDiscussionDeadline(discussionId, deadlineUnix)
+	if err != nil {
+		ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, discussion_client.DiscussionDeadline{Deadline: &deadline})
+}
+
 func getActionDiscussionIds(ctx *context.Context) []int64 {
 	commaSeparatedDiscussionIDs := ctx.FormString("issue_ids")
 	if len(commaSeparatedDiscussionIDs) == 0 {
@@ -594,6 +630,70 @@ func ModifyDiscussionFileComment(ctx *context.Context) {
 
 }
 
+func ChangeDiscussionCommentReaction(ctx *context.Context) {
+	form := web.GetForm(ctx).(*forms.ReactionForm)
+	if ctx.Written() {
+		return
+	}
+	discussionId, err := strconv.ParseInt(ctx.Params(":discussionId"), 10, 64)
+	if err != nil {
+		ctx.Error(http.StatusBadRequest, "Invalid DiscussionId")
+	}
+	commentId, err := strconv.ParseInt(ctx.Params(":commentId"), 10, 64)
+	if err != nil {
+		ctx.Error(http.StatusBadRequest, "Invalid CommentId")
+	}
+	action := ctx.Params(":action")
+
+	req := discussion_client.DiscussionReactionRequest{
+		Type:         form.Content,
+		DiscussionId: discussionId,
+		CommentId:    commentId,
+		UserId:       ctx.Doer.ID,
+	}
+
+	switch action {
+	case "react":
+		// XXX: backend returns newly created reaction id, but that is useless..
+		_, err := discussion_client.GiveReaction(req)
+		if err != nil {
+			ctx.ServerError("Failed to Give Reaction", err)
+		}
+		log.Info("react on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
+	case "unreact":
+		err := discussion_client.RemoveReaction(req)
+		if err != nil {
+			ctx.ServerError("Failed to Remove Reaction", err)
+		}
+		log.Info("unreact on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
+	}
+
+	// FIXME: I know this job is clumsy, but because of current backend implementation. without rewriting backend code this is the lesser of two evil..
+	d, err := discussion_client.GetDiscussionContent(discussionId)
+	if err != nil {
+		ctx.ServerError("Failed to Get Discussion Content", err)
+	}
+	var reactions discussion_client.ReactionList
+	for _, gc := range d.GlobalComments {
+		if gc.Id == commentId {
+			reactions = gc.Reactions
+		}
+	}
+
+	// i can't ensure null safety ;0
+	html, err := ctx.RenderToHTML(tplDiscussionReactions, map[string]any{
+		"ActionURL": fmt.Sprintf("%s/discussions/%d/comment/%d/reactions", ctx.Repo.RepoLink, discussionId, commentId),
+		"Reactions": reactions.GroupByType(),
+	})
+	if err != nil {
+		ctx.ServerError("Failed to Render Reactions..", err)
+		return
+	}
+	ctx.JSON(http.StatusOK, map[string]any{
+		"html": html,
+	})
+}
+
 func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, poster *user_model.User, discussionResponse *discussion_client.DiscussionResponse) (issues_model.RoleDescriptor, error) {
 	roleDescriptor := issues_model.RoleDescriptor{}
 	roleDescriptor.IsPoster = discussionResponse.IsPoster(poster.ID)
@@ -703,4 +803,31 @@ func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *di
 	}
 
 	return newComment, err
+}
+
+
+func UpdateDiscussionAssignee(ctx *context.Context)  {
+	assigneeId := ctx.FormInt64("id")
+	discussionId := ctx.FormInt64("issue_ids")
+	action := ctx.FormString("action")
+	println(assigneeId)
+	println(discussionId)
+	println(action)
+
+	switch action {
+	case "clear":
+		err := discussion_client.ClearDiscussionAssignee(discussionId)
+		if err != nil {
+			ctx.ServerError("error on discussion response: err = %v", err)
+		}
+	default:
+		req := &discussion_client.UpdateAssigneeRequest{
+			DiscussionId:	discussionId,
+			AssigneeId: 	assigneeId,
+		}
+		err := discussion_client.UpdateDiscussionAssignee(req)
+		if err != nil {
+			ctx.ServerError("error on discussion response: err = %v", err)
+		}
+	}
 }

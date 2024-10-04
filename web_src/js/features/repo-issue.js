@@ -390,6 +390,7 @@ export function initRepoIssueWipTitle() {
 
 export async function updateIssuesMeta(url, action, issue_ids, id) {
   try {
+    console.log(issue_ids);
     const response = await POST(url, {data: new URLSearchParams({action, issue_ids, id})});
     if (!response.ok) {
       throw new Error('Failed to update issues meta');
