@@ -92,7 +92,7 @@ import {initAdminSelfCheck} from './features/admin/selfcheck.js';
 import {initDiscussionForm} from './features/repo-discussion-form.js';
 import {initDiscussionFileView} from './features/repo-discussion-view.js';
 import {initHomeMarquee} from './features/home-marquee.js';
-import {initDiscussionCommentDelete} from './features/discussion-general-comment.js';
+import {initDiscussionCommentDelete, initDiscussionGeneralEditContent} from './features/discussion-general-comment.js';
 import {initDiscussionStatusButton} from './features/discussion-conversation.js';
 import {initDiscussionCommentReaction} from './features/discussion-general-comment.js';
 import {initDiscussionDue} from './features/discussion-setting.js';
@@ -207,6 +207,7 @@ onDomReady(() => {
   initDiscussionFileView();
   initDiscussionCommentDelete();
   initDiscussionStatusButton();
+  initDiscussionGeneralEditContent();
   initDiscussionCommentReaction();
   initDiscussionDue();
 });
