@@ -12,6 +12,7 @@ import (
 	"code.gitea.io/gitea/models/discussion"
 
 	stdCtx "context"
+
 	api "code.gitea.io/gitea/modules/structs"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
@@ -504,9 +505,9 @@ func SetDiscussionDeadline(ctx *context.Context) {
 	var deadlineUnix int64 // Unix 타임스탬프를 저장할 int64 변수
 	var deadline time.Time
 	if form.Deadline != nil && !form.Deadline.IsZero() {
-    	deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
-        	23, 59, 59, 0, time.Local)
-    	deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
+		deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
+			23, 59, 59, 0, time.Local)
+		deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
 	}
 
 	err := discussion_client.SetDiscussionDeadline(discussionId, deadlineUnix)
@@ -763,9 +764,15 @@ func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
 	// TODO converAiSampleCodeToDiscussionCommentFormat
 	comment, err := discussion_client.GetDiscussionComment(aiSampleCode.TargetCommentId)
 
+	if err != nil {
+		ctx.ServerError("디스커션 코멘트 가져오기 실패: %v", err)
+		return
+	}
+
 	newComment, err := convertAiSampleCodeToDiscussionComment(ctx, aiSampleCode, comment)
 	if err != nil {
-		ctx.ServerError("문제가 발생", err)
+		ctx.ServerError(" ai 샘플코드를 디스커션 코멘트로 전환하는 과정에서 문제가 발생", err)
+		return
 	}
 
 	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
@@ -774,6 +781,10 @@ func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
 			Base: ctx.Repo.RepoLink,
 		},
 	}, newComment.Content)
+
+	if err != nil {
+		ctx.ServerError("markdown 렌더링 실패 : %v", err)
+	}
 
 	comments = append(comments, newComment)
 	ctx.Data["DiscussionId"] = newComment.DiscussionId
@@ -805,8 +816,7 @@ func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *di
 	return newComment, err
 }
 
-
-func UpdateDiscussionAssignee(ctx *context.Context)  {
+func UpdateDiscussionAssignee(ctx *context.Context) {
 	assigneeId := ctx.FormInt64("id")
 	discussionId := ctx.FormInt64("issue_ids")
 	action := ctx.FormString("action")
@@ -822,8 +832,8 @@ func UpdateDiscussionAssignee(ctx *context.Context)  {
 		}
 	default:
 		req := &discussion_client.UpdateAssigneeRequest{
-			DiscussionId:	discussionId,
-			AssigneeId: 	assigneeId,
+			DiscussionId: discussionId,
+			AssigneeId:   assigneeId,
 		}
 		err := discussion_client.UpdateDiscussionAssignee(req)
 		if err != nil {
