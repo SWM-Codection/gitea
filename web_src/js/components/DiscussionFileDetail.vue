@@ -111,7 +111,7 @@ export default {
 
 
         <div style="margin-top: 1rem;">
-            <div id="file-tab-content" style="display:flex; width: 600px">
+            <div id="file-tab-content" style="display:flex; width: 1500px">
                 <DiscussionFileDetailTreeView id="discussion-tree" style="width: 200px;"/>
                 <div style="display: flex; flex-wrap: wrap;">
                     <div v-for ="content in store.contents" class="tw-w-full tw-px-1" style="margin-bottom: 2rem;">

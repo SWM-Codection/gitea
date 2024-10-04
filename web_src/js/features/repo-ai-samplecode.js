@@ -9,7 +9,7 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
       loadingImage.classList.remove('tw-hidden');
     }
 
-    const response = await POST('/ai/discussion/samples', {data});
+    const response = await POST('/ai/samples', {data});
 
     if (!response.ok) {
       const result = await response.json();
@@ -55,11 +55,48 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
   }
 }
 
-async function saveAiSampleCode(data, aiCodeModal) {
+async function saveAiDiscussionSampleCode(data, aiCodeModal) {
+  const response = await POST('/ai/discussion/sample', {data});
+
   try {
-    const response = await POST('/ai/discussion/sample', {data});
+    if (!response.ok) {
+      throw new Error('Failed to save AI discussion sample code');
+    }
+  
+    const result = await response.text();
+  
+    const $newCommentHolder = $(result);
+    const id = parseInt($newCommentHolder.get(0).id.split("--")[1])  // Get the new comment's ID from the data attribute
+
+    // Replace the current comment with the new one
+    const selector = `#discussioncomment-${id}`; 
+    const $currentCommentHolder = $(selector);
+    
+    if ($currentCommentHolder.length) {
+      $newCommentHolder.insertAfter($currentCommentHolder);
+    } else {
+      console.warn('Could not find the discussion comment holder with the given selector.');
+    }
+  
+    // Activate dropdown functionality for the new comment
+    $newCommentHolder.find('.dropdown').dropdown();
+  
+    if (!aiCodeModal.classList.contains('tw-hidden')) {
+      aiCodeModal.classList.add('tw-hidden');
+    }
+  } catch (error) {
+    console.error('Error saving AI discussion sample code:', error);
+    alert(`Error saving AI discussion sample code: ${error.message}`);
+  }
+}
+
+
+async function saveAiPullSampleCode(data, aiCodeModal) {
+  try {
+    const response = await POST('/ai/pull/sample', {data});
 
     if (!response.ok) {
+
       throw new Error('Failed to save AI sample codes');
     }
 
@@ -102,14 +139,26 @@ export function initAiSampleCodeModal() {
   if (!aiCodeModalClose) return;
   if (!aiCodeContainers.length) return;
 
+
+  const type = () => {
+    if (modalShowBtns[0].getAttribute("data-comment-id").split('-')[0] == "discussioncomment") {
+      return "discussion";
+    }
+    else {
+      return "pull";
+    }
+  } 
+
   for (const modalShowBtn of modalShowBtns) {
     modalShowBtn.addEventListener('click', async ({target}) => {
       const tag = target.getAttribute('data-comment-id');
       commentId = parseInt(tag.split('-')[1]);
+      // 디스커션 코멘트인지 풀 코멘트인지 확인
+
 
       const data = {
         target_comment_id: commentId.toString(),
-        type: 'pull',
+        type: type(),
       };
 
       await fetchAiSampleCodes(data, aiCodeContainers);
@@ -141,14 +190,29 @@ export function initAiSampleCodeModal() {
       return;
     }
 
-    const originalMarkdown = selectedCodeContainer.getAttribute('data-original-markdown');
+  const originalMarkdown = selectedCodeContainer.getAttribute('data-original-markdown');
 
-    const data = {
-      origin_data: 'diff',
-      target_comment_id: commentId.toString(),
-      sample_code_content: originalMarkdown, // original_markdown 값을 sample_code_content로 전달
-      type: 'pull',
-    };
-    await saveAiSampleCode(data, aiCodeModal);
+    if (type() == 'pull') {
+
+      const data = {
+        origin_data: 'diff',
+        target_comment_id: commentId.toString(),
+        sample_code_content: originalMarkdown, // original_markdown 값을 sample_code_content로 전달
+        type: type(),
+      };
+      
+      await saveAiPullSampleCode(data, aiCodeModal);
+    }
+    else {
+      const data = {
+        origin_data: "",
+        target_comment_id: commentId.toString(),
+        sample_code_content: originalMarkdown,
+        type: type(),
+      };
+      
+      await saveAiDiscussionSampleCode(data, aiCodeModal);
+    }
+
   });
 }

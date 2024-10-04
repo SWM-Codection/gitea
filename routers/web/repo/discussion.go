@@ -9,7 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"code.gitea.io/gitea/models/discussion"
+
 	stdCtx "context"
+
 	api "code.gitea.io/gitea/modules/structs"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
@@ -23,6 +26,7 @@ import (
 	"code.gitea.io/gitea/modules/markup"
 	"code.gitea.io/gitea/modules/markup/markdown"
 	"code.gitea.io/gitea/modules/setting"
+	"code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/timeutil"
 	"code.gitea.io/gitea/modules/util"
 	"code.gitea.io/gitea/modules/web"
@@ -364,6 +368,24 @@ func groupDiscussionFileCommentsByGroupId(
 
 		comments[discussionComment.GroupId] = append(comments[discussionComment.GroupId], &discussionComment)
 
+		sampleCode, err := discussion.GetAiSampleCodeByCommentID(ctx, comment.Id, "discussion")
+		if err != nil {
+			return nil, err
+		}
+		if sampleCode == nil {
+			continue
+		}
+
+		aiComment, err := convertAiSampleCodeToDiscussionComment(ctx, sampleCode, comment)
+
+		aiComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+			Ctx: ctx,
+			Links: markup.Links{
+				Base: ctx.Repo.RepoLink,
+			},
+		}, aiComment.Content)
+
+		comments[aiComment.GroupId] = append(comments[aiComment.GroupId], aiComment)
 	}
 
 	return comments, nil
@@ -483,9 +505,9 @@ func SetDiscussionDeadline(ctx *context.Context) {
 	var deadlineUnix int64 // Unix 타임스탬프를 저장할 int64 변수
 	var deadline time.Time
 	if form.Deadline != nil && !form.Deadline.IsZero() {
-    	deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
-        	23, 59, 59, 0, time.Local)
-    	deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
+		deadline = time.Date(form.Deadline.Year(), form.Deadline.Month(), form.Deadline.Day(),
+			23, 59, 59, 0, time.Local)
+		deadlineUnix = deadline.Unix() // Unix 타임스탬프를 int64로 저장
 	}
 
 	err := discussion_client.SetDiscussionDeadline(discussionId, deadlineUnix)
@@ -715,7 +737,86 @@ func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, p
 	return roleDescriptor, nil
 }
 
-func UpdateDiscussionAssignee(ctx *context.Context)  {
+func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
+
+	form := web.GetForm(ctx).(*structs.CreateAiSampleCodesForm)
+
+	commentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
+	if err != nil {
+		ctx.ServerError("잘못된 CommentId 형식", err)
+	}
+
+	aiSampleCode, err := discussion.CreateAiSampleCode(
+		ctx,
+		&discussion.CreateDiscussionAiCommentOpt{
+			Type:            form.Type,
+			TargetCommentId: commentId,
+			Content:         &form.SampleCodeContent,
+			GenearaterId:    ctx.Doer.ID,
+		})
+
+	if err != nil {
+		ctx.ServerError("ai 코드 생성 실패: %v", err)
+		return
+	}
+
+	comments := make([]*DiscussionComment, 0, 1)
+	// TODO converAiSampleCodeToDiscussionCommentFormat
+	comment, err := discussion_client.GetDiscussionComment(aiSampleCode.TargetCommentId)
+
+	if err != nil {
+		ctx.ServerError("디스커션 코멘트 가져오기 실패: %v", err)
+		return
+	}
+
+	newComment, err := convertAiSampleCodeToDiscussionComment(ctx, aiSampleCode, comment)
+	if err != nil {
+		ctx.ServerError(" ai 샘플코드를 디스커션 코멘트로 전환하는 과정에서 문제가 발생", err)
+		return
+	}
+
+	newComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+		Ctx: ctx,
+		Links: markup.Links{
+			Base: ctx.Repo.RepoLink,
+		},
+	}, newComment.Content)
+
+	if err != nil {
+		ctx.ServerError("markdown 렌더링 실패 : %v", err)
+	}
+
+	comments = append(comments, newComment)
+	ctx.Data["DiscussionId"] = newComment.DiscussionId
+	ctx.Data["comments"] = comments
+	ctx.HTML(http.StatusOK, tplDiscussionFileComment)
+}
+
+func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode, comment *discussion_client.DiscussionCommentResponse) (*DiscussionComment, error) {
+
+	poster, err := user_model.GetPossibleUserByID(ctx, -3)
+
+	if err != nil {
+		return nil, err
+	}
+
+	newComment := &DiscussionComment{
+		ID:           -comment.Id,
+		StartLine:    comment.StartLine,
+		DiscussionId: comment.DiscussionId,
+		GroupId:      comment.GroupId,
+		EndLine:      comment.EndLine,
+		CodeId:       comment.CodeId,
+		CreatedUnix:  comment.CreatedUnix - 1,
+		Reactions:    nil, // TODO: 뱃지 형식으로 변경하기
+		Poster:       poster,
+		Content:      sampleCode.Content,
+	}
+
+	return newComment, err
+}
+
+func UpdateDiscussionAssignee(ctx *context.Context) {
 	assigneeId := ctx.FormInt64("id")
 	discussionId := ctx.FormInt64("issue_ids")
 	action := ctx.FormString("action")
@@ -731,8 +832,8 @@ func UpdateDiscussionAssignee(ctx *context.Context)  {
 		}
 	default:
 		req := &discussion_client.UpdateAssigneeRequest{
-			DiscussionId:	discussionId,
-			AssigneeId: 	assigneeId,
+			DiscussionId: discussionId,
+			AssigneeId:   assigneeId,
 		}
 		err := discussion_client.UpdateDiscussionAssignee(req)
 		if err != nil {

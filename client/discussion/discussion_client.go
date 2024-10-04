@@ -161,17 +161,18 @@ type FileContent struct {
 }
 
 type DiscussionCommentResponse struct {
-	Id           int64              `json:"id"`
-	GroupId      int64              `json:"groupId"`
-	DiscussionId int64              `json:"discussionId"`
-	PosterId     int64              `json:"posterId"`
-	CodeId       int64              `json:"codeId"`
-	Scope        string             `json:"scope"`
-	StartLine    int64              `json:"startLine"`
-	EndLine      int64              `json:"endLine"`
-	Content      string             `json:"content"`
-	CreatedUnix  timeutil.TimeStamp `json:"createdUnix"`
-	Reactions    ReactionList       `json:"reactions"`
+	Id           int64                 `json:"id"`
+	FilePath     string                `json:"filePath"`
+	GroupId      int64                 `json:"groupId"`
+	DiscussionId int64                 `json:"discussionId"`
+	PosterId     int64                 `json:"posterId"`
+	CodeId       int64                 `json:"codeId"`
+	Scope        string                `json:"scope"`
+	StartLine    int64                 `json:"startLine"`
+	EndLine      int64                 `json:"endLine"`
+	Content      string                `json:"content"`
+	CreatedUnix  timeutil.TimeStamp    `json:"createdUnix"`
+	Reactions    []*DiscussionReaction `json:"reactions"`
 }
 
 type ReactionTypeEnum = string
@@ -339,9 +340,11 @@ func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error
 }
 
 func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse, error) {
+
 	resp, err := client.Request().
 		SetQueryParam("id", strconv.FormatInt(discussionCommentId, 10)).
 		Get("/discussion/comment")
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET /discussion/comment request: %w", err)
 	}

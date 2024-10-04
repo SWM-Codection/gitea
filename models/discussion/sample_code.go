@@ -18,7 +18,7 @@ type AiSampleCode struct {
 	Id              int64 `xorm:"'id' pk autoincr"`
 	TargetCommentId int64 `xorm:"'target_comment_id' INDEX NOT NULL"`
 	GenearaterId    int64
-	CommentType		string			   `xorm:"'comment_type'"`
+	CommentType     string             `xorm:"'comment_type'"`
 	Content         string             `xorm:"'content' text"`
 	CreatedUnix     timeutil.TimeStamp `xorm:"INDEX created"`
 	UpdatedUnix     timeutil.TimeStamp `xorm:"INDEX updated"`
@@ -29,7 +29,7 @@ type AiSampleCode struct {
 type CreateDiscussionAiCommentOpt struct {
 	TargetCommentId int64
 	GenearaterId    int64
-	Type			string
+	Type            string
 
 	Content *string
 }
@@ -52,7 +52,7 @@ func CreateAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt)
 	DiscussionAiComment := &AiSampleCode{
 		GenearaterId:    opts.GenearaterId,
 		TargetCommentId: opts.TargetCommentId,
-		CommentType: opts.Type,
+		CommentType:     opts.Type,
 		Content:         *opts.Content,
 	}
 
