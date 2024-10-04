@@ -1,4 +1,4 @@
-// package dashboard
+package dashboard
 
 // import (
 // 	issue_model "code.gitea.io/gitea/models/issues"
