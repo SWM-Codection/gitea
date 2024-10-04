@@ -1,7 +1,6 @@
-
-import {DELETE,PUT,POST} from "../modules/fetch.js";
-import {getComboMarkdownEditor, initComboMarkdownEditor} from './comp/ComboMarkdownEditor.js';
+import {DELETE, POST, PUT} from "../modules/fetch.js";
 import {hideElem, showElem} from '../utils/dom.js';
+import {getComboMarkdownEditor, initComboMarkdownEditor} from './comp/ComboMarkdownEditor.js';
 
 export function initDiscussionCommentDelete() {
   const deleteButtons = document.querySelectorAll('.discussion-delete-comment');
@@ -189,6 +188,7 @@ export function initDiscussionGeneralEditContent() {
   editContents.forEach(($el) => {
     $el.addEventListener('click', onEditContent);
   })
+}
 
 export function initDiscussionCommentReaction() { 
   const $reactionButtons = document.querySelectorAll('.discussion-comment-reaction-button');
