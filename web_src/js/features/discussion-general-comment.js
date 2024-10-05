@@ -4,9 +4,7 @@ import {getComboMarkdownEditor, initComboMarkdownEditor} from './comp/ComboMarkd
 
 export function initDiscussionCommentDelete() {
   const deleteButtons = document.querySelectorAll('.discussion-delete-comment');
-  console.log('searching delete comments...')
   if (!deleteButtons) return;
-  console.log('find delete buttons done!');
   deleteButtons.forEach((deleteButton) => {
     deleteButton.addEventListener('click', async (event) => {
       event.preventDefault();
@@ -183,7 +181,6 @@ async function onEditContent(event) {
 }
 
 export function initDiscussionGeneralEditContent() {
-  console.log('init discussion general edit content')
   const editContents = document.querySelectorAll('.discussion-general-edit-content');
   editContents.forEach(($el) => {
     $el.addEventListener('click', onEditContent);
