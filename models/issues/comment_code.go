@@ -191,9 +191,6 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 		return nil, err
 	}
 
-	println(issue.ID)
-	println(pullRequest.ID)
-
 	// AiPullComment 리스트를 가져옴
 	aiPullComments, err := fetchAiPullComments(ctx, pullRequest)
 	if err != nil {
