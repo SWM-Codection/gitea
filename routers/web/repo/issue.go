@@ -30,6 +30,7 @@ import (
 	repo_model "code.gitea.io/gitea/models/repo"
 	"code.gitea.io/gitea/models/unit"
 	user_model "code.gitea.io/gitea/models/user"
+	discussion_model "code.gitea.io/gitea/models/discussion"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/container"
 	"code.gitea.io/gitea/modules/emoji"
@@ -151,7 +152,7 @@ func MustAllowDiscussions(ctx *context.Context) {
 	}
 }
 
-func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption optional.Option[bool], isDiscussionOption optional.Option[bool]) {
+func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption optional.Option[bool]) {
 	var err error
 	viewType := ctx.FormString("type")
 	sortType := ctx.FormString("sort")
@@ -223,7 +224,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 		ReviewRequestedID: reviewRequestedID,
 		ReviewedID:        reviewedID,
 		IsPull:            isPullOption,
-		IsDiscussion:      isDiscussionOption,
 		IssueIDs:          nil,
 	}
 	if keyword != "" {
@@ -310,7 +310,6 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption opt
 			ProjectID:         projectID,
 			IsClosed:          isShowClosed,
 			IsPull:            isPullOption,
-			IsDiscussion:      isDiscussionOption,
 			LabelIDs:          labelIDs,
 			SortType:          sortType,
 		})
@@ -520,8 +519,6 @@ func issueIDsFromSearch(ctx *context.Context, keyword string, opts *issues_model
 // Issues render issues page
 func Issues(ctx *context.Context) {
 	isPullList := ctx.Params(":type") == "pulls"
-	isDiscussion := ctx.Params(":type") == "discussions"
-
 	if isPullList {
 		// handle pull requests
 		MustAllowPulls(ctx)
@@ -530,14 +527,6 @@ func Issues(ctx *context.Context) {
 		}
 		ctx.Data["Title"] = ctx.Tr("repo.pulls")
 		ctx.Data["PageIsPullList"] = true
-	} else if isDiscussion {
-		// handle discussions
-		MustAllowDiscussions(ctx)
-		if ctx.Written() {
-			return
-		}
-		ctx.Data["Title"] = ctx.Tr("repo.discussions")
-		ctx.Data["PageIsDiscussionList"] = true
 	} else {
 		// handle issuses
 		MustEnableIssues(ctx)
@@ -549,7 +538,7 @@ func Issues(ctx *context.Context) {
 		ctx.Data["NewIssueChooseTemplate"] = issue_service.HasTemplatesOrContactLinks(ctx.Repo.Repository, ctx.Repo.GitRepo)
 	}
 
-	issues(ctx, ctx.FormInt64("milestone"), ctx.FormInt64("project"), optional.Some(isPullList), optional.Some(isDiscussion))
+	issues(ctx, ctx.FormInt64("milestone"), ctx.FormInt64("project"), optional.Some(isPullList))
 	if ctx.Written() {
 		return
 	}
@@ -3241,7 +3230,47 @@ func UpdateCommentContent(ctx *context.Context) {
 
 // DeleteComment delete comment of issue
 func DeleteComment(ctx *context.Context) {
-	comment, err := issues_model.GetCommentByID(ctx, ctx.ParamsInt64(":id"))
+	targetId := ctx.ParamsInt64(":id")
+
+	if targetId < 0 {
+		sampleComment, err := discussion_model.GetAiSampleCodeByCommentID(ctx, -targetId, "pull")
+		if err != nil {
+			ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
+			return
+		}
+		err = discussion_model.DeleteAiSampleCodeByID(ctx, sampleComment.Id)
+		if err != nil {
+			ctx.ServerError("DeleteComment", err)
+			return
+		}
+		ctx.Status(http.StatusOK)
+		return
+	} else if targetId == 0 {
+		dataPath := ctx.Req.URL.Query().Get("path")
+		issueIdxStr := ctx.Req.URL.Query().Get("index")
+
+		issueIdx, err := strconv.ParseInt(issueIdxStr, 10, 64)
+		if err != nil {
+    		ctx.ServerError("Cannot Convert issueIdx", err)
+    		return
+		}
+
+		comment, err := issues_model.GetAiSampleCodeByIdxAndPath(ctx, issueIdx, dataPath)
+		if err != nil {
+			ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
+			return
+		}
+
+		err = issues_model.DeleteAiPullCommentByID(ctx, comment.ID)
+		if err != nil {
+			ctx.ServerError("DeleteComment", err)
+			return
+		}
+		ctx.Status(http.StatusOK)
+		return
+	}
+
+	comment, err := issues_model.GetCommentByID(ctx, targetId)
 	if err != nil {
 		ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
 		return

@@ -34,6 +34,7 @@ import {
   initRepoPullRequestAllowMaintainerEdit,
   initRepoPullRequestReview, initRepoIssueSidebarList, initArchivedLabelHandler,
 } from './features/repo-issue.js';
+import {initAiSampleCodeModal} from './features/repo-ai-samplecode.js';
 import {initRepoEllipsisButton, initCommitStatuses} from './features/repo-commit.js';
 import {
   initFootLanguageMenu,
@@ -88,6 +89,14 @@ import {initDirAuto} from './modules/dirauto.js';
 import {initRepositorySearch} from './features/repo-search.js';
 import {initColorPickers} from './features/colorpicker.js';
 import {initAdminSelfCheck} from './features/admin/selfcheck.js';
+import {initDiscussionForm} from './features/repo-discussion-form.js';
+import {initDiscussionFileView} from './features/repo-discussion-view.js';
+import {initHomeMarquee} from './features/home-marquee.js';
+import {initDiscussionCommentDelete, initDiscussionGeneralEditContent} from './features/discussion-general-comment.js';
+import {initDiscussionStatusButton} from './features/discussion-conversation.js';
+import {initDiscussionCommentReaction} from './features/discussion-general-comment.js';
+import {initDiscussionDue} from './features/discussion-setting.js';
+
 
 // Init Gitea's Fomantic settings
 initGiteaFomantic();
@@ -192,4 +201,13 @@ onDomReady(() => {
   initPdfViewer();
   initScopedAccessTokenCategories();
   initColorPickers();
+  initDiscussionForm();
+  initHomeMarquee();
+  initAiSampleCodeModal();
+  initDiscussionFileView();
+  initDiscussionCommentDelete();
+  initDiscussionStatusButton();
+  initDiscussionGeneralEditContent();
+  initDiscussionCommentReaction();
+  initDiscussionDue();
 });

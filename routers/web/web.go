@@ -856,9 +856,14 @@ func registerRoutes(m *web.Route) {
 		}
 	}
 
-	m.Group("/ai/pull/review", func() {
-		m.Post("", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
-	})
+	m.Group("/ai", func() {
+		m.Post("/pull/review", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
+		m.Post("/samples", bind(structs.GenerateAiSampleCodesForm{}), api_repo_router.GenerateAiSampleCodes)
+		m.Post("/pull/sample", bind(structs.CreateAiSampleCodesForm{}), repo.SetShowOutdatedComments, repo.CreateAiSampleCode)
+		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), repo.CreateAiSampleCodeForDiscussion)
+		m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
+		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
+	}, ignSignIn)
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
@@ -1146,6 +1151,9 @@ func registerRoutes(m *web.Route) {
 
 	m.Group("/{username}/{reponame}", func() {
 		m.Get("/find/*", repo.FindFiles)
+		m.Group("/all-tree-list", func() {
+			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.AllTreeList)
+		})
 		m.Group("/tree-list", func() {
 			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.TreeList)
 			m.Get("/tag/*", context.RepoRefByType(context.RepoRefTag), repo.TreeList)
@@ -1181,7 +1189,25 @@ func registerRoutes(m *web.Route) {
 	// end "/{username}/{reponame}": view milestone, label, issue, pull, etc
 
 	m.Group("/{username}/{reponame}", func() {
-		m.Group("/{type:issues|pulls|discussions}", func() {
+		m.Group("/discussions", func() {
+			m.Get("", repo.Discussions)
+			m.Group("/{index}", func() {
+				m.Get("", repo.ViewDiscussion)
+				m.Get("/contents", repo.DiscussionContent)
+				m.Group("/files", func() {
+					m.Get("", repo.ViewDiscussionFiles)
+				})
+			})
+			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
+			m.Patch("/state/{discussionId}", repo.SetDiscussionClosedState)
+			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
+			m.Post("/status", repo.UpdateDiscussionStatus)
+			m.Post("/assignee", repo.UpdateDiscussionAssignee)
+		})
+	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
+
+	m.Group("/{username}/{reponame}", func() {
+		m.Group("/{type:issues|pulls}", func() {
 			m.Get("", repo.Issues)
 			m.Group("/{index}", func() {
 				m.Get("", repo.ViewIssue)
@@ -1198,6 +1224,22 @@ func registerRoutes(m *web.Route) {
 				m.Get("/choose", context.RepoRef(), repo.NewIssueChooseTemplate)
 			})
 			m.Get("/search", repo.ListIssues)
+		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
+
+		m.Group("/discussions", func() {
+			m.Group("/new", func() {
+				m.Combo("").Get(context.RepoRef(), repo.NewDiscussion).
+					Post(web.Bind(forms.CreateDiscussionForm{}), repo.NewDiscussionPost)
+			})
+			m.Group("/{discussionId}", func() {
+				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
+				m.Delete("/comment", repo.DeleteDiscussionFileComment)
+				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
+
+				m.Post("/comment/{commentId}/reactions/{action}", web.Bind(forms.ReactionForm{}), repo.ChangeDiscussionCommentReaction)
+			})
+			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
+			m.Get("/comments/{codeId}", repo.DiscussionComments)
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.
@@ -1533,7 +1575,9 @@ func registerRoutes(m *web.Route) {
 			// "/*" route is deprecated, and kept for backward compatibility
 			m.Get("/*", context.RepoRefByType(context.RepoRefLegacy), repo.SingleDownloadOrLFS)
 		}, repo.MustBeNotEmpty)
-
+		m.Group("/highlight", func() {
+			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.SingleHighlightDownload)
+		}, repo.MustBeNotEmpty)
 		m.Group("/raw", func() {
 			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.SingleDownload)
 			m.Get("/tag/*", context.RepoRefByType(context.RepoRefTag), repo.SingleDownload)

@@ -1,0 +1,7 @@
+{{if $.comment}}
+	{{template "repo/discussion/file_comment_form" dict "root" $.root "hidden" $.hidden "HasComments" true}}
+{{else if $.root}}
+	{{template "repo/discussion/file_comment_form" $}}
+{{else}}
+	{{template "repo/discussion/file_comment_form" dict "root" $}}
+{{end}}

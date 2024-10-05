@@ -1,0 +1,40 @@
+{{range .comments}}
+
+{{$createdStr:= TimeSinceUnix .CreatedUnix ctx.Locale}}
+
+<div class="comment" id="{{.HashTag}}">
+	{{template "shared/user/avatarlink" dict "user" .Poster}}
+	<div class="content comment-container" style = "border: 1px solid #d0d7de; border-radius: 6px;">
+		<div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between">
+			<div class="comment-header-left tw-flex tw-items-center">
+					<span class="text grey muted-links">
+						{{template "shared/user/namelink" .Poster}}
+						{{ctx.Locale.Tr "repo.issues.commented_at" .HashTag $createdStr}}
+					</span>
+			</div>
+			<div class="comment-header-right actions tw-flex tw-items-center">
+				{{template "repo/issue/view_content/add_reaction" dict "ActionURL" (printf "%s/comments/%d/reactions" $.root.RepoLink .ID)}}
+				{{template "repo/discussion/context_menu" dict "ctxData" $.root "item" . "delete" true "issue" false "diff" false "IsCommentPoster" (and $.root.IsSigned (eq $.root.SignedUserID .Poster.ID))}}
+
+			</div>
+		</div>
+		<div class="ui attached segment comment-body">
+			<div class="render-content markup">
+			{{if .RenderedContent}}
+				{{.RenderedContent}}
+			{{else}}
+				<span class="no-content">{{ctx.Locale.Tr "repo.issues.no_content"}}</span>
+			{{end}}
+			</div>
+			<div id="discussioncomment-{{.ID}}-raw" class="raw-content tw-hidden">{{.Content}}</div>
+			<!-- 수정 버튼 들어가는 부분 -->
+			 {{template "repo/discussion/file_edit_comment_form" dict "root" $.root "item" .}}
+		</div>
+		{{$reactions := .Reactions.GroupByType}}
+		{{if $reactions}}
+			{{template "repo/issue/view_content/reactions" dict "ActionURL" (printf "%s/comments/%d/reactions" $.root.RepoLink .ID) "Reactions" $reactions}}
+
+		{{end}}
+	</div>
+</div>
+{{end}}

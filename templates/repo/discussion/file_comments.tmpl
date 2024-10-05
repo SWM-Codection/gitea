@@ -1,0 +1,30 @@
+{{if len .comments}}
+	{{$comment := index .comments 0}}
+	<div class="discussion-file-comment-holder">
+		<div class="field comment-code-cloud">
+			<div class="comment-list">
+				<ui class="ui comments">
+					{{template "repo/discussion/file_comment" dict "root" $ "comments" .comments}}
+				</ui>
+			</div>
+			<div class="tw-flex tw-justify-end tw-items-center tw-flex-wrap tw-mt-2">
+				<div class="ui buttons tw-mr-1">
+				</div>
+				{{if and $.SignedUserID (not $.Repository.IsArchived)}}
+					<button class="discussion-file-comment-form-reply ui primary tiny labeled icon button tw-ml-1 tw-mr-0">
+						{{svg "octicon-reply" 16 "reply icon tw-mr-1"}}{{ctx.Locale.Tr "repo.diff.comment.reply"}}
+					</button>
+				{{end}}
+
+			</div>
+			{{template "repo/discussion/file_comment_datahandler" dict "hidden" true "root" $ "comment" $comment}}
+		</div>
+		<input type="hidden" name="groupId" value = {{$comment.GroupId}}>
+		<input type="hidden" name="dId" value = {{$comment.DiscussionId}}> 
+		<input type="hidden" name="startLine" value="{{$comment.StartLine}}">
+		<input type="hidden" name="endLine" value="{{$comment.EndLine}}">
+		<input type="hidden" name="codeId" value = "{{printf "%d" $comment.CodeId}}">
+	</div>
+{{else}}
+
+{{end}}

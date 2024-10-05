@@ -1,0 +1,168 @@
+<div class="ui timeline">
+    <!-- discussion content -->
+    <div id="discussion-{{ .Discussion.Id }}" class="timeline-item comment first tw-pb-4" style="position: relative; margin-left: 72px;">
+        <a class="timeline-avatar"  href="#" style="position: absolute; left: -68px;">					
+            {{ctx.AvatarUtils.Avatar .Discussion.Poster 40}}
+        </a>
+        <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
+            <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between" role="heading">
+                <div class="comment-header-left tw-flex tw-items-center">
+                    <span class="text-grey muted-linkes">
+                        {{$hashTag := printf "discussion-%d" .Discussion.Id }}
+                        {{$createdStr:= TimeSinceUnix .Discussion.CreatedUnix ctx.Locale}}
+
+                        {{template "shared/user/authorlink" .Discussion.Poster}}
+                        {{ctx.Locale.Tr "repo.issues.commented_at" $hashTag $createdStr}}
+                    </span>
+                </div>
+                <div class="comment-header-right actions tw-flex tw-items-center"></div>
+            </div>
+            <div class="ui attached segment comment-body" role="article">
+                <div class="render-content markup">
+                    {{if .Discussion.Content }}
+                        {{.Discussion.Content}}
+                    {{ else }}
+                        <span style="font-style: italic; color: #5b6167; font-size: 14px;">  
+                            {{ctx.Locale.Tr "repo.issues.no_content"}}
+                        </span>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- discussion comments -->
+    {{ range .DiscussionContent.GlobalComments }}
+         <!-- for consistency -->
+        <div>
+            <div class="timeline-item comment tw-pb-4" id="discussioncomment-{{ .Id }}" class="timeline-item comment first tw-pb-4" style="position: relative; margin-left: 72px;">
+                <a  class="timeline-avatar" href="#" style="position: absolute; left: -68px;">
+                    {{ ctx.AvatarUtils.AvatarByUserId .PosterId 40}}
+                </a>
+                <div class="content comment-container" style="border: 1px solid #d0d7de; border-radius: 6px;">
+                    <div class="ui top attached header comment-header tw-flex tw-items-center tw-justify-between">
+                        <div class="comment-header-left tw-flex tw-items-center">
+                            <span class="text grey muted-links">
+                                {{$poster := ctx.ConverterUtils.UserIdToUser .PosterId}}
+                                {{$hashTag := printf "discussioncomment-%d" .Id }}
+                                {{$createdStr:= TimeSinceUnix .CreatedUnix ctx.Locale}}
+                                <span class="text grey muted-links">
+                                    {{template "shared/user/authorlink" $poster}}
+                                    {{ctx.Locale.Tr "repo.issues.commented_at" $hashTag $createdStr}}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="comment-header-right actions tw-flex tw-items-center">
+                            {{template "repo/issue/view_content/show_role" dict "ShowRole" $.DiscussionRoleDescriptor "IgnorePoster" false}}
+                            <div class="item action ui dropdown jump pointing top right select-reaction" data-action-url="/chlwodud0123/asdfqq/comments/25/reactions" role="menu" aria-haspopup="" aria-controls="_aria_auto_id_28" aria-expanded="false" tabindex="0">
+                                <a class="muted">
+                                    {{svg "octicon-smiley"}}
+                                </a>
+                                <div class="menu transition hidden discussion-comment-reactions" role="" tabindex="-1">
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="+1"  data-reaction-content="+1" id="_aria_auto_id_29" role="menuitem" tabindex="-1">👍</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="-1" data-reaction-content="-1" id="_aria_auto_id_30" role="menuitem" tabindex="-1">👎</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="laugh" data-reaction-content="laugh" id="_aria_auto_id_31" role="menuitem" tabindex="-1">😆</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="hooray" data-reaction-content="hooray" id="_aria_auto_id_32" role="menuitem" tabindex="-1">🎉</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="confused" data-reaction-content="confused" id="_aria_auto_id_33" role="menuitem" tabindex="-1">😕</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="heart" data-reaction-content="heart" id="_aria_auto_id_34" role="menuitem" tabindex="-1">❤️</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="rocket" data-reaction-content="rocket" id="_aria_auto_id_35" role="menuitem" tabindex="-1">🚀</a>
+                                    <a class="item emoji discussion-comment-reaction-button" data-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment/{{.Id}}/reactions" data-tooltip-content="eyes" data-reaction-content="eyes" id="_aria_auto_id_36" role="menuitem" tabindex="-1">👀</a>
+                                </div>
+                            </div>
+                            <!-- discussion comment hamburger menu -->
+                            <div class="item action ui dropdown jump pointing top right context-dropdown-active visible" role="menu" >
+                                <a class="context-menu muted">
+                                    {{svg "octicon-kebab-horizontal"}}
+                                </a>
+                                <div class="menu transition visible" role="" tabindex="-1" style="min-width: 180px;">
+                                    <div class="item context js-aria-clickable discussion-general-edit-content" data-comment-id={{.Id}}  >{{ctx.Locale.Tr "repo.issues.context.edit"}}</div>
+                                    <div class="item context js-aria-clickable discussion-delete-comment" data-comment-id="discussioncomment-{{.Id}}" data-url="{{$.RepoLink}}/discussions/{{.Id}}/comment" data-locale="{{ctx.Locale.Tr "repo.issues.delete_comment_confirm"}}">{{ctx.Locale.Tr "repo.issues.context.delete"}}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ui attached segment comment-body">
+                        <div class="render-content markup">
+                            {{ .Content }}
+                        </div>
+                        <div id="discussioncomment-{{.Id}}-raw" class="raw-content tw-hidden">{{.Content}}</div>
+                        <div class="edit-content-zone" 
+                            data-update-url="{{$.RepoLink}}/discussions/{{$.Discussion.Id}}/comment" 
+                            data-context="{{$.RepoLink}}"
+                            data-discussion-id="{{$.Discussion.Id}}"
+                            data-discussion-comment-id="{{.Id}}"></div>
+                    </div>
+                    {{$comment := .}}
+                    {{if .Reactions}}
+                        {{$reactions := .Reactions.GroupByType}}
+                        {{$actionUrl := printf "%s/discussions/%d/comment/%d/reactions" $.RepoLink $.Discussion.Id $comment.Id}}
+                        {{template "repo/discussion/reactions" dict "Reactions" $reactions "ActionURL" $actionUrl}}
+                    {{else}}
+                        <div class="bottom-reactions"></div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    {{ end }}
+
+
+    <!-- discussion comment post form -->
+    <div class="timeline-item comment form" style="position: relative; margin-left: 72px;">
+        <a class="timeline-avatar" href="#" style="position: absolute; left: -68px;">
+            {{ctx.AvatarUtils.Avatar .SignedUser 40}}
+        </a>
+        <div class="content">
+            <div class="ui segment">
+                <form class="ui form form-fetch-action" id="comment-form" action="{{.Link}}/comment" method="post">
+                    <div class="field">
+                        {{template "shared/combomarkdowneditor" (dict
+                            "MarkdownPreviewUrl" (print .Reposistory.Link "/markup")
+                            "MarkdownPreviewContext" .RepoLink 
+                            "TextareaName" "content"
+                            "TextAreaContent" "text area content on here"
+                            "TextAreaPlaceHolder" (ctx.Locale.Tr "repo.discussion.comment.placeholder")
+                            "DropzoneParentContainer" "form, .ui.form"
+                        )}}
+                    </div>
+                    {{$statusButtonColor := "red"}}
+                    {{if .Discussion.IsClosed}}{{$statusButtonColor = "green"}}{{end}}
+                    {{$statusButtonText := "repo.discussion.close"}}
+                    {{if .Discussion.IsClosed}}{{$statusButtonText = "repo.issues.reopen_issue"}}{{end}}
+                    <div class="field footer">
+                        <div class="text right">
+                            <button id="discussion-status-button" class="ui {{$statusButtonColor}} basic button" data-discussion-id="{{.Discussion.Id}}" data-is-closed="{{.Discussion.IsClosed}}">{{ctx.Locale.Tr $statusButtonText}}</button>
+                            <button class="ui primary button">{{ctx.Locale.Tr "repo.discussion.create_comment"}}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<template id="discussion-comment-editor-template">
+	<div class="ui form comment">
+		<div class="field">
+			{{template "shared/combomarkdowneditor" (dict
+				"MarkdownPreviewUrl" (print .Repository.Link "/markup")
+				"MarkdownPreviewContext" .RepoLink
+				"TextareaName" "content"
+				"DropzoneParentContainer" ".ui.form"
+			)}}
+		</div>
+
+		{{if .IsAttachmentEnabled}}
+			<div class="field">
+				{{template "repo/upload" .}}
+			</div>
+		{{end}}
+
+		<div class="field">
+			<div class="text right edit">
+				<button class="ui cancel button">{{ctx.Locale.Tr "repo.issues.cancel"}}</button>
+				<button class="ui primary button">{{ctx.Locale.Tr "repo.issues.save"}}</button>
+			</div>
+		</div>
+	</div>
+</template>

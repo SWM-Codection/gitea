@@ -7,15 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	issues_model "code.gitea.io/gitea/models/issues"
 	pull_model "code.gitea.io/gitea/models/pull"
+	"code.gitea.io/gitea/models/repo"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/base"
+	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/json"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/setting"
+	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/web"
+	ai_service "code.gitea.io/gitea/services/ai"
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/context/upload"
 	"code.gitea.io/gitea/services/forms"
@@ -165,6 +170,48 @@ func UpdateResolveConversation(ctx *context.Context) {
 	renderConversation(ctx, comment, origin)
 }
 
+func CreateAiSampleCode(ctx *context.Context) {
+	// TODOC swagger 추가
+	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
+	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
+
+	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": "Invalid TargetCommentId format",
+		})
+		return
+	}
+
+	_, err = ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]any{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	targetComment, err := issues_model.GetCommentByID(ctx, targetCommentId)
+	if err != nil {
+		ctx.ServerError("GetIssueByID", err)
+		return
+	}
+
+	if err = targetComment.LoadIssue(ctx); err != nil {
+		ctx.ServerError("comment.LoadIssue", err)
+		return
+	}
+
+	if err = targetComment.Issue.LoadRepo(ctx); err != nil {
+		ctx.ServerError("Issue.LoadRepo", err)
+		return
+	}
+
+	initializeRepo(ctx, targetComment.Issue.Repo.OwnerName, targetComment.Issue.Repo.Name)
+	renderConversation(ctx, targetComment, form.OriginData)
+}
+
+// 체크 코멘트가 만들어졌을 때 렌더링 되는 곳
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {
 	ctx.Data["PageIsPullFiles"] = origin == "diff"
 
@@ -174,6 +221,24 @@ func renderConversation(ctx *context.Context, comment *issues_model.Comment, ori
 		ctx.ServerError("FetchCodeCommentsByLine", err)
 		return
 	}
+	aiPullComment, err := issues_model.FetchAiPullCommentByLine(ctx, comment.Issue, comment.TreePath, comment.Line)
+
+	if err != nil {
+		ctx.ServerError("FetchAiPullCommentByLine", err)
+		return
+	}
+	if aiPullComment != nil {
+		if err := aiPullComment.LoadPoster(ctx); err != nil {
+			ctx.ServerError("LoadPoster", err)
+			return
+		}
+		if err := aiPullComment.LoadAttachments(ctx); err != nil {
+			ctx.ServerError("LoadPoster", err)
+			return
+		}
+		comments = append([]*issues_model.Comment{aiPullComment}, comments...)
+	}
+
 	if len(comments) == 0 {
 		// if the comments are empty (deleted, outdated, etc), it's better to tell the users that it is outdated
 		ctx.HTML(http.StatusOK, tplConversationOutdated)
@@ -331,5 +396,26 @@ func UpdateViewedFiles(ctx *context.Context) {
 
 	if err := pull_model.UpdateReviewState(ctx, ctx.Doer.ID, pull.ID, data.HeadCommitSHA, updatedFiles); err != nil {
 		ctx.ServerError("UpdateReview", err)
+	}
+}
+
+func initializeRepo(ctx *context.Context, ownerName string, repoName string) {
+	if ctx.Repo.Repository == nil {
+		repo, err := repo.GetRepositoryByOwnerAndName(ctx, ownerName, repoName)
+		if err != nil {
+			ctx.ServerError("GetRepositoryByOwnerAndName", err)
+			return
+		}
+		ctx.Repo.Repository = repo
+	}
+
+	if ctx.Repo.GitRepo == nil {
+		gitRepo, err := git.OpenRepository(ctx, ctx.Repo.Repository.RepoPath())
+		if err != nil {
+			ctx.ServerError("OpenRepository", err)
+			return
+		}
+		ctx.Repo.GitRepo = gitRepo
+		defer ctx.Repo.GitRepo.Close()
 	}
 }

@@ -24,6 +24,7 @@
 					{{if .delete}}
 						<div class="item context js-aria-clickable delete-comment" data-comment-id={{.item.HashTag}} data-url="{{.ctxData.RepoLink}}/comments/{{.item.ID}}/delete" data-locale="{{ctx.Locale.Tr "repo.issues.delete_comment_confirm"}}">{{ctx.Locale.Tr "repo.issues.context.delete"}}</div>
 					{{end}}
+					<div class="item context js-aria-clickable show-ai-code-modal" data-comment-id="{{ .item.HashTag }}">{{ctx.Locale.Tr "repo.issues.context.sample"}}</div>				  
 				{{end}}
 			{{end}}
 			{{$canUserBlock := call .ctxData.CanBlockUser .ctxData.SignedUser .item.Poster}}
@@ -42,3 +43,23 @@
 		{{end}}
 	</div>
 </div>
+
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+	  const aiCodeItems = document.querySelectorAll('.show-ai-code-modal');
+	  const activeItem = document.querySelector('.active.item')?.getAttribute('href');
+	  const detailActiveItem = document.querySelector('.ui.top.attached.pull.tabular.menu .item.active')?.getAttribute('href');
+
+	  if (activeItem && aiCodeItems.length) {
+		aiCodeItems.forEach((aiCodeItem) => {
+		  if (!activeItem.includes('discussions') && !activeItem.includes('pulls')) {
+			aiCodeItem.classList.add('tw-hidden');
+		  } else if (!detailActiveItem || !detailActiveItem.endsWith('files')) {
+			aiCodeItem.classList.add('tw-hidden');
+		  } else {
+			aiCodeItem.classList.remove('tw-hidden');
+		  }
+		});
+	  }
+	});
+</script>

@@ -1,0 +1,85 @@
+{{template "base/head" .}}
+<div role="main" aria-label="{{.Title}}" class="page-content repository view discussion">
+    {{template "repo/header" .}}
+    <div class="ui container">
+        <div class="loading-overlay tw-hidden">
+            <div class="loading-overlay " style="flex-direction: column; justify-content: center;">
+                <h2>AI 샘플 코드 생성 중입니다</h2>
+                <div class="tw-inline-block tw-h-8 tw-w-8 tw-animate-spin tw-rounded-full tw-border-4 tw-border-solid tw-border-current tw-border-e-transparent tw-align-[-0.125em] tw-text-info motion-reduce:tw-animate-[spin_1.5s_linear_infinite]" role="status">
+                    <span class="!tw-absolute !tw--m-px !tw-h-px !tw-w-px !tw-overflow-hidden !tw-whitespace-nowrap !tw-border-0 !tw-p-0 ![tw-clip:rect(0,0,0,0)]">
+                        Loading...
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="discussion-title-header">
+            <div class="discussion-title">
+                <h1 class="tw-break-anywhere">
+                    {{ .Discussion.Name }}
+                    <span class="index">#{{.Discussion.Index}}</span>
+                </h1>
+                <div class="discussion-title-buttons">
+                    <!-- todo add edit button on here -->
+                </div>
+            </div>
+            <div class="discussion-title-meta" style="display: flex;">
+                {{$statusLabelText := "repo.issues.open_title"}}
+                {{$statusLabelColor := "green"}}
+                {{if .Discussion.IsClosed}}{{$statusLabelText = "repo.issues.closed_title"}}{{$statusLabelColor = "red"}}{{end}}
+                <div class="ui {{$statusLabelColor}} label discussion-state-label">
+                    {{svg "octicon-comment-discussion"}} {{ctx.Locale.Tr $statusLabelText}}
+                </div>
+                <div class="tw-ml-2 tw-flex-1 tw-break-anywhere">
+                    {{$createdStr:= TimeSinceUnix .Discussion.CreatedUnix ctx.Locale}}
+                    <span class="time-desc">
+                        {{ $createdStr }}
+                        {{ctx.Locale.Tr "repo.issues.opened_by" $createdStr .Discussion.Poster.HomeLink .Discussion.Poster.GetDisplayName}}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ui discussion tabs container">
+            <div class="ui top attached discussion tabular menu">
+                <a class="item  {{ if eq .DiscussionTab "conversation" }} active {{end}}" href="{{.RepoLink}}/discussions/{{.Discussion.Id}}">
+                    {{svg "octicon-comment-discussion"}}
+                    <span class="resize-for-semibold">대화</span>
+                </a>
+                <a class="item {{ if eq .DiscussionTab "files" }} active {{end}}" href="{{.RepoLink}}/{{.Id}}discussions/{{.Discussion.Id}}/files">
+                    {{svg "octicon-git-commit"}}
+                    <span class="resize-for-semibold">파일 목록</span>
+                </a>
+            </div>
+            <div class="ui tabs divider"></div>
+        </div>
+
+        <div class="ui discussion discussion-content container" style="display: flex;">
+            <input type="hidden" id="repolink" value="repo link here">
+            <input type="hidden" id="repoId" value="repo id here">
+            <input type="hidden" id="issueIndex" value="index here">
+            <input type="hidden" id="type" value="type herer">
+
+            <div class="discussion-content-left comment-list prevent-before-timline" style="width: 100%">
+                {{ if eq .DiscussionTab "conversation" }}
+                    {{ template "repo/discussion/view_conversation" . }}
+                {{ else }}
+                    {{ template "repo/discussion/view_file" .}}
+                {{ end }}
+                <script>
+                    window.config.pageData.discussionFileInfo = {} 
+                </script>
+            </div>
+
+            {{ if eq .DiscussionTab "conversation" }}
+                <div style="width: 300px; margin-left: 15px;">
+                    {{ template "repo/issue/view_content/discussion_sidebar" . }}
+                </div>
+            {{end}}
+        </div>
+
+
+    </div>
+</div>
+{{template "repo/issue/ai_sample_code_modal" .}}
+
+{{template "base/footer" .}}

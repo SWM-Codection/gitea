@@ -1,0 +1,25 @@
+
+    <div class="ui container">
+
+
+        <div class="discussion-content" style="display: flex;">
+            <input type="hidden" id="repolink" value="repo link here">
+            <input type="hidden" id="repoId" value="repo id here">
+            <input type="hidden" id="issueIndex" value="index here">
+            <input type="hidden" id="type" value="type herer">
+
+            <div class="discussion-content-left comment-list prevent-before-timline">
+                <div id="discussion-file-view">
+
+                    <!-- 디스커션 파일 뷰 -->
+                </div>
+                <script>
+                    window.config.pageData.repoLink = "{{.RepoPathLink}}";
+                </script>
+
+            </div>
+
+        </div>
+
+
+    </div>

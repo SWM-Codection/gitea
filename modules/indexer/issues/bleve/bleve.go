@@ -156,7 +156,7 @@ func (b *Indexer) Search(ctx context.Context, options *internal.SearchOptions) (
 	var queries []query.Query
 
 	if options.Keyword != "" {
-		fuzziness := 0
+		fuzziness := 1
 		if options.IsFuzzyKeyword {
 			fuzziness = inner_bleve.GuessFuzzinessByKeyword(options.Keyword)
 		}

@@ -40,7 +40,6 @@ func TestCreateAiPullComment(t *testing.T) {
 
 func TestDeleteAiPullRequest(t *testing.T) {
 
-
 	assert.NoError(t, unittest.PrepareTestDatabase())
 
 	comment := unittest.AssertExistsAndLoadBean(t, &ai_comment.AiPullComment{ID: 2})
