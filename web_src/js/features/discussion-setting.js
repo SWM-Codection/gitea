@@ -39,7 +39,6 @@ async function updateDeadline(deadlineString) {
 // eslint-disable-next-line i/no-unused-modules
 export function initDiscussionDue() {
   $(document).on('click', '.discussion-due-edit', () => {
-    console.log('clicked');
     toggleElem('#deadlineForm');
   });
   $(document).on('click', '.discussion-due-remove', () => {

@@ -61,7 +61,6 @@ export default {
 
 
             if (!this.store.isBin) {
-                console.log('content is ',content);
                 content.html.forEach((line, idx) => {
                     this.store.contents.push({
                         line: idx + 1, 

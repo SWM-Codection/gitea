@@ -76,7 +76,6 @@ export default {
   },
   mounted() {
     // Default to true if unset
-    console.log('discussion tree mounted!')
     this.store.fileTreeIsVisible = true; 
 
     this.hashChangeListener = () => {

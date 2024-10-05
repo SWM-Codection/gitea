@@ -22,7 +22,6 @@ export default {
         
     }),
     async mounted() {
-        console.log('vue component has been mounted'); 
         await this.fetchDiscussion();
     },
 
