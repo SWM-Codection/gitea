@@ -60,7 +60,6 @@ func MockIcon(icon string) func() {
 func RenderHTML(icon string, others ...any) template.HTML {
 	size, class := gitea_html.ParseSizeAndClass(defaultSize, "", others...)
 	if svgStr, ok := svgIcons[icon]; ok {
-		println(svgStr);
 		// the code is somewhat hacky, but it just works, because the SVG contents are all normalized
 		if size != defaultSize {
 			svgStr = strings.Replace(svgStr, fmt.Sprintf(`width="%d"`, defaultSize), fmt.Sprintf(`width="%d"`, size), 1)

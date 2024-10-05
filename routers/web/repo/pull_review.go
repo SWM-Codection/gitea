@@ -183,14 +183,13 @@ func CreateAiPullSampleCode(ctx *context.Context) {
 		return
 	}
 
-	sampleCode, err := ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
+	_, err = ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]any{
 			"message": err.Error(),
 		})
 		return
 	}
-	println(sampleCode.Id)
 
 	targetComment, err := issues_model.GetCommentByID(ctx, targetCommentId)
 	if err != nil {
@@ -237,10 +236,7 @@ func renderConversation(ctx *context.Context, comment *issues_model.Comment, ori
 			ctx.ServerError("LoadPoster", err)
 			return
 		}
-		println(comments[0].RenderedContent)
-		println()
 		comments = append([]*issues_model.Comment{aiPullComment}, comments...)
-		println(comments[0].RenderedContent)
 	}
 
 	if len(comments) == 0 {

@@ -160,7 +160,6 @@ func ViewDiscussion(ctx *context.Context) {
 			ctx.ServerError("errro on get user by id: err = %v", err)
 		}
 		assignees = append(assignees, assignee)
-		println(len(assignees))
 	}
 	repo := ctx.Repo.Repository
 	assigneeUsers, err := repo_model.GetRepoAssignees(ctx, repo)
@@ -168,7 +167,6 @@ func ViewDiscussion(ctx *context.Context) {
 		ctx.ServerError("GetRepoAssignees", err)
 		return
 	}
-	println(len(assignees))
 
 	participants[0] = poster
 	ctx.Data["DiscussionContent"] = discussionContentResponse
@@ -664,9 +662,6 @@ func UpdateDiscussionAssignee(ctx *context.Context)  {
 	assigneeId := ctx.FormInt64("id")
 	discussionId := ctx.FormInt64("issue_ids")
 	action := ctx.FormString("action")
-	println(assigneeId)
-	println(discussionId)
-	println(action)
 
 	switch action {
 	case "clear":
