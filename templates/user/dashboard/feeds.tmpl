@@ -1,3 +1,4 @@
+{{if .Feeds}}
 <div id="activity-feed" class="flex-list">
 	{{range .Feeds}}
 		<div class="flex-item">
@@ -125,3 +126,10 @@
 	{{end}}
 	{{template "base/paginate" .}}
 </div>
+{{else}}
+<div id="empty-feed" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 12px;">
+	{{svg "octicon-squirrel" 40}}
+	<h2>아직 활동 내역이 없네요</h2>
+	<div>저장소를 만드는 것부터 시작해보세요</div>
+</div>
+{{end}}

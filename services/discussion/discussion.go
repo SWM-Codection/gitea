@@ -1,8 +1,16 @@
 package discussion
 
 import (
+<<<<<<< HEAD
 	"strconv"
 
+=======
+	"fmt"
+	"strconv"
+
+	"code.gitea.io/gitea/modules/highlight"
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/services/context"
 
@@ -30,9 +38,16 @@ func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListR
 		page = 1
 	}
 	page-- // gitea uses 1-based paginiation methodology, but discussion backend uses 0-based pagination methodology
+<<<<<<< HEAD
 
 	log.Info("calling get discussion list with repoId: %v, isClosed: %v, page: %v", repoId, isClosed, page)
 	discussionListResponse, err := discussion_client.GetDiscussionList(repoId, isClosed, page)
+=======
+	sort := ctx.FormString("sort")
+
+	log.Info("calling get discussion list with repoId: %v, isClosed: %v, page: %v", repoId, isClosed, page)
+	discussionListResponse, err := discussion_client.GetDiscussionList(repoId, isClosed, page, sort)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	if err != nil {
 		log.Info("discusisonClient.getdiscussionList failed1")
 		return nil, err
@@ -45,6 +60,7 @@ func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListR
 	return discussionListResponse, nil
 }
 
+<<<<<<< HEAD
 func GetDiscussionContent(ctx *context.Context, discussionId int64) (*discussion_client.DiscussionContentResponse, error) {
 
 	content, err := discussion_client.GetDiscussionContent(discussionId)
@@ -55,4 +71,64 @@ func GetDiscussionContent(ctx *context.Context, discussionId int64) (*discussion
 	}
 
 	return content, nil
+=======
+func GetDiscussionContent(discussionID int64) (*discussion_client.DiscussionContentResponse, error) {
+	contents, err := discussion_client.GetDiscussionContents(discussionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return contents, nil
+}
+
+func GetDiscussionContentWithHighlights(discussionID int64) (*discussion_client.DiscussionContentResponse, error) {
+	contents, err := discussion_client.GetDiscussionContents(discussionID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = highlightContents(contents)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return contents, nil
+
+}
+
+func highlightContents(contents *discussion_client.DiscussionContentResponse) error {
+	for i := range contents.Contents {
+		if err := highlightContent(&contents.Contents[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func highlightContent(content *discussion_client.FileContent) error {
+	for i, block := range content.CodeBlocks {
+		for j, line := range block.Lines {
+			html, _, err := highlight.File(content.FilePath, "", []byte(line.Content))
+			if err != nil {
+				return fmt.Errorf("failed to highlight line %d in block %d: %w", j, i, err)
+			}
+			if len(html) == 0 {
+				continue
+			}
+
+			content.CodeBlocks[i].Lines[j].Content = string(html[0])
+		}
+	}
+	return nil
+}
+
+func DeleteDiscussionComment(ctx *context.Context, discussionId int64, posterId int64) error {
+
+	if err := discussion_client.DeleteDiscussionComment(discussionId, posterId); err != nil {
+		return err
+	}
+
+	return nil
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 }

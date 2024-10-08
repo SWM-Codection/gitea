@@ -1,7 +1,7 @@
 import {throttle} from 'throttle-debounce';
 import {createTippy} from '../modules/tippy.js';
 import {isDocumentFragmentOrElementNode} from '../utils/dom.js';
-import octiconKebabHorizontal from '../../../public/assets/img/svg/octicon-kebab-horizontal.svg';
+const octiconKebabHorizontal = 'https://d21gfi7kzrpyzn.cloudfront.net/public/assets/img/svg/octicon-kebab-horizontal.svg';
 
 window.customElements.define('overflow-menu', class extends HTMLElement {
   updateItems = throttle(100, () => {
@@ -121,7 +121,9 @@ window.customElements.define('overflow-menu', class extends HTMLElement {
     const btn = document.createElement('button');
     btn.classList.add('overflow-menu-button');
     btn.setAttribute('aria-label', window.config.i18n.more_items);
-    btn.innerHTML = octiconKebabHorizontal;
+
+    btn.innerHTML = `<img src="${octiconKebabHorizontal}" alt="Icon" />`;
+
     this.append(btn);
     this.button = btn;
 

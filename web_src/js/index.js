@@ -89,9 +89,19 @@ import {initDirAuto} from './modules/dirauto.js';
 import {initRepositorySearch} from './features/repo-search.js';
 import {initColorPickers} from './features/colorpicker.js';
 import {initAdminSelfCheck} from './features/admin/selfcheck.js';
+<<<<<<< HEAD
 import { initDiscussionForm } from './features/repo-discussion-form.js';
 import { initDiscussionFileView } from './features/repo-discussion-view.js';
 import { initHomeMarquee } from './features/home-marquee.js';
+=======
+import {initDiscussionForm} from './features/repo-discussion-form.js';
+import {initDiscussionFileView} from './features/repo-discussion-view.js';
+import {initHomeMarquee} from './features/home-marquee.js';
+import {initDiscussionCommentDelete, initDiscussionGeneralEditContent} from './features/discussion-general-comment.js';
+import {initDiscussionStatusButton} from './features/discussion-conversation.js';
+import {initDiscussionCommentReaction} from './features/discussion-general-comment.js';
+import {initDiscussionDue} from './features/discussion-setting.js';
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 
 // Init Gitea's Fomantic settings
@@ -201,4 +211,12 @@ onDomReady(() => {
   initHomeMarquee();
   initAiSampleCodeModal();
   initDiscussionFileView();
+<<<<<<< HEAD
+=======
+  initDiscussionCommentDelete();
+  initDiscussionStatusButton();
+  initDiscussionGeneralEditContent();
+  initDiscussionCommentReaction();
+  initDiscussionDue();
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 });

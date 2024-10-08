@@ -51,12 +51,16 @@ func fetchCodeCommentsByReview(ctx context.Context, issue *Issue, currentUser *u
 		}
 
 		if aiSampleCode != nil {
+<<<<<<< HEAD
 			aiComment, err := convertAiSampleCodeToComment(
 				ctx,
 				aiSampleCode,
 				issue,
 				comment,
 			)
+=======
+			aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 			if err != nil {
 				return nil, err
 			}
@@ -146,17 +150,46 @@ func findCodeComments(ctx context.Context, opts FindCommentsOptions, issue *Issu
 	return comments[:n], nil
 }
 
-// FetchCodeCommentsByLine fetches the code comments for a given treePath and line number
 func FetchCodeCommentsByLine(ctx context.Context, issue *Issue, currentUser *user_model.User, treePath string, line int64, showOutdatedComments bool) (CommentList, error) {
-	opts := FindCommentsOptions{
-		Type:     CommentTypeCode,
-		IssueID:  issue.ID,
-		TreePath: treePath,
-		Line:     line,
-	}
-	return findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
+    opts := FindCommentsOptions{
+        Type:     CommentTypeCode,
+        IssueID:  issue.ID,
+        TreePath: treePath,
+        Line:     line,
+    }
+
+    codeComments, err := findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
+    if err != nil {
+        return nil, err
+    }
+
+    var allComments CommentList
+
+    for _, comment := range codeComments {
+        allComments = append(allComments, comment)
+
+        aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
+        if err != nil {
+            return nil, err
+        }
+
+        if aiSampleCode != nil {
+            aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
+            if err != nil {
+                return nil, err
+            }
+
+            allComments = append(allComments, aiComment)
+        }
+    }
+
+    return allComments, nil
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 func FetchCodeAiComments(ctx context.Context, issue *Issue, fileLines map[string]int64) (CodeComments, error) {
 	return fetchCodeAiCommentsByReview(ctx, issue, fileLines)
 }
@@ -165,8 +198,18 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 	pathToLineToComment := make(CodeComments)
 	var comments CommentList
 
+<<<<<<< HEAD
 	// AiPullComment 리스트를 가져옴
 	aiPullComments, err := fetchAiPullComments(ctx, issue)
+=======
+	pullRequest, err := GetPullRequestByIssueID(ctx, issue.ID)
+	if err != nil || pullRequest == nil {
+		return nil, err
+	}
+
+	// AiPullComment 리스트를 가져옴
+	aiPullComments, err := fetchAiPullComments(ctx, pullRequest)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +243,16 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 }
 
 func FetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string, line int64) (*Comment, error) {
+<<<<<<< HEAD
 	aiPullComment, err := fetchAiPullCommentByLine(ctx, issue, treePath, line)
+=======
+	pullRequest, err := GetPullRequestByIssueID(ctx, issue.ID)
+	if err != nil || pullRequest == nil {
+		return nil, err
+	}
+	
+	aiPullComment, err := fetchAiPullCommentByLine(ctx, pullRequest, treePath, line)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	if err != nil || aiPullComment == nil {
 		return nil, err
 	}
@@ -272,8 +324,13 @@ func convertAiSampleCodeToComment(ctx context.Context, aiSampleCode *discussion_
 		PosterID:    -3,
 		IssueID:     aiSampleCode.TargetCommentId,
 		Content:     aiSampleCode.Content,
+<<<<<<< HEAD
 		CreatedUnix: aiSampleCode.CreatedUnix,
 		UpdatedUnix: aiSampleCode.UpdatedUnix,
+=======
+		CreatedUnix: target_comment.CreatedUnix+1,
+		UpdatedUnix: target_comment.UpdatedUnix+1,
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 		CommitSHA:   target_comment.CommitSHA,
 		Line:        target_comment.Line,
 	}

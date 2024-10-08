@@ -17,8 +17,12 @@
         <SvgIcon name="octicon-plus" />
       </button>
     </td>
+<<<<<<< HEAD
     <td class="lines-code chroma">
       {{ line.content }}
+=======
+    <td class="lines-code chroma"  style="white-space: pre-wrap;" v-html="line.content">
+>>>>>>> 75358a09f8 (main 최신화 (#113))
     </td>
   </tr>
 </template>

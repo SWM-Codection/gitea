@@ -1,5 +1,9 @@
 {{if and $.root.SignedUserID (not $.Repository.IsArchived)}}
+<<<<<<< HEAD
 <form class="ui form {{if $.hidden}}tw-hidden comment-form{{end}}" action="{{$.root.RepoLink}}/discussions/{{$.root.DiscussionId}}/comment" method="post">
+=======
+<form class="ui form {{if $.hidden}}tw-hidden comment-form{{end}}" action="{{$.root.RepoLink}}/discussions/{{$.root.DiscussionId}}/comment" method="post" data-get-url="{{$.root.RepoLink}}/discussions/comment">
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 	{{$.root.CsrfTokenHtml}}
         <input type="hidden" name="startLine" value="{{$.root.StartLine}}">

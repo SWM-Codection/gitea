@@ -6,5 +6,8 @@ export function initHomeMarquee() {
     if (!el) return; 
     const homeMarqueView = createApp(HomeMarquee); 
     homeMarqueView.mount(el); 
+<<<<<<< HEAD
     console.log('home marquee mounted');
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 }

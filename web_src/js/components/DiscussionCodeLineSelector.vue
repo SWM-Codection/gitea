@@ -14,10 +14,17 @@
       <table :id="content.Name" ref="codeTable" class="discussion-file-table">
         <tbody v-for="codeBlock in content.codeBlocks" :key="codeBlock.codeId">
           <DiscussionFileCodeLine
+<<<<<<< HEAD
           :lines="codeBlock.lines"
           :codeId="codeBlock.codeId"
           @show-comment-form="showCommentForm"
           @handle-mouse-down="handleMouseDown"
+=======
+            :lines="codeBlock.lines"
+            :codeId="codeBlock.codeId"
+            @show-comment-form="renderCreateCommentForm"
+            @handle-mouse-down="handleMouseDown"
+>>>>>>> 75358a09f8 (main 최신화 (#113))
           />
         </tbody>
       </table>
@@ -26,6 +33,7 @@
 </template>
 
 <script>
+<<<<<<< HEAD
 
 import { GET, POST } from "../modules/fetch";
 import {
@@ -33,11 +41,22 @@ import {
   validateTextareaNonEmpty,
 } from "../features/comp/ComboMarkdownEditor";
 import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
+=======
+import { GET, POST } from "../modules/fetch";
+import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
+import {initDiscussionCommentsEventHandler} from "../features/discussion-file-comment.js";
+import { convertTextToHTML, createCommentPlaceHolder, fetchCommentForm, initDiscussionFileCommentForm} from "./dIscussion-file-comment-form.js";
+import { initAiSampleCodeModal } from "../features/repo-ai-samplecode.js";
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 const { pageData } = window.config;
 
 export default {
+<<<<<<< HEAD
   components: {  DiscussionFileCodeLine },
+=======
+  components: { DiscussionFileCodeLine },
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
   props: {
     content: {
@@ -60,6 +79,10 @@ export default {
 
   async mounted() {
     await this.fetchDiscussionComments();
+<<<<<<< HEAD
+=======
+    initAiSampleCodeModal() 
+>>>>>>> 75358a09f8 (main 최신화 (#113))
   },
 
   methods: {
@@ -69,10 +92,20 @@ export default {
     },
 
     setSelection(target, canExpand) {
+<<<<<<< HEAD
       const {codeId, lineNumber} = this.extractDataFromLine(target)
 
       if (canExpand && this.currentDraggedRange && this.currentDraggedRange.codeId === codeId) {
 
+=======
+      const { codeId, lineNumber } = this.extractDataFromLine(target);
+
+      if (
+        canExpand &&
+        this.currentDraggedRange &&
+        this.currentDraggedRange.codeId === codeId
+      ) {
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         if (lineNumber < this.currentDraggedRange.startPosition.lineNumber) {
           return;
         }
@@ -80,11 +113,21 @@ export default {
         const expandedRange = this.createCodeLineRange(
           codeId,
           this.currentDraggedRange.startPosition,
+<<<<<<< HEAD
           this.createCodePosition(codeId, lineNumber)
         );
 
         this.showMultiLineCommentForm = () => {
           const button = target.closest("tr")?.querySelector(".add-code-comment");
+=======
+          this.createCodePosition(codeId, lineNumber),
+        );
+
+        this.showMultiLineCommentForm = () => {
+          const button = target
+            .closest("tr")
+            ?.querySelector(".add-code-comment");
+>>>>>>> 75358a09f8 (main 최신화 (#113))
           if (button) {
             button.click();
           }
@@ -92,7 +135,15 @@ export default {
         this.displayHighlight(expandedRange);
       } else {
         const position = this.createCodePosition(codeId, lineNumber);
+<<<<<<< HEAD
         const expandedRange = this.createCodeLineRange(codeId, position, position);
+=======
+        const expandedRange = this.createCodeLineRange(
+          codeId,
+          position,
+          position,
+        );
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         this.displayHighlight(expandedRange);
       }
     },
@@ -108,7 +159,13 @@ export default {
           const lineElements = new Set();
 
           for (let i = startLine; i <= endLine; i++) {
+<<<<<<< HEAD
             const lineElement = this.$refs.codeTable.querySelector(`#line-${codeId}-${i}`);
+=======
+            const lineElement = this.$refs.codeTable.querySelector(
+              `#line-${codeId}-${i}`,
+            );
+>>>>>>> 75358a09f8 (main 최신화 (#113))
             if (lineElement) {
               lineElements.add(lineElement);
             }
@@ -152,7 +209,13 @@ export default {
       }
 
       const targetElement = event.currentTarget;
+<<<<<<< HEAD
       const lineNumberElement = this.prevLinkableLine(targetElement.parentElement);
+=======
+      const lineNumberElement = this.prevLinkableLine(
+        targetElement.parentElement,
+      );
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
       if (!lineNumberElement) {
         return;
@@ -163,24 +226,43 @@ export default {
         return;
       }
 
+<<<<<<< HEAD
       this.addCommentDragSelectionEvent(table);
+=======
+      this.addCodeDragSelectionEvent(table);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
       this.currentDraggedPosition = lineNumberElement;
       this.isDraggingForComment = true;
 
       const mouseUpHandler = () => {
+<<<<<<< HEAD
         this.removeCommentDragSelectionEvent(table);
+=======
+        this.removeCodeDragSelectionEvent(table);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         this.currentDraggedPosition = null;
         this.isDraggingForComment = false;
       };
 
       targetElement.addEventListener("mouseup", mouseUpHandler, { once: true });
 
+<<<<<<< HEAD
       if (this.currentDraggedRange && this.currentDraggedRange.elements().size > 1) {
+=======
+      if (
+        this.currentDraggedRange &&
+        this.currentDraggedRange.elements().size > 1
+      ) {
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         event.preventDefault();
       }
     },
 
+<<<<<<< HEAD
     commentDragSelectionIfMouseEnterToCode(codeElement) {
+=======
+    codeDragSelectionIfMouseEnterToCode(codeElement) {
+>>>>>>> 75358a09f8 (main 최신화 (#113))
       const target = this.prevLinkableLine(codeElement);
       if (!target || !this.isFileSelecting(codeElement)) {
         return;
@@ -188,6 +270,7 @@ export default {
       this.setSelection(target, true);
     },
 
+<<<<<<< HEAD
     commentDragSelectionIfMouseEnterToLineNumber(lineNumberElement) {
       this.setSelection(lineNumberElement, true);
     },
@@ -201,6 +284,27 @@ export default {
       table.removeEventListener("mouseenter", this.handleDragMouseEvent, { capture: true });
       setTimeout(() => {
         document.addEventListener("click", this.handleClickOutside, { once: true });
+=======
+    codeDragSelectionIfMouseEnterToLineNumber(lineNumberElement) {
+      this.setSelection(lineNumberElement, true);
+    },
+
+    addCodeDragSelectionEvent(table) {
+      table.addEventListener("mouseenter", this.handleDragMouseEvent, {
+        capture: true,
+      });
+    },
+
+    removeCodeDragSelectionEvent(table) {
+      this.isDraggingForComment = false;
+      table.removeEventListener("mouseenter", this.handleDragMouseEvent, {
+        capture: true,
+      });
+      setTimeout(() => {
+        document.addEventListener("click", this.handleClickOutside, {
+          once: true,
+        });
+>>>>>>> 75358a09f8 (main 최신화 (#113))
       }, 0);
     },
 
@@ -218,9 +322,15 @@ export default {
       const linesCode = target.querySelector(".lines-code");
 
       if (linesNum && linesNum.classList.contains("lines-num")) {
+<<<<<<< HEAD
         this.commentDragSelectionIfMouseEnterToLineNumber(linesNum);
       } else if (linesCode && linesCode.classList.contains("lines-code")) {
         this.commentDragSelectionIfMouseEnterToCode(linesCode);
+=======
+        this.codeDragSelectionIfMouseEnterToLineNumber(linesNum);
+      } else if (linesCode && linesCode.classList.contains("lines-code")) {
+        this.codeDragSelectionIfMouseEnterToCode(linesCode);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
       }
     },
 
@@ -240,7 +350,11 @@ export default {
           this.showMultiLineCommentForm();
           this.showMultiLineCommentForm = null;
         }
+<<<<<<< HEAD
         this.removeCommentDragSelectionEvent(table);
+=======
+        this.removeCodeDragSelectionEvent(table);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         event.preventDefault();
       };
 
@@ -270,6 +384,7 @@ export default {
       const targetProperties = line.id.split("-");
       const codeId = targetProperties[1];
       const lineNumber = targetProperties[2];
+<<<<<<< HEAD
       return {codeId, lineNumber}
     },
 
@@ -291,12 +406,33 @@ export default {
         
         const codeLinePosition = this.createCodePosition(codeId, lineNumber);
         this.currentDraggedRange = this.createCodeLineRange(codeId, codeLinePosition, codeLinePosition);
+=======
+      return { codeId, lineNumber };
+    },
+
+    async renderCreateCommentForm(event) {
+      const targetLine = event.target.closest("tr");
+      if (!this.isDraggingForComment) {
+        
+        const { codeId, lineNumber } = this.extractDataFromLine(targetLine);
+
+        const codeLinePosition = this.createCodePosition(codeId, lineNumber);
+        this.currentDraggedRange = this.createCodeLineRange(
+          codeId,
+          codeLinePosition,
+          codeLinePosition,
+        );
+>>>>>>> 75358a09f8 (main 최신화 (#113))
       }
 
       const { codeId, startPosition, endPosition } = this.currentDraggedRange;
       const queryParams = {
         discussionId: this.discussionId,
+<<<<<<< HEAD
         codeId,
+=======
+        codeId : codeId,
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         startLine: startPosition.lineNumber,
         endLine: endPosition.lineNumber,
       };
@@ -306,6 +442,7 @@ export default {
         requestURL.searchParams.set(key, value);
       });
 
+<<<<<<< HEAD
       try {
         const response = await GET(requestURL.toString());
         if (!response.ok) {
@@ -387,11 +524,19 @@ export default {
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = text
       return tempDiv.firstElementChild
+=======
+      const commentForm = await fetchCommentForm(requestURL)  
+
+      initDiscussionFileCommentForm(commentForm);
+
+      targetLine.insertAdjacentElement("afterend", commentForm);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
     },
 
     async fetchDiscussionComments() {
       try {
         const codeBlocks = this.content.codeBlocks;
+<<<<<<< HEAD
         const commentPromises = codeBlocks.flatMap((codeBlock) => {
           const { codeId, comments } = codeBlock;
           return comments.map(async (comment) => {
@@ -408,12 +553,42 @@ export default {
 
         allComments.forEach(({ comment, commentHolder, codeId }) => {
           const targetLine = this.$refs.codeTable.querySelector(`#line-${codeId}-${comment.endLine}`);
+=======
+        const commentPromises = codeBlocks.map(async (codeBlock) => {
+          const { codeId } = codeBlock;
+          const response = await GET(
+            `${this.repoLink}/discussions/comments/${codeId}`,
+          );
+
+          const commentGroups = await response.json();
+
+          return commentGroups.map((result) => {
+            const line = result.endLine;
+            const commentHolder = result.html;
+
+            return { line, commentHolder, codeId };
+          });
+        });
+
+        const allCommentsNested = await Promise.all(commentPromises);
+        const allComments = allCommentsNested.flat();
+
+        allComments.forEach(({ line, commentHolder, codeId }) => {
+          const targetLine = this.$refs.codeTable.querySelector(
+            `#line-${codeId}-${line}`,
+          );
+          commentHolder = convertTextToHTML(commentHolder)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
           if (targetLine) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
             td.setAttribute("colspan", "3");
             td.appendChild(commentHolder);
+<<<<<<< HEAD
+=======
+            initDiscussionCommentsEventHandler(commentHolder);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
             tr.appendChild(td);
             targetLine.insertAdjacentElement("afterend", tr);
           }
@@ -423,9 +598,13 @@ export default {
       }
     },
 
+<<<<<<< HEAD
     async initDiscussionFileCommentForm(form) {
       form.addEventListener("submit", this.submitDiscussionFileCommentForm);
     },
+=======
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
   },
 };
 </script>

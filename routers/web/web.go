@@ -858,12 +858,21 @@ func registerRoutes(m *web.Route) {
 
 	m.Group("/ai", func() {
 		m.Post("/pull/review", bind(structs.CreateAiPullCommentForm{}), api_repo_router.CreateAiPullComment) // 라우팅
+<<<<<<< HEAD
 		m.Post("/discussion/samples", bind(structs.GenerateAiSampleCodesForm{}), api_repo_router.GenerateAiSampleCodes)
 		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), api_repo_router.CreateAiSampleCode)
 		m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
 		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
 
 	})
+=======
+		m.Post("/samples", bind(structs.GenerateAiSampleCodesForm{}), api_repo_router.GenerateAiSampleCodes)
+		m.Post("/pull/sample", bind(structs.CreateAiSampleCodesForm{}), repo.SetShowOutdatedComments, repo.CreateAiSampleCode)
+		m.Post("/discussion/sample", bind(structs.CreateAiSampleCodesForm{}), repo.CreateAiSampleCodeForDiscussion)
+		m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
+		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
+	}, ignSignIn)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
@@ -1199,7 +1208,14 @@ func registerRoutes(m *web.Route) {
 				})
 			})
 			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
+<<<<<<< HEAD
 
+=======
+			m.Patch("/state/{discussionId}", repo.SetDiscussionClosedState)
+			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
+			m.Post("/status", repo.UpdateDiscussionStatus)
+			m.Post("/assignee", repo.UpdateDiscussionAssignee)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 
@@ -1230,9 +1246,19 @@ func registerRoutes(m *web.Route) {
 			})
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
+<<<<<<< HEAD
 
 			})
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
+=======
+				m.Delete("/comment", repo.DeleteDiscussionFileComment)
+				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
+
+				m.Post("/comment/{commentId}/reactions/{action}", web.Bind(forms.ReactionForm{}), repo.ChangeDiscussionCommentReaction)
+			})
+			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
+			m.Get("/comments/{codeId}", repo.DiscussionComments)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.

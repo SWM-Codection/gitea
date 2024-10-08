@@ -13,10 +13,14 @@ export default {
   data: () => ({
     store: discussionTreeStore(),
     collapsed: false,
+<<<<<<< HEAD
   }), 
   mounted() {
     console.log('discussion tree item mounted!')
   }
+=======
+  })
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 };
 </script>
 <template>

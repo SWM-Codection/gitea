@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"log"
 
 	activities_model "code.gitea.io/gitea/models/activities"
 	"code.gitea.io/gitea/models/avatars"
@@ -78,4 +79,13 @@ func (au *AvatarUtils) AvatarByEmail(email, name string, others ...any) template
 	}
 
 	return ""
+}
+
+func (au *AvatarUtils) AvatarByUserId(id int64, others ...any) template.HTML {
+	user, err := user_model.GetUserByID(au.ctx, id)
+	if err != nil {
+		log.Fatalf("failed to load user from id %v", id)
+		return ""
+	}
+	return au.Avatar(user, others...)
 }

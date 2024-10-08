@@ -3260,7 +3260,10 @@ func DeleteComment(ctx *context.Context) {
 			ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
 			return
 		}
+<<<<<<< HEAD
 		println(comment.ID)
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 		err = issues_model.DeleteAiPullCommentByID(ctx, comment.ID)
 		if err != nil {

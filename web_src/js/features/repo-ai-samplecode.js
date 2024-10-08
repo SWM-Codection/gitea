@@ -1,4 +1,8 @@
 import {POST} from '../modules/fetch.js';
+<<<<<<< HEAD
+=======
+import $ from 'jquery';
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 async function fetchAiSampleCodes(data, aiCodeContainers) {
   try {
@@ -8,7 +12,11 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
       loadingImage.classList.remove('tw-hidden');
     }
 
+<<<<<<< HEAD
     const response = await POST('/ai/discussion/samples', {data});
+=======
+    const response = await POST('/ai/samples', {data});
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
     if (!response.ok) {
       const result = await response.json();
@@ -26,8 +34,14 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
     if (Array.isArray(result) && result.length === 3) {
       for (const [index, sampleCodeObj] of result.entries()) {
         if (aiCodeContainers[index]) {
+<<<<<<< HEAD
           // sample_code에 하이라이트된 HTML이 포함되므로, innerHTML로 설정
           aiCodeContainers[index].innerHTML = `<pre><code>${sampleCodeObj.sample_code}</code></pre>`;
+=======
+          // innerHTML을 사용하여 마크다운이 적용된 HTML을 표시하고, 원본 마크다운도 저장
+          aiCodeContainers[index].innerHTML = sampleCodeObj.sample_code;
+          aiCodeContainers[index].setAttribute('data-original-markdown', sampleCodeObj.original_markdown);
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         }
       }
     } else {
@@ -53,6 +67,7 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
   }
 }
 
+<<<<<<< HEAD
 async function saveAiSampleCode(data, aiCodeModal) {
   try {
     const response = await POST('/ai/discussion/sample', {data});
@@ -66,6 +81,72 @@ async function saveAiSampleCode(data, aiCodeModal) {
     // 데이터 저장 성공 후 모달 닫기 (선택 사항)
     const isHidden = aiCodeModal.classList.contains('tw-hidden');
     if (!isHidden) aiCodeModal.classList.add('tw-hidden');
+=======
+async function saveAiDiscussionSampleCode(data, aiCodeModal) {
+  const response = await POST('/ai/discussion/sample', {data});
+
+  try {
+    if (!response.ok) {
+      throw new Error('Failed to save AI discussion sample code');
+    }
+  
+    const result = await response.text();
+  
+    const $newCommentHolder = $(result);
+    const id = parseInt($newCommentHolder.get(0).id.split("--")[1])  // Get the new comment's ID from the data attribute
+
+    // Replace the current comment with the new one
+    const selector = `#discussioncomment-${id}`; 
+    const $currentCommentHolder = $(selector);
+    
+    if ($currentCommentHolder.length) {
+      $newCommentHolder.insertAfter($currentCommentHolder);
+    } else {
+      console.warn('Could not find the discussion comment holder with the given selector.');
+    }
+  
+    // Activate dropdown functionality for the new comment
+    $newCommentHolder.find('.dropdown').dropdown();
+  
+    if (!aiCodeModal.classList.contains('tw-hidden')) {
+      aiCodeModal.classList.add('tw-hidden');
+    }
+  } catch (error) {
+    console.error('Error saving AI discussion sample code:', error);
+    alert(`Error saving AI discussion sample code: ${error.message}`);
+  }
+}
+
+
+async function saveAiPullSampleCode(data, aiCodeModal) {
+  try {
+    const response = await POST('/ai/pull/sample', {data});
+
+    if (!response.ok) {
+
+      throw new Error('Failed to save AI sample codes');
+    }
+
+    const $newConversationHolder = $(await response.text());
+    const {path, side, idx} = $newConversationHolder.data();
+
+    // 현재 코멘트 위치를 새로운 코멘트로 교체
+    const selector = `.conversation-holder[data-path="${path}"][data-side="${side}"][data-idx="${idx}"]`;
+    const $currentCommentHolder = $(selector);
+
+    if ($currentCommentHolder.length) {
+      $currentCommentHolder.replaceWith($newConversationHolder);
+    } else {
+      console.warn('Could not find the comment holder with the given selector.');
+    }
+
+    // 새로 추가된 코멘트에 대한 드롭다운 기능 활성화
+    $newConversationHolder.find('.dropdown').dropdown();
+
+    if (!aiCodeModal.classList.contains('tw-hidden')) {
+      aiCodeModal.classList.add('tw-hidden');
+    }
+>>>>>>> 75358a09f8 (main 최신화 (#113))
   } catch (error) {
     console.error('Error saving AI sample codes:', error);
     alert(`Error saving AI sample codes: ${error.message}`);
@@ -86,14 +167,36 @@ export function initAiSampleCodeModal() {
   if (!aiCodeModalClose) return;
   if (!aiCodeContainers.length) return;
 
+<<<<<<< HEAD
+=======
+
+  const type = () => {
+    if (modalShowBtns[0].getAttribute("data-comment-id").split('-')[0] == "discussioncomment") {
+      return "discussion";
+    }
+    else {
+      return "pull";
+    }
+  } 
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
   for (const modalShowBtn of modalShowBtns) {
     modalShowBtn.addEventListener('click', async ({target}) => {
       const tag = target.getAttribute('data-comment-id');
       commentId = parseInt(tag.split('-')[1]);
+<<<<<<< HEAD
 
       const data = {
         target_comment_id: commentId.toString(),
         type: 'pull',
+=======
+      // 디스커션 코멘트인지 풀 코멘트인지 확인
+
+
+      const data = {
+        target_comment_id: commentId.toString(),
+        type: type(),
+>>>>>>> 75358a09f8 (main 최신화 (#113))
       };
 
       await fetchAiSampleCodes(data, aiCodeContainers);
@@ -119,6 +222,7 @@ export function initAiSampleCodeModal() {
     });
   }
 
+<<<<<<< HEAD
   // Insert 버튼 클릭 시 선택된 area의 텍스트를 콘솔에 출력
   aiCodeModalInsert.addEventListener('click', async () => {
     const data = {
@@ -128,5 +232,37 @@ export function initAiSampleCodeModal() {
     };
     console.log(data);
     await saveAiSampleCode(data, aiCodeModal);
+=======
+  aiCodeModalInsert.addEventListener('click', async () => {
+    if (!selectedCodeContainer) {
+      alert('코드 영역을 선택하세요.');
+      return;
+    }
+
+  const originalMarkdown = selectedCodeContainer.getAttribute('data-original-markdown');
+
+    if (type() == 'pull') {
+
+      const data = {
+        origin_data: 'diff',
+        target_comment_id: commentId.toString(),
+        sample_code_content: originalMarkdown, // original_markdown 값을 sample_code_content로 전달
+        type: type(),
+      };
+      
+      await saveAiPullSampleCode(data, aiCodeModal);
+    }
+    else {
+      const data = {
+        origin_data: "",
+        target_comment_id: commentId.toString(),
+        sample_code_content: originalMarkdown,
+        type: type(),
+      };
+      
+      await saveAiDiscussionSampleCode(data, aiCodeModal);
+    }
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
   });
 }

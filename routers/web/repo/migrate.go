@@ -254,8 +254,10 @@ func setMigrationContextData(ctx *context.Context, serviceType structs.GitServic
 	ctx.Data["IsForcedPrivate"] = setting.Repository.ForcePrivate
 	ctx.Data["DisableNewPullMirrors"] = setting.Mirror.DisableNewPull
 
-	// Plain git should be first
-	ctx.Data["Services"] = append([]structs.GitServiceType{structs.PlainGitService}, structs.SupportedFullGitService...)
+	gitServices := make([]structs.GitServiceType, 0)
+	gitServices = append(gitServices, structs.SupportedFullGitService...)
+	gitServices = append(gitServices, structs.PlainGitService)
+	ctx.Data["Services"] = gitServices
 	ctx.Data["service"] = serviceType
 }
 

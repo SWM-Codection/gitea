@@ -2,9 +2,15 @@
 	{{$approvalCounts := .ApprovalCounts}}
 	{{range .Discussions}}
 		<div class="flex-item">
+<<<<<<< HEAD
 			<div class="flex-item-icon"> 
 				{{if $.CanWriteIssuesOrPulls}}
 				<input type="checkbox" autocomplete="off" class="issue-checkbox tw-mr-4" data-issue-id={{.ID}} aria-label="{{ctx.Locale.Tr "repo.issues.action_check"}} &quot;{{.Title}}&quot;">
+=======
+			<div class="flex-item-icon">
+				{{if $.PageIsDiscussionList}}
+				<input type="checkbox" autocomplete="off" class="issue-checkbox tw-mr-4" data-issue-id={{.Id}} aria-label="{{ctx.Locale.Tr "repo.issues.action_check"}} &quot;{{.Name}}&quot;">
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 				{{end}}
 				{{template "repo/discussion/icon" .}}
 			</div>
@@ -47,7 +53,11 @@
 
 					{{if ne .DeadlineUnix 0}}
 						<span class="due-date flex-text-inline" data-tooltip-content="{{ctx.Locale.Tr "repo.issues.due_date"}}">
+<<<<<<< HEAD
 							<span{{if .IsOverdue}} class="text red"{{end}}>
+=======
+							<span>
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 								{{svg "octicon-calendar" 14}}
 								{{DateTime "short" (.DeadlineUnix.FormatDate)}}
 							</span>
@@ -63,4 +73,8 @@
 		</div>
 	{{end}}
 </div>
+<<<<<<< HEAD
 {{template "base/paginate" .}}
+=======
+{{template "base/paginate" .}}
+>>>>>>> 75358a09f8 (main 최신화 (#113))

@@ -22,7 +22,10 @@ export default {
         
     }),
     async mounted() {
+<<<<<<< HEAD
         console.log('vue component has been mounted'); 
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
         await this.fetchDiscussion();
     },
 
@@ -46,6 +49,10 @@ export default {
                     Name : content["filePath"],
                     NameHash : nameHash
                 })
+<<<<<<< HEAD
+=======
+                
+>>>>>>> 75358a09f8 (main 최신화 (#113))
             })
             
 
@@ -110,7 +117,11 @@ export default {
 
 
         <div style="margin-top: 1rem;">
+<<<<<<< HEAD
             <div id="file-tab-content" style="display:flex; width: 600px">
+=======
+            <div id="file-tab-content" style="display:flex; width: 1500px">
+>>>>>>> 75358a09f8 (main 최신화 (#113))
                 <DiscussionFileDetailTreeView id="discussion-tree" style="width: 200px;"/>
                 <div style="display: flex; flex-wrap: wrap;">
                     <div v-for ="content in store.contents" class="tw-w-full tw-px-1" style="margin-bottom: 2rem;">

@@ -376,11 +376,6 @@ func (gt GitServiceType) TokenAuth() bool {
 var SupportedFullGitService = []GitServiceType{
 	GithubService,
 	GitlabService,
-	GiteaService,
-	GogsService,
-	OneDevService,
-	GitBucketService,
-	CodebaseService,
 }
 
 // RepoTransfer represents a pending repo transfer

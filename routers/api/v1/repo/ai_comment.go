@@ -89,6 +89,7 @@ func GenerateAiSampleCodes(ctx *context.Context) {
 	ctx.JSON(http.StatusAccepted, sampleCodes)
 }
 
+<<<<<<< HEAD
 func CreateAiSampleCode(ctx *context.Context) {
 
 	// TODOC swagger 추가
@@ -107,6 +108,8 @@ func CreateAiSampleCode(ctx *context.Context) {
 
 }
 
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 func DeleteAiSampleCode(ctx *context.Context) {
 
 	form := web.GetForm(ctx).(*api.DeleteSampleCodesForm)

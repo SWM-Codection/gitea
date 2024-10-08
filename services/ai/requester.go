@@ -18,6 +18,14 @@ type AiSampleCodeResponse struct {
 	SampleCode string `json:"sample_code"`
 }
 
+<<<<<<< HEAD
+=======
+type GenerateSampleCodeResponse struct {
+	SampleCode 		 string `json:"sample_code"`
+	OriginalMarkdown string `json:"original_markdown"`
+}
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 type SampleCodeRequesterImpl struct{}
 
 type SampleCodeRequester interface {

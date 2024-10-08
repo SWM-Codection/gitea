@@ -9,6 +9,7 @@ import {initImageDiff} from './imagediff.js';
 import {showErrorToast} from '../modules/toast.js';
 import {submitEventSubmitter, queryElemSiblings, hideElem, showElem} from '../utils/dom.js';
 import {POST, GET} from '../modules/fetch.js';
+import {initAiSampleCodeModal} from './repo-ai-samplecode.js';
 
 const {pageData, i18n} = window.config;
 
@@ -87,6 +88,7 @@ function initRepoDiffConversationForm() {
         el.classList.add('tw-invisible');
       }
       $newConversationHolder.find('.dropdown').dropdown();
+      initAiSampleCodeModal();
     } catch (error) {
       console.error('Error:', error);
       showErrorToast(i18n.network_error);
@@ -111,6 +113,7 @@ function initRepoDiffConversationForm() {
         $(this).closest('.conversation-holder').replaceWith($conversation);
         $conversation.find('.dropdown').dropdown();
         initCompReactionSelector($conversation);
+        initAiSampleCodeModal();
       } else {
         window.location.reload();
       }

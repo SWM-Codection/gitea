@@ -1,6 +1,7 @@
 package ai
 
 import (
+<<<<<<< HEAD
 	"strconv"
 	discussion_model "code.gitea.io/gitea/models/discussion"
 	api "code.gitea.io/gitea/modules/structs"
@@ -13,11 +14,32 @@ import (
 	issues_model "code.gitea.io/gitea/models/issues"
 	repo_model "code.gitea.io/gitea/models/repo"
 	"code.gitea.io/gitea/modules/highlight"
+=======
+	"fmt"
+	"strconv"
+	"strings"
+	"sync"
+
+	"code.gitea.io/gitea/client/discussion"
+	discussion_model "code.gitea.io/gitea/models/discussion"
+	issues_model "code.gitea.io/gitea/models/issues"
+	repo_model "code.gitea.io/gitea/models/repo"
+	"code.gitea.io/gitea/modules/git"
+	"code.gitea.io/gitea/modules/markup"
+	"code.gitea.io/gitea/modules/setting"
+	api "code.gitea.io/gitea/modules/structs"
+	"code.gitea.io/gitea/services/context"
+	"github.com/spf13/cast"
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 )
 
 type SampleCodeService interface {
 	GetAiSampleCodeByCommentID(ctx *context.Context, commentID int64, sampleType string) (*api.AiSampleCodeResponse, error)
+<<<<<<< HEAD
 	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error)
+=======
+	GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*GenerateSampleCodeResponse, error)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm) (*discussion_model.AiSampleCode, error)
 	DeleteAiSampleCode(ctx *context.Context, id int64) error
 }
@@ -46,7 +68,11 @@ func (is *SampleCodeServiceImpl) CreateAiSampleCode(ctx *context.Context, form *
 	aiSampleCode, err := AiSampleCodeDbAdapter.InsertAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
 		TargetCommentId: cast.ToInt64(form.TargetCommentId),
 		GenearaterId:    ctx.Doer.ID,
+<<<<<<< HEAD
 		Type: form.Type,
+=======
+		Type:            form.Type,
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 		Content:         &form.SampleCodeContent,
 	})
 
@@ -88,10 +114,71 @@ func GetFileContentFromCommit(ctx *context.Context, repoPath, commitHash, filePa
 	return content, nil
 }
 
+<<<<<<< HEAD
 
 // TODOC 재시도 횟수를 유저 정보로부터 가져와서 제한하기.
 // TODOC 잘못된 형식의 json이 돌아올 때 예외 반환하기(json 형식 표시하도록)
 func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*AiSampleCodeResponse, error) {
+=======
+func getContentForFull(ctx *context.Context, targetCommentId int64, form *api.GenerateAiSampleCodesForm) (*string, *string, error) {
+
+	comment, err := issues_model.GetCommentByID(ctx, targetCommentId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Comment not found: %v", err)
+	}
+
+	issue, err := issues_model.GetIssueByID(ctx, comment.IssueID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Issue not found: %v", err)
+	}
+
+	repo, err := repo_model.GetRepositoryByID(ctx, issue.RepoID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Repository not found: %v", err)
+	}
+
+	codeContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), comment.CommitSHA, comment.TreePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+	}
+
+	return &codeContent, &comment.Content, nil
+}
+
+func getContentForDiscussion(ctx *context.Context, targetCommentId int64, form *api.GenerateAiSampleCodesForm) (*string, *string, error) {
+	comment, err := discussion.GetDiscussionComment(targetCommentId)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("Comment found error: %v", err)
+	}
+
+	discussion, err := discussion.GetDiscussion(comment.DiscussionId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Discussion found error: %v", err)
+	}
+	repo, err := repo_model.GetRepositoryByID(ctx, discussion.RepoId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("repo found error: %v", err)
+	}
+
+	fileContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), discussion.CommitHash, comment.FilePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+	}
+
+	lines := strings.Split(fileContent, "\n")
+
+	if comment.StartLine < 1 || comment.StartLine > comment.EndLine {
+		return nil, nil, fmt.Errorf("Invalid start or end line")
+	}
+
+	codeContent := strings.Join(lines[comment.StartLine-1:comment.EndLine], "\n")
+
+	return &codeContent, &comment.Content, nil
+}
+
+func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*GenerateSampleCodeResponse, error) {
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid TargetCommentId: %v", err)
@@ -103,6 +190,7 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 		return nil, fmt.Errorf("already Ai comment: %v", err)
 	}
 
+<<<<<<< HEAD
 	comment, err := issues_model.GetCommentByID(ctx, targetCommentId)
 	if err != nil {
 		return nil, fmt.Errorf("Comment not found: %v", err)
@@ -121,39 +209,87 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 	codeContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), comment.CommitSHA, comment.TreePath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+=======
+	var codeContent, commentContent *string
+
+	if form.Type == "pull" {
+		codeContent, commentContent, err = getContentForFull(ctx, targetCommentId, form)
+
+	} else if form.Type == "discussion" {
+
+		codeContent, commentContent, err = getContentForDiscussion(ctx, targetCommentId, form)
+
+	}
+
+	if err != nil {
+		return nil, err
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	}
 
 	wg := new(sync.WaitGroup)
 	wg.Add(AI_SAMPLE_CODE_UNIT)
 
+<<<<<<< HEAD
 	resultQueue := make(chan *AiSampleCodeResponse, AI_SAMPLE_CODE_UNIT)
+=======
+	resultQueue := make(chan *GenerateSampleCodeResponse, AI_SAMPLE_CODE_UNIT)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 
 	for i := 0; i < AI_SAMPLE_CODE_UNIT; i++ {
 		go func(codeContent, commentContent string) {
 			defer wg.Done()
 
+<<<<<<< HEAD
 			result, err := AiSampleCodeRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
+=======
+			response, err := AiSampleCodeRequester.RequestReviewToAI(ctx, &AiSampleCodeRequest{
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 				CodeContent:    codeContent,
 				CommentContent: commentContent,
 			})
 
 			if err != nil {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 				fmt.Errorf("request sample to ai server fail")
 				resultQueue <- nil
 				return
 			}
 
+<<<<<<< HEAD
 			highlightedCode, _ := highlight.Code(comment.TreePath, "", result.SampleCode)
 			result.SampleCode = string(highlightedCode)
 
 			resultQueue <- result
 		}(codeContent, comment.Content)
+=======
+			result := &GenerateSampleCodeResponse{
+				SampleCode:       "",
+				OriginalMarkdown: response.SampleCode,
+			}
+
+			highlightedCode, _ := markup.RenderString(&markup.RenderContext{
+				Ctx:  git.DefaultContext,
+				Type: "markdown",
+			}, result.OriginalMarkdown)
+
+			result.SampleCode = string(highlightedCode)
+
+			resultQueue <- result
+		}(*codeContent, *commentContent)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	}
 
 	wg.Wait()
 	close(resultQueue)
 
+<<<<<<< HEAD
 	sampleCodes := make([]*AiSampleCodeResponse, 0, AI_SAMPLE_CODE_UNIT)
+=======
+	sampleCodes := make([]*GenerateSampleCodeResponse, 0, AI_SAMPLE_CODE_UNIT)
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	for result := range resultQueue {
 		sampleCodes = append(sampleCodes, result)
 	}
@@ -161,12 +297,15 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 	return sampleCodes, nil
 }
 
+<<<<<<< HEAD
 // TODOC ai 샘플코드 저장
 
 // TODOC ai 샘플코드 삭제
 
 // TODOC a
 
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 func (is *SampleCodeServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64) error {
 
 	return AiSampleCodeDbAdapter.DeleteAiSampleCodeByID(ctx, id)

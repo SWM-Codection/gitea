@@ -18,11 +18,19 @@ type GenerateAiSampleCodesForm struct {
 }
 
 type CreateAiSampleCodesForm struct {
+<<<<<<< HEAD
+=======
+	OriginData		  string `json:"origin_data"`
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	TargetCommentId   string `json:"target_comment_id"`
 	SampleCodeContent string `json:"sample_code_content"`
 	Type			  string `json:"type"`
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 type DeleteSampleCodesForm struct {
 	TargetCommentId string `json:"target_comment_id"`
 }

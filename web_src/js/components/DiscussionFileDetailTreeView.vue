@@ -76,7 +76,10 @@ export default {
   },
   mounted() {
     // Default to true if unset
+<<<<<<< HEAD
     console.log('discussion tree mounted!')
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
     this.store.fileTreeIsVisible = true; 
 
     this.hashChangeListener = () => {

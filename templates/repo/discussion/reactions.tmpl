@@ -1,0 +1,13 @@
+<div class="bottom-reactions" data-action-url="{{$.ActionURL}}">
+{{range $key, $value := .Reactions}}
+	{{$hasReacted := $value.HasUser ctx.RootData.SignedUserID}}
+	<a role="button" class="ui label basic{{if $hasReacted}} primary{{end}}{{if not ctx.RootData.IsSigned}} disabled{{end}} discussion-comment-reaction-button"
+		data-url="{{$.ActionURL}}"
+		data-tooltip-content="{{$key}}"
+		data-tooltip-placement="bottom-start"
+		data-reaction-content="{{$key}}" data-has-reacted="{{$hasReacted}}">
+		<span class="reaction">{{ReactionToEmoji $key}}</span>
+		<span class="reaction-count">{{len $value}}</span>
+	</a>
+{{end}}
+</div>

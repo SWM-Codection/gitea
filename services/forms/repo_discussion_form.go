@@ -22,8 +22,13 @@ func (d *CreateDiscussionForm) Validate(req *http.Request, errs binding.Errors) 
 }
 
 type CreateDiscussionCommentForm struct {
+<<<<<<< HEAD
 	Content string `form:"content"`
 
+=======
+	Content   string `form:"content"`
+	GroupId   *int64 `form:"groupId"`
+>>>>>>> 75358a09f8 (main 최신화 (#113))
 	CodeId    *int64 `form:"codeId"`
 	StartLine *int32 `form:"startLine"`
 	EndLine   *int32 `form:"endLine"`
@@ -34,3 +39,19 @@ func (dc *CreateDiscussionCommentForm) Validate(req *http.Request, errs binding.
 	return middleware.Validate(errs, ctx.Data, dc, ctx.Locale)
 }
 
+<<<<<<< HEAD
+=======
+type ModifyDiscussionCommentForm struct {
+	DiscussionCommentId int64  `form:"id"`
+	Content             string `form:"content"`
+
+	CodeId    *int64 `form:"codeId"`
+	StartLine *int32 `form:"startLine"`
+	EndLine   *int32 `form:"endLine"`
+}
+
+func (mc *ModifyDiscussionCommentForm) Validate(req *http.Request, errs binding.Errors) binding.Errors {
+	ctx := context.GetValidateContext(req)
+	return middleware.Validate(errs, ctx.Data, mc, ctx.Locale)
+}
+>>>>>>> 75358a09f8 (main 최신화 (#113))

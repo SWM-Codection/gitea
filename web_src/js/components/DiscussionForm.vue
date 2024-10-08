@@ -61,7 +61,10 @@ export default {
 
 
             if (!this.store.isBin) {
+<<<<<<< HEAD
                 console.log('content is ',content);
+=======
+>>>>>>> 75358a09f8 (main 최신화 (#113))
                 content.html.forEach((line, idx) => {
                     this.store.contents.push({
                         line: idx + 1, 
