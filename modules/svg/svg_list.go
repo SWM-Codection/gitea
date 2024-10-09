@@ -1,6 +1,7 @@
 package svg
 
 func generateSVGIconMap() map[string]string {
+	const cloudfrontBaseURL = "https://d21gfi7kzrpyzn.cloudfront.net/"
 
 	return map[string]string{
 		"telegram"                                    : "public/assets/img/telegram.png",
@@ -408,5 +409,6 @@ func generateSVGIconMap() map[string]string {
         "github"                                : "public/assets/img/emoji/github.png",
         "gitlab"                                : "public/assets/img/emoji/gitlab.png",
         "codeberg"                              : "public/assets/img/emoji/codeberg.png",
+
 	}
 }

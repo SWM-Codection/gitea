@@ -393,18 +393,26 @@ const svgs = {
 // retrieve an HTML string for given SVG icon name, size and additional classes
 
 export function svg(name, size = 16, className = '') {
-  const svgUrl = svgs[name];
   if (!(name in svgs)) {
-    throw new Error(`Unknown SVG icon: ${svgUrl}`);
+    throw new Error(`Unknown SVG icon: ${name}`);
   }
-  const document = parseDom(svgUrl, 'image/svg+xml');
-  const svgNode = document.firstChild;
-  if (size !== 16) {
-    svgNode.setAttribute('width', String(size));
-    svgNode.setAttribute('height', String(size));
+
+  // SVG 파일 URL을 가져옴
+  const svgUrl = svgs[name];
+
+  // 이미지 태그를 만들어서 반환
+  const img = document.createElement('img');
+  img.src = svgUrl;
+  img.setAttribute('width', String(size));
+  img.setAttribute('height', String(size));
+
+  img.classList.add('svg', name);
+
+  if (className) {
+    img.classList.add(...className.split(/\s+/).filter(Boolean));
   }
-  if (className) svgNode.classList.add(...className.split(/\s+/).filter(Boolean));
-  return serializeXml(svgNode);
+
+  return img.outerHTML;
 }
 
 export function svgParseOuterInner(name) {
