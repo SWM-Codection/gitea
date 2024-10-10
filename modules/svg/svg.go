@@ -6,66 +6,47 @@ package svg
 import (
 	"fmt"
 	"html/template"
-	"io/ioutil"
-	"net/http"
+	"path"
 	"strings"
 
 	gitea_html "code.gitea.io/gitea/modules/html"
+	"code.gitea.io/gitea/modules/log"
+	"code.gitea.io/gitea/modules/public"
 )
 
 var svgIcons map[string]string
-const cloudfrontBaseURL = "https://d21gfi7kzrpyzn.cloudfront.net/"
 
 const defaultSize = 16
 
-func fetchSVGContent(url string) (string, error) {
-	// Send HTTP GET request to fetch the SVG content
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch SVG from URL: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch SVG, status code: %d", resp.StatusCode)
-	}
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read SVG content: %v", err)
-	}
-
-	return string(body), nil
-}
-
 // Init discovers SVG icons and populates the `svgIcons` variable
 func Init() error {
-	iconMap := generateSVGIconMap()
-	svgIcons = make(map[string]string)
-
-	for name, url := range iconMap {
-		// Fetch the content from the CloudFront URL
-		content, err := fetchSVGContent(cloudfrontBaseURL+url)
-		if err != nil {
-			fmt.Printf("Error fetching %s from %s: %v\n", name, url, err)
-			continue
-		}
-
-		// Store the fetched content in the svgIcons map
-		svgIcons[name] = content
+	const svgAssetsPath = "assets/img/svg"
+	files, err := public.AssetFS().ListFiles(svgAssetsPath)
+	if err != nil {
+		return err
 	}
 
+	svgIcons = make(map[string]string, len(files))
+	for _, file := range files {
+		if path.Ext(file) != ".svg" {
+			continue
+		}
+		bs, err := public.AssetFS().ReadFile(svgAssetsPath, file)
+		if err != nil {
+			log.Error("Failed to read SVG file %s: %v", file, err)
+		} else {
+			svgIcons[file[:len(file)-4]] = string(Normalize(bs, defaultSize))
+		}
+	}
 	return nil
 }
 
-// MockIcon replaces the current icon temporarily for testing or mocking purposes
 func MockIcon(icon string) func() {
 	if svgIcons == nil {
-		svgIcons = generateSVGIconMap()
+		svgIcons = make(map[string]string)
 	}
 	orig, exist := svgIcons[icon]
-	svgIcons[icon] = fmt.Sprintf(`https://d21gfi7kzrpyzn.cloudfront.net/public/assets/img/%s.svg`, icon)
+	svgIcons[icon] = fmt.Sprintf(`<svg class="svg %s" width="%d" height="%d"></svg>`, icon, defaultSize, defaultSize)
 	return func() {
 		if exist {
 			svgIcons[icon] = orig
@@ -76,13 +57,6 @@ func MockIcon(icon string) func() {
 }
 
 // RenderHTML renders icons - arguments icon name (string), size (int), class (string)
-/*func RenderHTML(icon string, others ...any) template.HTML {
-	size, class := gitea_html.ParseSizeAndClass(defaultSize, "", others...)
-	if svgURL, ok := svgIcons[icon]; ok {
-		return template.HTML(fmt.Sprintf(`<img src="%s" class="svg %s" width="%d" height="%d" />`, fmt.Sprintf(`https://d21gfi7kzrpyzn.cloudfront.net/%s`, svgURL), class, size, size))
-	}
-	return template.HTML(fmt.Sprintf("<span>%s(%d/%s)</span>", template.HTMLEscapeString(icon), size, template.HTMLEscapeString(class)))
-}*/
 func RenderHTML(icon string, others ...any) template.HTML {
 	size, class := gitea_html.ParseSizeAndClass(defaultSize, "", others...)
 	if svgStr, ok := svgIcons[icon]; ok {
