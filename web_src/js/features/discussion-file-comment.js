@@ -92,6 +92,8 @@ function initDiscussionCommentDelete(comment) {
         comment.remove()
 
       } catch (error) {
+        // TODO: 다국어 에러 메세지 지원
+        alert("코멘트 삭제에 실패했습니다.");
         console.error(error);
       }
     }
@@ -148,7 +150,6 @@ function initDiscussionCommentUpdate(comment) {
         data: formData,
       });
       if (!response.ok) {
-        alert("수정에 실패했습니다.")
         throw Error()
       }
       const data = await response.json();
@@ -162,6 +163,8 @@ function initDiscussionCommentUpdate(comment) {
       }
     }
     catch (e) {
+        // TODO: 다국어 에러 메세지 지원
+      alert("코멘트 수정에 실패했습니다.")
       console.error(e)
     } 
 
