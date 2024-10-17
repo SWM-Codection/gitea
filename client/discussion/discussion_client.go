@@ -635,3 +635,21 @@ func ConvertDiscussionPinStatus(discussionId int64) error {
 
 	return nil
 }
+
+func GetPinnedDiscussions(repoId int64) (*DiscussionListResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/pin", repoId))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var result DiscussionListResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	return &result, nil
+}

@@ -112,9 +112,14 @@ func Discussions(ctx *context.Context) {
 	if isClosed {
 		state = "closed"
 	}
+	pinned, err := discussion_service.GetPinnedDiscussionList(ctx)
+	if err != nil {
+		ctx.ServerError("Discussions:GetPinnedDiscussions", err)
+	}
 
 	log.Info("discussions : %v", listResp.Discussions)
 	// prepare data for tamplete
+	ctx.Data["PinnedDiscussions"] = pinned.Discussions
 	ctx.Data["Title"] = ctx.Tr("repo.discussion.list")
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Discussions"] = listResp.Discussions
