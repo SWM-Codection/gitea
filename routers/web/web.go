@@ -1204,6 +1204,7 @@ func registerRoutes(m *web.Route) {
 			m.Post("/status", repo.UpdateDiscussionStatus)
 			m.Post("/assignee", repo.UpdateDiscussionAssignee)
 			m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
+			m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 

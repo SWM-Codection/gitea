@@ -119,6 +119,7 @@ func Discussions(ctx *context.Context) {
 
 	log.Info("discussions : %v", listResp.Discussions)
 	// prepare data for tamplete
+	ctx.Data["IsRepoAdmin"] = ctx.IsSigned && (ctx.Repo.IsAdmin() || ctx.Doer.IsAdmin)
 	ctx.Data["PinnedDiscussions"] = pinned.Discussions
 	ctx.Data["Title"] = ctx.Tr("repo.discussion.list")
 	ctx.Data["PageIsDiscussionList"] = true
@@ -855,5 +856,11 @@ func DiscussionPinOrUnpin(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64("discussionId")
 	discussion_client.ConvertDiscussionPinStatus(discussionId)
 
-	ctx.JSONRedirect("/qwer123/testtest/discussions/1")
+	trimmedLink := strings.TrimSuffix(ctx.Link, "/pin")
+	ctx.JSONRedirect(trimmedLink)
+}
+
+func DiscussionUnpin(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64("discussionId")
+	discussion_client.UnDiscussionStatus(discussionId)
 }
