@@ -173,7 +173,15 @@ func ViewDiscussion(ctx *context.Context) {
 		return
 	}
 
+	var pinAllowed bool
+	pinAllowed, err = discussion_client.IsNewPinAllowed(discussionResponse.RepoId)
+	if err != nil {
+		ctx.ServerError("IsNewPinAllowed", err)
+		return
+	}
+
 	participants[0] = poster
+	ctx.Data["IsRepoAdmin"] = ctx.IsSigned && (ctx.Repo.IsAdmin() || ctx.Doer.IsAdmin)
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
@@ -184,6 +192,7 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["Participants"] = participants
 	ctx.Data["NumParticipants"] = len(participants)
 	ctx.Data["Assignees"] = MakeSelfOnTop(ctx.Doer, assigneeUsers)
+	ctx.Data["NewPinAllowed"] = pinAllowed
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -835,4 +844,11 @@ func UpdateDiscussionAssignee(ctx *context.Context) {
 			ctx.ServerError("error on discussion response: err = %v", err)
 		}
 	}
+}
+
+func DiscussionPinOrUnpin(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64("discussionId")
+	discussion_client.ConvertDiscussionPinStatus(discussionId)
+
+	ctx.JSONRedirect("/qwer123/testtest/discussions/1")
 }

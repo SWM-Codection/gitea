@@ -1203,6 +1203,7 @@ func registerRoutes(m *web.Route) {
 			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
 			m.Post("/status", repo.UpdateDiscussionStatus)
 			m.Post("/assignee", repo.UpdateDiscussionAssignee)
+			m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 

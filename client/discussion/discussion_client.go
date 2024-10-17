@@ -84,6 +84,7 @@ type DiscussionResponse struct {
 	UpdatedUnix timeutil.TimeStamp `json:"updatedUnix"`
 	Index       int64              `json:"index"`
 	Poster      *user_model.User   `json:"-"`
+	PinOrder	int64			   `json:"pinOrder"`
 }
 
 type ReactionList []*DiscussionReaction
@@ -600,4 +601,37 @@ func RemoveReaction(request DiscussionReactionRequest) error {
 		return err
 	}
 	return err
+}
+
+
+func IsNewPinAllowed(repoId int64) (bool, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/max-pin", repoId))
+	if err != nil {
+		return false, err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return false, err
+	}
+	bodyStr := string(resp.Body())
+
+	isAllowed, err := strconv.ParseBool(string(bodyStr))
+	if err != nil {
+		return false, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	return isAllowed, nil
+}
+
+func ConvertDiscussionPinStatus(discussionId int64) error {
+	resp, err := client.Request().Post(fmt.Sprintf("discussion/%d/pin", discussionId))
+	if err != nil {
+		return err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
+	}
+
+	return nil
 }
