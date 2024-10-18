@@ -21,7 +21,8 @@ import (
 type (
 	notificationService struct {
 		notify_service.NullNotifier
-		issueQueue *queue.WorkerPoolQueue[issueNotificationOpts]
+		issueQueue      *queue.WorkerPoolQueue[issueNotificationOpts]
+		discussionQueue *queue.WorkerPoolQueue[discussionNotificationOps]
 	}
 
 	issueNotificationOpts struct {
@@ -29,6 +30,13 @@ type (
 		CommentID            int64
 		NotificationAuthorID int64
 		ReceiverID           int64 // 0 -- ALL Watcher
+	}
+
+	discussionNotificationOps struct {
+		DiscussionId         int64
+		CommentId            int64
+		NotificationAuthorID int64
+		ReceiverID           int64
 	}
 )
 
@@ -43,14 +51,18 @@ var _ notify_service.Notifier = &notificationService{}
 // NewNotifier create a new notificationService notifier
 func NewNotifier() notify_service.Notifier {
 	ns := &notificationService{}
-	ns.issueQueue = queue.CreateSimpleQueue(graceful.GetManager().ShutdownContext(), "notification-service", handler)
+	ns.issueQueue = queue.CreateSimpleQueue(graceful.GetManager().ShutdownContext(), "notification-service", issueQueueHandler)
 	if ns.issueQueue == nil {
 		log.Fatal("Unable to create notification-service queue")
+	}
+	ns.discussionQueue = queue.CreateSimpleQueue(graceful.GetManager().ShutdownContext(), "discussion-notification-service", discussionQueueHandler)
+	if ns.discussionQueue == nil {
+		log.Fatal("Unable to create discussino-noitification-service queue")
 	}
 	return ns
 }
 
-func handler(items ...issueNotificationOpts) []issueNotificationOpts {
+func issueQueueHandler(items ...issueNotificationOpts) []issueNotificationOpts {
 	for _, opts := range items {
 		if err := activities_model.CreateOrUpdateIssueNotifications(db.DefaultContext, opts.IssueID, opts.CommentID, opts.NotificationAuthorID, opts.ReceiverID); err != nil {
 			log.Error("Was unable to create issue notification: %v", err)
@@ -59,8 +71,18 @@ func handler(items ...issueNotificationOpts) []issueNotificationOpts {
 	return nil
 }
 
+func discussionQueueHandler(items ...discussionNotificationOps) []discussionNotificationOps {
+	for _, opts := range items {
+		if err := activities_model.CreateOrUpdateDiscussionNotifications(db.DefaultContext, opts.DiscussionId, opts.CommentId, opts.NotificationAuthorID, opts.ReceiverID); err != nil {
+			log.Error("Was unable to create discussion notification: %v", err)
+		}
+	}
+	return nil
+}
+
 func (ns *notificationService) Run() {
 	go graceful.GetManager().RunWithCancel(ns.issueQueue) // TODO: using "go" here doesn't seem right, just leave it as old code
+	go graceful.GetManager().RunWithCancel(ns.discussionQueue)
 }
 
 func (ns *notificationService) CreateIssueComment(ctx context.Context, doer *user_model.User, repo *repo_model.Repository,
@@ -258,4 +280,17 @@ func (ns *notificationService) RepoPendingTransfer(ctx context.Context, doer, ne
 	if err != nil {
 		log.Error("CreateRepoTransferNotification: %v", err)
 	}
+}
+
+// NewDiscussion places a place holder function
+func (ns *notificationService) NewDiscussion(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, discussionId int) {
+	// TODO
+	// 1. Unicast Notification (mention); When the case receiver id is larger than 0
+	// 2. Comment Handling; currnet implementation does not considering about comment notification
+	_ = ns.discussionQueue.Push(discussionNotificationOps{
+		DiscussionId:         int64(discussionId),
+		CommentId:            0,
+		NotificationAuthorID: doer.ID,
+		ReceiverID:           0,
+	})
 }
