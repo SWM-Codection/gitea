@@ -864,3 +864,8 @@ func DiscussionUnpin(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64("discussionId")
 	discussion_client.UnDiscussionStatus(discussionId)
 }
+
+func DiscussionMovePin(ctx *context.Context) {
+	form := web.GetForm(ctx).(*discussion_client.MoveDiscussionPinRequest)
+	discussion_client.MoveDiscussionPin(form)
+}

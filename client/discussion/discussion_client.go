@@ -142,6 +142,11 @@ type ModifyDiscussionCommentRequest struct {
 	Content             string           `json:"content"`
 }
 
+type MoveDiscussionPinRequest struct {
+	DiscussionId		int64			`json:"id"`
+	Position			int64			`json:"position"`
+}
+
 type DiscussionCountResponse struct {
 	OpenCount  int `json:"openCount"`
 	CloseCount int `json:"closeCount"`
@@ -665,4 +670,18 @@ func GetPinnedDiscussions(repoId int64) (*DiscussionListResponse, error) {
 	}
 
 	return &result, nil
+}
+
+func MoveDiscussionPin(request *MoveDiscussionPinRequest) error {
+	resp, err := client.Request().
+		SetBody(request).
+		Post("discussion/move-pin")
+	if err != nil {
+		return fmt.Errorf("failed to make POST /discussion request: %w", err)
+	}
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+	
+	return nil
 }
