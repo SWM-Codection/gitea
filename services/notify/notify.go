@@ -370,7 +370,6 @@ func ChangeDefaultBranch(ctx context.Context, repo *repo_model.Repository) {
 
 func NewDiscussion(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, discussionId int) {
 	for _, notifier := range notifiers {
-		log.Info("iterating notifiers on NewDiscussion... ")
 		notifier.NewDiscussion(ctx, doer, repo, discussionId)
 	}
 }
