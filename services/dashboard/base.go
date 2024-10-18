@@ -1,11 +1,11 @@
 package dashboard
 
-var (
-	DpullDbAdapter    PullDbAdapter
-	DdashboardService DashboardService
-)
+// var (
+// 	DpullDbAdapter    PullDbAdapter
+// 	DdashboardService DashboardService
+// )
 
-func init() {
-	DpullDbAdapter = new(PullDbAdapterImpl)
-	DdashboardService = new(DashboardServiceImpl)
-}
+// func init() {
+// 	DpullDbAdapter = new(PullDbAdapterImpl)
+// 	DdashboardService = new(DashboardServiceImpl)
+// }
