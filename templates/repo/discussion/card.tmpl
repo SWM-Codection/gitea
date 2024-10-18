@@ -1,0 +1,27 @@
+{{with .Discussion}}
+	<div class="content tw-w-full">
+		<div class="tw-flex tw-items-start tw-gap-[5px]">
+			{{$IsPull := false}}
+			<div class="issue-card-icon">
+				{{template "shared/discussionicon" .}}
+			</div>
+			<a class="issue-card-title muted issue-title" href="{{$.RepoLink}}/discussions/{{.Id}}">{{.Name}}</a>
+			{{if and $.isPinnedIssueCard $.Page.IsRepoAdmin}}
+				<a role="button" class="issue-card-unpin muted tw-flex tw-items-center" data-tooltip-content={{ctx.Locale.Tr "repo.issues.unpin_issue"}} data-issue-id="{{.Id}}" data-unpin-url="{{$.Page.Link}}/unpin/{{.Id}}">
+					{{svg "octicon-x" 16}}
+				</a>
+			{{end}}
+		</div>
+		<div class="meta">
+			<span class="text light grey muted-links">
+				{{if not $.Page.Repository}}{{.Repo.FullName}}{{end}}#{{.Index}}
+				{{$timeStr := TimeSinceUnix .GetLastEventTimestamp ctx.Locale}}
+				{{if gt .Poster.ID 0}}
+					{{ctx.Locale.Tr .GetLastEventLabel $timeStr .Poster.HomeLink .Poster.GetDisplayName}}
+				{{else}}
+					{{ctx.Locale.Tr .GetLastEventLabelFake $timeStr .Poster.GetDisplayName}}
+				{{end}}
+			</span>
+		</div>
+	</div>
+{{end}}
