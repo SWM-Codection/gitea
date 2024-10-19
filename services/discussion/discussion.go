@@ -114,7 +114,7 @@ func GetPinnedDiscussionList(ctx *context.Context) (*discussion_client.Discussio
 	repoId := repo.ID
 	discussionListResponse, err := discussion_client.GetPinnedDiscussions(repoId)
 	if err != nil {
-		log.Info("discusisonClient.getPinnedDiscussionList failed1")
+		log.Error("discussionClient.getPinnedDiscussions failed")
 		return nil, err
 	}
 	// post process discussions
