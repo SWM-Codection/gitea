@@ -16,7 +16,7 @@
           <DiscussionFileCodeLine
             :lines="codeBlock.lines"
             :codeId="codeBlock.codeId"
-            @show-comment-form="renderCreateCommentForm"
+            @show-comment-form="renderOptionSelect"
             @handle-mouse-down="handleMouseDown"
           />
         </tbody>
@@ -32,6 +32,7 @@ import {initDiscussionCommentsEventHandler} from "../features/discussion-file-co
 import { convertTextToHTML, createCommentPlaceHolder, fetchCommentForm, initDiscussionFileCommentForm} from "./dIscussion-file-comment-form.js";
 import { initAiSampleCodeModal } from "../features/repo-ai-samplecode.js";
 import { initDiscussionCommentReaction } from "../features/discussion-general-comment.js";
+import DiscussionFileCommentOption from "./DiscussionFileCommentOption.vue";
 
 const { pageData } = window.config;
 
@@ -296,39 +297,40 @@ export default {
       return { codeId, lineNumber };
     },
 
-    async renderCreateCommentForm(event) {
-      const targetLine = event.target.closest("tr");
-      if (!this.isDraggingForComment) {
-        
-        const { codeId, lineNumber } = this.extractDataFromLine(targetLine);
+    renderOptionSelect(event) {
+    
+    const targetLine = event.target.closest("tr");
 
-        const codeLinePosition = this.createCodePosition(codeId, lineNumber);
-        this.currentDraggedRange = this.createCodeLineRange(
-          codeId,
-          codeLinePosition,
-          codeLinePosition,
-        );
-      }
+    if (!this.isDraggingForComment) {
+      const { codeId, lineNumber } = this.extractDataFromLine(targetLine);
 
-      const { codeId, startPosition, endPosition } = this.currentDraggedRange;
-      const queryParams = {
+      const codeLinePosition = this.createCodePosition(codeId, lineNumber);
+      this.currentDraggedRange = this.createCodeLineRange(
+        codeId,
+        codeLinePosition,
+        codeLinePosition,
+      );
+    }
+
+    const { codeId, startPosition, endPosition } = this.currentDraggedRange;
+
+    const OptionComponent = Vue.extend(DiscussionFileCommentOption);
+    const instance = new OptionComponent({
+      propsData: {
         discussionId: this.discussionId,
-        codeId : codeId,
+        codeId: codeId,
         startLine: startPosition.lineNumber,
         endLine: endPosition.lineNumber,
-      };
+      },
+    });
 
-      const requestURL = new URL(`${this.repoLink}/discussions/comment`);
-      Object.entries(queryParams).forEach(([key, value]) => {
-        requestURL.searchParams.set(key, value);
-      });
+    instance.$mount();
 
-      const commentForm = await fetchCommentForm(requestURL)  
+    targetLine.insertAdjacentElement("afterend", instance.$el);
 
-      initDiscussionFileCommentForm(commentForm);
+  },
 
-      targetLine.insertAdjacentElement("afterend", commentForm);
-    },
+
 
     async fetchDiscussionComments() {
       try {
