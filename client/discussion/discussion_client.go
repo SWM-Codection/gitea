@@ -334,3 +334,23 @@ func RemoveReaction(request model.DiscussionReactionRequest) error {
 	}
 	return err
 }
+
+func GetDiscussionCommentReaction(commentId int64) (*model.ReactionList, error) {
+	resp, err := client.Request().SetQueryParam("commentId", strconv.FormatInt(commentId, 10)).
+		Get("/discussion/reaction")
+	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/reaction request: %w", err)
+		log.Error("Failed to make GET /discussion/reaction request: %v", err)
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var result model.ReactionList
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	return &result, nil
+}

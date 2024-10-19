@@ -34,7 +34,6 @@ import (
 	"code.gitea.io/gitea/services/context"
 	discussion_service "code.gitea.io/gitea/services/discussion"
 	"code.gitea.io/gitea/services/forms"
-	notify_service "code.gitea.io/gitea/services/notify"
 )
 
 const (
@@ -78,7 +77,7 @@ func NewDiscussionPost(ctx *context.Context) {
 		ctx.ServerError("NewDiscussion", err)
 		return
 	}
-	notify_service.NewDiscussion(ctx, ctx.Doer, repo, discussionId)
+	// notify_service.NewDiscussion(ctx, ctx.Doer, repo, discussionId)
 	ctx.JSON(http.StatusOK, map[string]interface{}{
 		"discussionId": discussionId,
 	})
@@ -400,7 +399,7 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 		sort.Slice(groupComments, func(i, j int) bool {
 			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
 		})
-
+		ctx.Data["RepoLink"] = ctx.Repo.RepoLink
 		ctx.Data["comments"] = groupComments
 		ctx.Data["DiscussionId"] = groupComments[0].DiscussionId
 		html, err := ctx.RenderToHTML(tplDiscussionFileComments, ctx.Data)
@@ -659,26 +658,23 @@ func ChangeDiscussionCommentReaction(ctx *context.Context) {
 		_, err := discussion_client.GiveReaction(req)
 		if err != nil {
 			ctx.ServerError("Failed to Give Reaction", err)
+			return
 		}
 		log.Info("react on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
 	case "unreact":
 		err := discussion_client.RemoveReaction(req)
 		if err != nil {
 			ctx.ServerError("Failed to Remove Reaction", err)
+			return
 		}
 		log.Info("unreact on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
 	}
 
 	// FIXME: I know this job is clumsy, but because of current backend implementation. without rewriting backend code this is the lesser of two evil..
-	d, err := discussion_client.GetDiscussionContent(discussionId)
+	reactions, err := discussion_client.GetDiscussionCommentReaction(commentId)
 	if err != nil {
 		ctx.ServerError("Failed to Get Discussion Content", err)
-	}
-	var reactions model.ReactionList
-	for _, gc := range d.GlobalComments {
-		if gc.Id == commentId {
-			reactions = gc.Reactions
-		}
+		return
 	}
 
 	// i can't ensure null safety ;0

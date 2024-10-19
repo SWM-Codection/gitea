@@ -64,6 +64,7 @@ function initDiscussionFileCommentSelectHighlight(commentHolder) {
 
 export async function initDiscussionCommentEventHandler(comment) {
   initDiscussionCommentDropDown(comment);
+  initReactionDropdown(comment)
   initDiscussionCommentDelete(comment);
   initDiscussionCommentUpdate(comment);
 }
@@ -174,6 +175,27 @@ function initDiscussionCommentUpdate(comment) {
   });
 }
 
+function initReactionDropdown(comment) {
+  var reactionDropdown = comment.querySelector(".select-reaction");
+  var reactionDropdownMenu = reactionDropdown.querySelector(".menu");
+  if (!reactionDropdown || !reactionDropdownMenu) return;
+
+  reactionDropdown.addEventListener("click", function (event) {
+    reactionDropdownMenu.classList.toggle("transition");
+    reactionDropdownMenu.classList.toggle("visible");
+  });
+
+  document.addEventListener("click", function (event) {
+    var isClickInside =
+    reactionDropdown.contains(event.target) || reactionDropdown.contains(event.target);
+
+    if (!isClickInside) {
+      reactionDropdownMenu.classList.remove("transition");
+      reactionDropdownMenu.classList.remove("visible");
+    }
+  });
+}
+
 function initDiscussionCommentDropDown(comment) {
   var dropdown = comment.querySelector(".context-dropdown");
   var dropdownMenu = dropdown.querySelector(".menu");
@@ -202,4 +224,5 @@ function initDiscussionCommentReply(commentHolder) {
   replyButton.addEventListener("click", renderReplyCommentForm) 
 
 }
+
 
