@@ -862,7 +862,7 @@ func DiscussionPinOrUnpin(ctx *context.Context) {
 
 func DiscussionUnpin(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64("discussionId")
-	discussion_client.UnDiscussionStatus(discussionId)
+	discussion_client.UnpinDiscussion(discussionId)
 }
 
 func DiscussionMovePin(ctx *context.Context) {

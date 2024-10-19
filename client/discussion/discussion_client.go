@@ -635,20 +635,20 @@ func ConvertDiscussionPinStatus(discussionId int64) error {
 	}
 
 	if err := validateResponse(resp); err != nil {
-		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
+		return fmt.Errorf("failed to convert discussion pin state, got %d", resp.StatusCode())
 	}
 
 	return nil
 }
 
-func UnDiscussionStatus(discussionId int64) error {
+func UnpinDiscussion(discussionId int64) error {
 	resp, err := client.Request().Delete(fmt.Sprintf("discussion/%d/unpin", discussionId))
 	if err != nil {
 		return err
 	}
 
 	if err := validateResponse(resp); err != nil {
-		return fmt.Errorf("failed to set review state, got %d", resp.StatusCode())
+		return fmt.Errorf("failed to unpin discussion, got %d", resp.StatusCode())
 	}
 
 	return nil

@@ -33,7 +33,6 @@ func IssuePinOrUnpin(ctx *context.Context) {
 		log.Error(err.Error())
 		return
 	}
-	println(issue.Link())
 
 	ctx.JSONRedirect(issue.Link())
 }
