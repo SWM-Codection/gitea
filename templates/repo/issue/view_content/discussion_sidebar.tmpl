@@ -145,9 +145,9 @@
 
     <div class="divider"></div>
 
-    <form class="tw-mt-1 form-fetch-action single-button-form" method="post" {{if $.NewPinAllowed}}action="{{.Discussion.Id}}/pin"{{else}}data-tooltip-content="{{ctx.Locale.Tr "repo.issues.max_pinned"}}"{{end}}>
+    <form class="tw-mt-1 form-fetch-action single-button-form" method="post" {{if or $.NewPinAllowed (gt .Discussion.PinOrder 0)}}action="{{.Discussion.Id}}/pin"{{else}}data-tooltip-content="{{ctx.Locale.Tr "repo.issues.max_pinned"}}"{{end}}>
         {{$.CsrfTokenHtml}}
-        <button class="fluid ui button {{if not $.NewPinAllowed}}disabled{{end}}">
+        <button class="fluid ui button {{if and (not $.NewPinAllowed) (eq .Discussion.PinOrder 0)}}disabled{{end}}">
             {{if eq .Discussion.PinOrder 0}}
                 {{svg "octicon-pin" 16 "tw-mr-2"}}
                 {{ctx.Locale.Tr "pin"}}
