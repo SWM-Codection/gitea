@@ -113,9 +113,15 @@ func Discussions(ctx *context.Context) {
 	if isClosed {
 		state = "closed"
 	}
+	pinned, err := discussion_service.GetPinnedDiscussionList(ctx)
+	if err != nil {
+		ctx.ServerError("Discussions:GetPinnedDiscussions", err)
+	}
 
 	log.Info("discussions : %v", listResp.Discussions)
 	// prepare data for tamplete
+	ctx.Data["IsRepoAdmin"] = ctx.IsSigned && (ctx.Repo.IsAdmin() || ctx.Doer.IsAdmin)
+	ctx.Data["PinnedDiscussions"] = pinned.Discussions
 	ctx.Data["Title"] = ctx.Tr("repo.discussion.list")
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Discussions"] = listResp.Discussions
@@ -174,7 +180,15 @@ func ViewDiscussion(ctx *context.Context) {
 		return
 	}
 
+	var pinAllowed bool
+	pinAllowed, err = discussion_client.IsNewPinAllowed(discussionResponse.RepoId)
+	if err != nil {
+		ctx.ServerError("IsNewPinAllowed", err)
+		return
+	}
+
 	participants[0] = poster
+	ctx.Data["IsRepoAdmin"] = ctx.IsSigned && (ctx.Repo.IsAdmin() || ctx.Doer.IsAdmin)
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
@@ -185,6 +199,7 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["Participants"] = participants
 	ctx.Data["NumParticipants"] = len(participants)
 	ctx.Data["Assignees"] = MakeSelfOnTop(ctx.Doer, assigneeUsers)
+	ctx.Data["NewPinAllowed"] = pinAllowed
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -833,4 +848,22 @@ func UpdateDiscussionAssignee(ctx *context.Context) {
 			ctx.ServerError("error on discussion response: err = %v", err)
 		}
 	}
+}
+
+func DiscussionPinOrUnpin(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64("discussionId")
+	discussion_client.ConvertDiscussionPinStatus(discussionId)
+
+	trimmedLink := strings.TrimSuffix(ctx.Link, "/pin")
+	ctx.JSONRedirect(trimmedLink)
+}
+
+func DiscussionUnpin(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64("discussionId")
+	discussion_client.UnpinDiscussion(discussionId)
+}
+
+func DiscussionMovePin(ctx *context.Context) {
+	form := web.GetForm(ctx).(*model.MoveDiscussionPinRequest)
+	discussion_client.MoveDiscussionPin(form)
 }
