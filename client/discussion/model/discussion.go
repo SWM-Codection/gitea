@@ -1,9 +1,9 @@
 package model
 
 import (
-	"code.gitea.io/gitea/services/context"
 	"log"
 	"time"
+	"code.gitea.io/gitea/services/context"
 
 	"code.gitea.io/gitea/models/repo"
 	repo_model "code.gitea.io/gitea/models/repo"

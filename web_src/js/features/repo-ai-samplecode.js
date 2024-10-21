@@ -1,8 +1,9 @@
 import {POST} from '../modules/fetch.js';
 import $ from 'jquery';
 
-async function fetchAiSampleCodes(data, aiCodeContainers) {
+export async function fetchAiSampleCodes(data, aiCodeContainers) {
   try {
+
     // 로딩 애니메이션 표시
     const loadingImage = document.querySelector('.loading-overlay');
     if (loadingImage) {
@@ -30,6 +31,10 @@ async function fetchAiSampleCodes(data, aiCodeContainers) {
           // innerHTML을 사용하여 마크다운이 적용된 HTML을 표시하고, 원본 마크다운도 저장
           aiCodeContainers[index].innerHTML = sampleCodeObj.sample_code;
           aiCodeContainers[index].setAttribute('data-original-markdown', sampleCodeObj.original_markdown);
+          aiCodeContainers[index].setAttribute('data-discussionId', data.discussionId)
+          aiCodeContainers[index].setAttribute('data-codeId', data.codeId)
+          aiCodeContainers[index].setAttribute('data-endLine', data.endLine)
+          aiCodeContainers[index].setAttribute('data-startLine', data.startLine)
         }
       }
     } else {
@@ -62,25 +67,30 @@ async function saveAiDiscussionSampleCode(data, aiCodeModal) {
     if (!response.ok) {
       throw new Error('Failed to save AI discussion sample code');
     }
-  
+
     const result = await response.text();
-  
+
     const $newCommentHolder = $(result);
-    const id = parseInt($newCommentHolder.get(0).id.split("--")[1])  // Get the new comment's ID from the data attribute
 
     // Replace the current comment with the new one
-    const selector = `#discussioncomment-${id}`; 
-    const $currentCommentHolder = $(selector);
-    
-    if ($currentCommentHolder.length) {
-      $newCommentHolder.insertAfter($currentCommentHolder);
+    const selector = `#line-${data.codeId}-${data.endLine}`;
+    const $targetLine = $(selector);
+
+    if ($targetLine.length) {
+      const tr = document.createElement("tr")
+      const td = document.createElement("td")
+      td.setAttribute("colspan", "3")
+      td.append($newCommentHolder.get(0))
+      tr.append(td);
+      const lineElement = $targetLine.get(0)
+      lineElement.insertAdjacentElement("afterend", tr);
     } else {
       console.warn('Could not find the discussion comment holder with the given selector.');
     }
-  
+
     // Activate dropdown functionality for the new comment
     $newCommentHolder.find('.dropdown').dropdown();
-  
+
     if (!aiCodeModal.classList.contains('tw-hidden')) {
       aiCodeModal.classList.add('tw-hidden');
     }
@@ -126,44 +136,16 @@ async function saveAiPullSampleCode(data, aiCodeModal) {
 }
 
 export function initAiSampleCodeModal() {
-  const modalShowBtns = document.querySelectorAll('.show-ai-code-modal');
   const aiCodeModal = document.querySelector('.ai-code-modal');
   const aiCodeModalClose = document.querySelector('.ai-code-modal-close');
   const aiCodeModalInsert = document.querySelector('.ai-code-modal-insert');
   const aiCodeContainers = document.querySelectorAll('.ai-code-area');
   let selectedCodeContainer = null;
-  let commentId = null;
 
-  if (!modalShowBtns.length) return;
   if (!aiCodeModal) return;
   if (!aiCodeModalClose) return;
   if (!aiCodeContainers.length) return;
 
-
-  const type = () => {
-    if (modalShowBtns[0].getAttribute("data-comment-id").split('-')[0] == "discussioncomment") {
-      return "discussion";
-    }
-    else {
-      return "pull";
-    }
-  } 
-
-  for (const modalShowBtn of modalShowBtns) {
-    modalShowBtn.addEventListener('click', async ({target}) => {
-      const tag = target.getAttribute('data-comment-id');
-      commentId = parseInt(tag.split('-')[1]);
-      // 디스커션 코멘트인지 풀 코멘트인지 확인
-
-
-      const data = {
-        target_comment_id: commentId.toString(),
-        type: type(),
-      };
-
-      await fetchAiSampleCodes(data, aiCodeContainers);
-    });
-  }
 
   aiCodeModalClose.addEventListener('click', () => {
     const isHidden = aiCodeModal.classList.contains('tw-hidden');
@@ -190,29 +172,23 @@ export function initAiSampleCodeModal() {
       return;
     }
 
-  const originalMarkdown = selectedCodeContainer.getAttribute('data-original-markdown');
+    const originalMarkdown = selectedCodeContainer.getAttribute('data-original-markdown');
+    const startLine = selectedCodeContainer.getAttribute('data-startLine');
+    const endLine = selectedCodeContainer.getAttribute('data-endLine');
+    const discussionId = selectedCodeContainer.getAttribute(`data-discussionId`);
+    const codeId = selectedCodeContainer.getAttribute('data-codeId');
 
-    if (type() == 'pull') {
+    const data = {
+      origin_data: "",
+      codeId: Number(codeId),
+      discussionId: Number(discussionId),
+      startLine: Number(startLine),
+      endLine: Number(endLine),
+      sample_code_content: originalMarkdown,
+      type: "discussion"
+    };
 
-      const data = {
-        origin_data: 'diff',
-        target_comment_id: commentId.toString(),
-        sample_code_content: originalMarkdown, // original_markdown 값을 sample_code_content로 전달
-        type: type(),
-      };
-      
-      await saveAiPullSampleCode(data, aiCodeModal);
-    }
-    else {
-      const data = {
-        origin_data: "",
-        target_comment_id: commentId.toString(),
-        sample_code_content: originalMarkdown,
-        type: type(),
-      };
-      
-      await saveAiDiscussionSampleCode(data, aiCodeModal);
-    }
+    await saveAiDiscussionSampleCode(data, aiCodeModal);
 
   });
 }

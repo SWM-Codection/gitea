@@ -28,12 +28,17 @@
 <script>
 import { GET, POST } from "../modules/fetch";
 import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
-import {initDiscussionCommentsEventHandler} from "../features/discussion-file-comment.js";
-import { convertTextToHTML, createCommentPlaceHolder, fetchCommentForm, initDiscussionFileCommentForm} from "./dIscussion-file-comment-form.js";
+import { initDiscussionCommentsEventHandler } from "../features/discussion-file-comment.js";
+import {
+  convertTextToHTML,
+  createCommentPlaceHolder,
+  fetchCommentForm,
+  initDiscussionFileCommentForm,
+} from "./dIscussion-file-comment-form.js";
 import { initAiSampleCodeModal } from "../features/repo-ai-samplecode.js";
 import { initDiscussionCommentReaction } from "../features/discussion-general-comment.js";
 import DiscussionFileCommentOption from "./DiscussionFileCommentOption.vue";
-
+import { createApp, h } from 'vue';
 const { pageData } = window.config;
 
 export default {
@@ -60,8 +65,7 @@ export default {
 
   async mounted() {
     await this.fetchDiscussionComments();
-    initAiSampleCodeModal() 
-    initDiscussionCommentReaction()
+    initDiscussionCommentReaction();
   },
 
   methods: {
@@ -298,38 +302,46 @@ export default {
     },
 
     renderOptionSelect(event) {
-    
-    const targetLine = event.target.closest("tr");
+      const targetLine = event.target.closest("tr");
 
-    if (!this.isDraggingForComment) {
-      const { codeId, lineNumber } = this.extractDataFromLine(targetLine);
+      if (!this.isDraggingForComment) {
+        const { codeId, lineNumber } = this.extractDataFromLine(targetLine);
 
-      const codeLinePosition = this.createCodePosition(codeId, lineNumber);
-      this.currentDraggedRange = this.createCodeLineRange(
-        codeId,
-        codeLinePosition,
-        codeLinePosition,
-      );
-    }
+        const codeLinePosition = this.createCodePosition(codeId, lineNumber);
+        this.currentDraggedRange = this.createCodeLineRange(
+          codeId,
+          codeLinePosition,
+          codeLinePosition,
+        );
+      }
 
-    const { codeId, startPosition, endPosition } = this.currentDraggedRange;
+      const { codeId, startPosition, endPosition } = this.currentDraggedRange;
 
-    const OptionComponent = Vue.extend(DiscussionFileCommentOption);
-    const instance = new OptionComponent({
-      propsData: {
+      // 새로운 tr 요소 생성
+      const tmp = document.createElement("tr");
+
+      // 기존 테이블 셀 수에 맞게 colspan 설정 (예시로 3과 2 사용, 필요에 따라 조정)
+      const td1 = document.createElement("td");
+      td1.setAttribute("colspan", "3");
+      tmp.appendChild(td1);
+
+      const instanceRoot = document.createElement("td");
+      instanceRoot.setAttribute("colspan", "2");
+      tmp.appendChild(instanceRoot);
+
+      // tr을 테이블에 삽입
+      targetLine.insertAdjacentElement("afterend", tmp);
+
+      // DiscussionFileCommentOption 컴포넌트에 props 전달하여 마운트
+      createApp(DiscussionFileCommentOption, {
         discussionId: this.discussionId,
         codeId: codeId,
         startLine: startPosition.lineNumber,
         endLine: endPosition.lineNumber,
-      },
-    });
-
-    instance.$mount();
-
-    targetLine.insertAdjacentElement("afterend", instance.$el);
-
-  },
-
+        repoLink: this.repoLink,
+      }).mount(instanceRoot);
+    },
+  
 
 
     async fetchDiscussionComments() {
@@ -358,7 +370,7 @@ export default {
           const targetLine = this.$refs.codeTable.querySelector(
             `#line-${codeId}-${line}`,
           );
-          commentHolder = convertTextToHTML(commentHolder)
+          commentHolder = convertTextToHTML(commentHolder);
 
           if (targetLine) {
             const tr = document.createElement("tr");
@@ -374,8 +386,6 @@ export default {
         console.error("Error processing code blocks:", e);
       }
     },
-
-
   },
 };
 </script>

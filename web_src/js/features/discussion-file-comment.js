@@ -13,7 +13,7 @@ export function initDiscussionCommentsEventHandler(commentsHolder) {
   const isReply = () => {
     return comments.length == 0
   }
-  
+
   if (isReply()) {
     initDiscussionCommentEventHandler(commentsHolder)
     return
@@ -30,19 +30,19 @@ export function initDiscussionCommentsEventHandler(commentsHolder) {
 
 
 function initDiscussionFileCommentSelectHighlight(commentHolder) {
-  
+
   commentHolder.addEventListener("click", (event) => {
-    event.stopPropagation(); 
+    event.stopPropagation();
 
     removeSelectedLines();
-    
+
     const startLine = parseInt(event.currentTarget.querySelector("input[name='startLine']").value, 10);
     const endLine = parseInt(event.currentTarget.querySelector("input[name='endLine']").value, 10);
     const codeId = event.currentTarget.querySelector("input[name='codeId']").value;
 
     for (let lineNumber = startLine; lineNumber <= endLine; lineNumber++) {
       const lineElement = document.querySelector(`#line-${codeId}-${lineNumber}`);
-      
+
       if (lineElement) {
         lineElement.classList.add("selected-line");
       }
@@ -64,7 +64,7 @@ function initDiscussionFileCommentSelectHighlight(commentHolder) {
 
 export async function initDiscussionCommentEventHandler(comment) {
   initDiscussionCommentDropDown(comment);
-  initReactionDropdown(comment)
+  initReactionDropdown(comment);
   initDiscussionCommentDelete(comment);
   initDiscussionCommentUpdate(comment);
 }
@@ -154,7 +154,7 @@ function initDiscussionCommentUpdate(comment) {
         throw Error()
       }
       const data = await response.json();
-  
+
       if (!data.content) {
         renderContent.innerHTML = document.getElementById("no-content").innerHTML;
         rawContent.textContent = "";
@@ -167,7 +167,7 @@ function initDiscussionCommentUpdate(comment) {
         // TODO: 다국어 에러 메세지 지원
       alert("코멘트 수정에 실패했습니다.")
       console.error(e)
-    } 
+    }
 
 
     showElem(renderContent);
@@ -221,7 +221,7 @@ function initDiscussionCommentDropDown(comment) {
 function initDiscussionCommentReply(commentHolder) {
   const replyButton = commentHolder.querySelector(".discussion-file-comment-form-reply")
   if (!replyButton) return;
-  replyButton.addEventListener("click", renderReplyCommentForm) 
+  replyButton.addEventListener("click", renderReplyCommentForm)
 
 }
 

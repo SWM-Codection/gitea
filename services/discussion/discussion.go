@@ -2,9 +2,13 @@ package discussion
 
 import (
 	"fmt"
+	"html/template"
 	"strconv"
 
+	"code.gitea.io/gitea/models/discussion"
+
 	"code.gitea.io/gitea/modules/highlight"
+	"code.gitea.io/gitea/modules/timeutil"
 
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/services/context"
@@ -44,6 +48,7 @@ func GetDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, err
 	}
 	// post process discussions
 	for _, d := range discussionListResponse.Discussions {
+
 		d.LoadRepo(ctx)
 		d.LoadPoster(ctx)
 	}
@@ -103,9 +108,101 @@ func highlightContent(content *model.FileContent) error {
 
 func DeleteDiscussionComment(ctx *context.Context, discussionId int64, posterId int64) error {
 
+	
+
 	if err := discussion_client.DeleteDiscussionComment(discussionId, posterId); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func GetDiscussionCommentsByCodeId(ctx *context.Context, codeId int64) ([]*DiscussionComment, error) {
+
+	commentsResp, err := discussion_client.GetDiscussionCommentsByCodeId(codeId)
+
+	sampleCodes, err := discussion.GetAiSampleCodesByCodeId(ctx, codeId, "discussion")
+
+	comments := make([]*DiscussionComment, 0, len(sampleCodes))
+
+	for _, sampleCode := range sampleCodes {
+
+		aiComment, err := ConvertAiSampleCodeToDiscussionComment(ctx, sampleCode)
+
+		if err != nil {
+			ctx.ServerError("failed to convert ai sample code to discussion comment: %v", err)
+		}
+		comments = append(comments, aiComment)
+	}
+
+	for _, comment := range commentsResp {
+		poster, err := user_model.GetUserByID(ctx, comment.PosterId)
+
+		if err != nil {
+
+		}
+		discussionComment := &DiscussionComment{
+			ID:           comment.Id,
+			StartLine:    comment.StartLine,
+			PosterId:     comment.PosterId,
+			DiscussionId: comment.DiscussionId,
+			CodeId:       comment.CodeId,
+			GroupId:      comment.GroupId,
+			EndLine:      comment.EndLine,
+			CreatedUnix:  comment.CreatedUnix,
+			Reactions:    comment.Reactions,
+			Poster:       poster,
+			Content:      comment.Content,
+		}
+		comments = append(comments, discussionComment)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return comments, nil
+}
+
+func ConvertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode) (*DiscussionComment, error) {
+
+	poster, err := user_model.GetPossibleUserByID(ctx, -3)
+
+	if err != nil {
+		return nil, err
+	}
+
+	newComment := &DiscussionComment{
+		ID:           -sampleCode.Id,
+		StartLine:    sampleCode.StartLine,
+		DiscussionId: sampleCode.DiscussionId,
+		GroupId:      -sampleCode.Id,
+		EndLine:      sampleCode.EndLine,
+		CodeId:       sampleCode.CodeId,
+		CreatedUnix:  sampleCode.CreatedUnix,
+		Reactions:    nil, // TODO: 뱃지 형식으로 변경하기
+		Poster:       poster,
+		Content:      sampleCode.Content,
+	}
+
+	return newComment, err
+}
+
+type DiscussionComment struct {
+	ID              int64
+	DiscussionId    int64
+	PosterId        int64
+	Poster          *user_model.User
+	GroupId         int64
+	Content         string
+	StartLine       int64
+	CodeId          int64
+	EndLine         int64
+	Reactions       model.ReactionList
+	RenderedContent template.HTML
+	CreatedUnix     timeutil.TimeStamp
+}
+
+func (c *DiscussionComment) HashTag() string {
+	return fmt.Sprintf("discussioncomment-%d", c.ID)
 }

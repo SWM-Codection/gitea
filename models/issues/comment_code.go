@@ -10,7 +10,6 @@ import (
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/markup"
 	"code.gitea.io/gitea/modules/markup/markdown"
-	discussion_model "code.gitea.io/gitea/models/discussion"
 
 	"xorm.io/builder"
 )
@@ -45,21 +44,21 @@ func fetchCodeCommentsByReview(ctx context.Context, issue *Issue, currentUser *u
 		}
 		pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], comment)
 
-		aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
-		if err != nil {
-			return nil, err
-		}
-
-		if aiSampleCode != nil {
-			aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
-			if err != nil {
-				return nil, err
-			}
-
-			pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], aiComment)
-		}
+		//aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//if aiSampleCode != nil {
+		//	aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//
+		//	pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], aiComment)
+		//}
 	}
-	
+
 	return pathToLineToComment, nil
 }
 
@@ -142,41 +141,40 @@ func findCodeComments(ctx context.Context, opts FindCommentsOptions, issue *Issu
 }
 
 func FetchCodeCommentsByLine(ctx context.Context, issue *Issue, currentUser *user_model.User, treePath string, line int64, showOutdatedComments bool) (CommentList, error) {
-    opts := FindCommentsOptions{
-        Type:     CommentTypeCode,
-        IssueID:  issue.ID,
-        TreePath: treePath,
-        Line:     line,
-    }
+	opts := FindCommentsOptions{
+		Type:     CommentTypeCode,
+		IssueID:  issue.ID,
+		TreePath: treePath,
+		Line:     line,
+	}
 
-    codeComments, err := findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
-    if err != nil {
-        return nil, err
-    }
+	codeComments, err := findCodeComments(ctx, opts, issue, currentUser, nil, showOutdatedComments)
+	if err != nil {
+		return nil, err
+	}
 
-    var allComments CommentList
+	var allComments CommentList
 
-    for _, comment := range codeComments {
-        allComments = append(allComments, comment)
+	for _, comment := range codeComments {
+		allComments = append(allComments, comment)
 
-        aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
-        if err != nil {
-            return nil, err
-        }
+		//aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
+		//if err != nil {
+		//    return nil, err
+		//}
 
-        if aiSampleCode != nil {
-            aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
-            if err != nil {
-                return nil, err
-            }
+		//if aiSampleCode != nil {
+		//    //aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
+		//    if err != nil {
+		//        return nil, err
+		//    }
+		//
+		//    allComments = append(allComments, aiComment)
+		//}
+	}
 
-            allComments = append(allComments, aiComment)
-        }
-    }
-
-    return allComments, nil
+	return allComments, nil
 }
-
 
 func FetchCodeAiComments(ctx context.Context, issue *Issue, fileLines map[string]int64) (CodeComments, error) {
 	return fetchCodeAiCommentsByReview(ctx, issue, fileLines)
@@ -201,8 +199,8 @@ func fetchCodeAiCommentsByReview(ctx context.Context, issue *Issue, fileLines ma
 	for _, aiPullComment := range aiPullComments {
 		line := fileLines[aiPullComment.TreePath]
 		updateOpts := UpdateAiPullCommentOption{
-			CommentID:	aiPullComment.ID,
-			Line:		&line,
+			CommentID: aiPullComment.ID,
+			Line:      &line,
 		}
 		updatedAiPullComment, err := UpdateAiPullComment(ctx, &updateOpts)
 		if err != nil {
@@ -230,7 +228,7 @@ func FetchAiPullCommentByLine(ctx context.Context, issue *Issue, treePath string
 	if err != nil || pullRequest == nil {
 		return nil, err
 	}
-	
+
 	aiPullComment, err := fetchAiPullCommentByLine(ctx, pullRequest, treePath, line)
 	if err != nil || aiPullComment == nil {
 		return nil, err
@@ -297,40 +295,41 @@ func MergeAIComments(allComments, aiComments CodeComments) {
 	}
 }
 
-func convertAiSampleCodeToComment(ctx context.Context, aiSampleCode *discussion_model.AiSampleCode, issue *Issue, target_comment *Comment) (*Comment, error) {
-	comment := &Comment{
-		ID:          -target_comment.ID,
-		PosterID:    -3,
-		IssueID:     aiSampleCode.TargetCommentId,
-		Content:     aiSampleCode.Content,
-		CreatedUnix: target_comment.CreatedUnix+1,
-		UpdatedUnix: target_comment.UpdatedUnix+1,
-		CommitSHA:   target_comment.CommitSHA,
-		Line:        target_comment.Line,
-	}
-
-	if err := comment.LoadPoster(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := comment.LoadAttachments(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := comment.LoadReactions(ctx, issue.Repo); err != nil {
-		return nil, err
-	}
-
-	var err error
-	if comment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
-		Ctx: ctx,
-		Links: markup.Links{
-			Base: issue.Repo.Link(),
-		},
-		Metas: issue.Repo.ComposeMetas(ctx),
-	}, aiSampleCode.Content); err != nil {
-		return nil, err
-	}
-
-	return comment, nil
-}
+//
+//func convertAiSampleCodeToComment(ctx context.Context, aiSampleCode *discussion_model.AiSampleCode, issue *Issue, target_comment *Comment) (*Comment, error) {
+//	comment := &Comment{
+//		ID:          -target_comment.ID,
+//		PosterID:    -3,
+//		IssueID:     aiSampleCode.TargetCommentId,
+//		Content:     aiSampleCode.Content,
+//		CreatedUnix: target_comment.CreatedUnix+1,
+//		UpdatedUnix: target_comment.UpdatedUnix+1,
+//		CommitSHA:   target_comment.CommitSHA,
+//		Line:        target_comment.Line,
+//	}
+//
+//	if err := comment.LoadPoster(ctx); err != nil {
+//		return nil, err
+//	}
+//
+//	if err := comment.LoadAttachments(ctx); err != nil {
+//		return nil, err
+//	}
+//
+//	if err := comment.LoadReactions(ctx, issue.Repo); err != nil {
+//		return nil, err
+//	}
+//
+//	var err error
+//	if comment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+//		Ctx: ctx,
+//		Links: markup.Links{
+//			Base: issue.Repo.Link(),
+//		},
+//		Metas: issue.Repo.ComposeMetas(ctx),
+//	}, aiSampleCode.Content); err != nil {
+//		return nil, err
+//	}
+//
+//	return comment, nil
+//}

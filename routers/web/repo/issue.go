@@ -30,7 +30,6 @@ import (
 	repo_model "code.gitea.io/gitea/models/repo"
 	"code.gitea.io/gitea/models/unit"
 	user_model "code.gitea.io/gitea/models/user"
-	discussion_model "code.gitea.io/gitea/models/discussion"
 	"code.gitea.io/gitea/modules/base"
 	"code.gitea.io/gitea/modules/container"
 	"code.gitea.io/gitea/modules/emoji"
@@ -3233,17 +3232,17 @@ func DeleteComment(ctx *context.Context) {
 	targetId := ctx.ParamsInt64(":id")
 
 	if targetId < 0 {
-		sampleComment, err := discussion_model.GetAiSampleCodeByCommentID(ctx, -targetId, "pull")
-		if err != nil {
-			ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
-			return
-		}
-		err = discussion_model.DeleteAiSampleCodeByID(ctx, sampleComment.Id)
-		if err != nil {
-			ctx.ServerError("DeleteComment", err)
-			return
-		}
-		ctx.Status(http.StatusOK)
+		// sampleComment, err := discussion_model.GetAiSampleCodesByCodeId(ctx, -targetId, "pull")
+		// if err != nil {
+		// 	ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
+		// 	return
+		// }
+		// err = discussion_model.DeleteAiSampleCodeByID(ctx, sampleComment.I)
+		// if err != nil {
+		// 	ctx.ServerError("DeleteComment", err)
+		// 	return
+		// }
+		// ctx.Status(http.StatusOK)
 		return
 	} else if targetId == 0 {
 		dataPath := ctx.Req.URL.Query().Get("path")
@@ -3251,8 +3250,8 @@ func DeleteComment(ctx *context.Context) {
 
 		issueIdx, err := strconv.ParseInt(issueIdxStr, 10, 64)
 		if err != nil {
-    		ctx.ServerError("Cannot Convert issueIdx", err)
-    		return
+			ctx.ServerError("Cannot Convert issueIdx", err)
+			return
 		}
 
 		comment, err := issues_model.GetAiSampleCodeByIdxAndPath(ctx, issueIdx, dataPath)
