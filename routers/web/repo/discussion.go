@@ -220,7 +220,7 @@ func ViewDiscussionFiles(ctx *context.Context) {
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
 	ctx.Data["Discussion"] = discussionResponse
-	ctx.PageData["RepoLink"] = ctx.Repo.Repository.RepoPathLink()
+	ctx.PageData["RepoLink"] = ctx.Repo.RepoLink
 	ctx.PageData["DiscussionId"] = discussionId
 	ctx.Data["DiscussionTab"] = "files"
 
