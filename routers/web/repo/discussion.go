@@ -16,6 +16,7 @@ import (
 	api "code.gitea.io/gitea/modules/structs"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
+	"code.gitea.io/gitea/client/discussion/model"
 	issues_model "code.gitea.io/gitea/models/issues"
 	"code.gitea.io/gitea/models/organization"
 	access_model "code.gitea.io/gitea/models/perm/access"
@@ -62,7 +63,7 @@ func NewDiscussionPost(ctx *context.Context) {
 	if ctx.Written() {
 		return
 	}
-	req := &discussion_client.PostDiscussionRequest{
+	req := &model.PostDiscussionRequest{
 		RepoId:     repo.ID,
 		Poster:     ctx.Doer,
 		PosterId:   ctx.Doer.ID,
@@ -72,11 +73,11 @@ func NewDiscussionPost(ctx *context.Context) {
 		Codes:      form.Codes,
 	}
 	discussionId, err := discussion_service.NewDiscussion(ctx, repo, req)
-	log.Info("New Discussion Post : %v", discussionId)
 	if err != nil {
 		ctx.ServerError("NewDiscussion", err)
 		return
 	}
+	// notify_service.NewDiscussion(ctx, ctx.Doer, repo, discussionId)
 	ctx.JSON(http.StatusOK, map[string]interface{}{
 		"discussionId": discussionId,
 	})
@@ -231,18 +232,18 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 	discussionId := ctx.ParamsInt64(":discussionId")
 	commentScope := util.Iif(
 		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
-		discussion_client.CommentScopeLocal,
-		discussion_client.CommentScopeGlobal,
+		model.CommentScopeLocal,
+		model.CommentScopeGlobal,
 	)
 	// if request malformed, then make it valid
-	if commentScope == discussion_client.CommentScopeGlobal {
+	if commentScope == model.CommentScopeGlobal {
 		form.CodeId = nil
 		form.StartLine = nil
 		form.EndLine = nil
 		form.GroupId = nil
 	}
 
-	req := &discussion_client.PostCommentRequest{
+	req := &model.PostCommentRequest{
 		DiscussionId: discussionId,
 		Scope:        commentScope,
 		PosterId:     ctx.Doer.ID,
@@ -274,7 +275,7 @@ type DiscussionComment struct {
 	StartLine       int64
 	CodeId          int64
 	EndLine         int64
-	Reactions       discussion_client.ReactionList
+	Reactions       model.ReactionList
 	RenderedContent template.HTML
 	CreatedUnix     timeutil.TimeStamp
 }
@@ -344,7 +345,7 @@ type DiscussionFileCommentsResponse struct {
 
 func groupDiscussionFileCommentsByGroupId(
 	ctx *context.Context,
-	commentsResp []*discussion_client.DiscussionCommentResponse) (map[int64][]*DiscussionComment, error) {
+	commentsResp []*model.DiscussionCommentResponse) (map[int64][]*DiscussionComment, error) {
 
 	comments := make(map[int64][]*DiscussionComment)
 
@@ -413,7 +414,7 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 		sort.Slice(groupComments, func(i, j int) bool {
 			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
 		})
-
+		ctx.Data["RepoLink"] = ctx.Repo.RepoLink
 		ctx.Data["comments"] = groupComments
 		ctx.Data["DiscussionId"] = groupComments[0].DiscussionId
 		html, err := ctx.RenderToHTML(tplDiscussionFileComments, ctx.Data)
@@ -529,7 +530,7 @@ func SetDiscussionDeadline(ctx *context.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, discussion_client.DiscussionDeadline{Deadline: &deadline})
+	ctx.JSON(http.StatusCreated, model.DiscussionDeadline{Deadline: &deadline})
 }
 
 func getActionDiscussionIds(ctx *context.Context) []int64 {
@@ -594,15 +595,15 @@ func ModifyDiscussionFileComment(ctx *context.Context) {
 
 	commentScope := util.Iif(
 		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
-		discussion_client.CommentScopeLocal,
-		discussion_client.CommentScopeGlobal,
+		model.CommentScopeLocal,
+		model.CommentScopeGlobal,
 	)
 
 	posterId := ctx.Doer.ID
 
 	discussionId := ctx.ParamsInt64(":discussionId")
 
-	request := &discussion_client.ModifyDiscussionCommentRequest{
+	request := &model.ModifyDiscussionCommentRequest{
 		DiscussionId:        discussionId,             // discussionId 변수는 이미 전달된 것으로 가정
 		DiscussionCommentId: form.DiscussionCommentId, // form에서 넘어온 DiscussionCommentId
 		CodeId:              form.CodeId,              // form에서 넘어온 CodeId (포인터)
@@ -659,7 +660,7 @@ func ChangeDiscussionCommentReaction(ctx *context.Context) {
 	}
 	action := ctx.Params(":action")
 
-	req := discussion_client.DiscussionReactionRequest{
+	req := model.DiscussionReactionRequest{
 		Type:         form.Content,
 		DiscussionId: discussionId,
 		CommentId:    commentId,
@@ -672,26 +673,23 @@ func ChangeDiscussionCommentReaction(ctx *context.Context) {
 		_, err := discussion_client.GiveReaction(req)
 		if err != nil {
 			ctx.ServerError("Failed to Give Reaction", err)
+			return
 		}
 		log.Info("react on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
 	case "unreact":
 		err := discussion_client.RemoveReaction(req)
 		if err != nil {
 			ctx.ServerError("Failed to Remove Reaction", err)
+			return
 		}
 		log.Info("unreact on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
 	}
 
 	// FIXME: I know this job is clumsy, but because of current backend implementation. without rewriting backend code this is the lesser of two evil..
-	d, err := discussion_client.GetDiscussionContent(discussionId)
+	reactions, err := discussion_client.GetDiscussionCommentReaction(commentId)
 	if err != nil {
 		ctx.ServerError("Failed to Get Discussion Content", err)
-	}
-	var reactions discussion_client.ReactionList
-	for _, gc := range d.GlobalComments {
-		if gc.Id == commentId {
-			reactions = gc.Reactions
-		}
+		return
 	}
 
 	// i can't ensure null safety ;0
@@ -708,7 +706,7 @@ func ChangeDiscussionCommentReaction(ctx *context.Context) {
 	})
 }
 
-func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, poster *user_model.User, discussionResponse *discussion_client.DiscussionResponse) (issues_model.RoleDescriptor, error) {
+func discussionRoleDescriptor(ctx stdCtx.Context, repo *repo_model.Repository, poster *user_model.User, discussionResponse *model.DiscussionResponse) (issues_model.RoleDescriptor, error) {
 	roleDescriptor := issues_model.RoleDescriptor{}
 	roleDescriptor.IsPoster = discussionResponse.IsPoster(poster.ID)
 
@@ -805,7 +803,7 @@ func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
 	ctx.HTML(http.StatusOK, tplDiscussionFileComment)
 }
 
-func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode, comment *discussion_client.DiscussionCommentResponse) (*DiscussionComment, error) {
+func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode, comment *model.DiscussionCommentResponse) (*DiscussionComment, error) {
 
 	poster, err := user_model.GetPossibleUserByID(ctx, -3)
 
@@ -841,7 +839,7 @@ func UpdateDiscussionAssignee(ctx *context.Context) {
 			ctx.ServerError("error on discussion response: err = %v", err)
 		}
 	default:
-		req := &discussion_client.UpdateAssigneeRequest{
+		req := &model.UpdateAssigneeRequest{
 			DiscussionId: discussionId,
 			AssigneeId:   assigneeId,
 		}
@@ -866,6 +864,6 @@ func DiscussionUnpin(ctx *context.Context) {
 }
 
 func DiscussionMovePin(ctx *context.Context) {
-	form := web.GetForm(ctx).(*discussion_client.MoveDiscussionPinRequest)
+	form := web.GetForm(ctx).(*model.MoveDiscussionPinRequest)
 	discussion_client.MoveDiscussionPin(form)
 }

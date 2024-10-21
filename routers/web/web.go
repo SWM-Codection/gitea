@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"code.gitea.io/gitea/client/discussion/model"
 	auth_model "code.gitea.io/gitea/models/auth"
 	"code.gitea.io/gitea/models/db"
 	"code.gitea.io/gitea/models/perm"
@@ -47,7 +48,6 @@ import (
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/forms"
 	"code.gitea.io/gitea/services/lfs"
-	discussion_client "code.gitea.io/gitea/client/discussion"
 
 	_ "code.gitea.io/gitea/modules/session" // to registers all internal adapters
 	"gitea.com/go-chi/binding"
@@ -1206,7 +1206,7 @@ func registerRoutes(m *web.Route) {
 			m.Post("/assignee", repo.UpdateDiscussionAssignee)
 			m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
 			m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
-			m.Post("/move_pin", web.Bind(discussion_client.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
+			m.Post("/move_pin", web.Bind(model.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 

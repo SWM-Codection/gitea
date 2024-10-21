@@ -4,247 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
-
-	"code.gitea.io/gitea/services/context"
 
 	"code.gitea.io/gitea/client"
-	repo_model "code.gitea.io/gitea/models/repo"
-	user_model "code.gitea.io/gitea/models/user"
+	"code.gitea.io/gitea/client/discussion/model"
 	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/timeutil"
 	"github.com/go-resty/resty/v2"
 )
 
-type DiscussionCode struct {
-	Id        int64  `json:"id"`
-	FilePath  string `json:"filePath"`
-	StartLine int    `json:"startLine"`
-	EndLine   int    `json:"endLine"`
-}
-
-type DeleteDiscussionCommentRequest struct {
-	PosterId            int64 `json:"posterId"`
-	DiscussionCommentId int64 `json:"discussionCommentId"`
-}
-
-type PostDiscussionRequest struct {
-	RepoId     int64            `json:"repoId"`
-	Poster     *user_model.User `json:"-"`
-	PosterId   int64            `json:"posterId"`
-	Name       string           `json:"name"`
-	Content    string           `json:"content"`
-	BranchName string           `json:"branchName"`
-	Codes      []DiscussionCode `json:"codes"`
-}
-
-type DiscussionAvailableRequest struct {
-	RepoId    int64 `json:"repoId"`
-	Available bool  `json:"available"`
-}
-
-type CommentScopeEnum int
-
-const (
-	CommentScopeGlobal CommentScopeEnum = iota
-	CommentScopeLocal
-)
-
-type PostCommentRequest struct {
-	DiscussionId int64            `json:"discussionId"`
-	CodeId       *int64           `json:"codeId"`
-	GroupId      *int64           `json:"groupId"`
-	PosterId     int64            `json:"posterId"`
-	Scope        CommentScopeEnum `json:"scope"`
-	StartLine    *int32           `json:"startLine"`
-	EndLine      *int32           `json:"endLine"`
-	Content      string           `json:"content"`
-}
-
-type ModifyDiscussionRequest struct {
-	RepoId       int64            `json:"repoId"`
-	DiscussionId int64            `json:"discussionId"`
-	PosterId     int64            `json:"posterId"`
-	Name         string           `json:"name"`
-	Content      string           `json:"content"`
-	Codes        []DiscussionCode `json:"codes"`
-}
-
-type DiscussionResponse struct {
-	Id          int64              `json:"id"`
-	Name        string             `json:"name"`
-	Content     string             `json:"content"`
-	RepoId      int64              `json:"repoId"`
-	PosterId    int64              `json:"posterId"`
-	CommitHash  string             `json:"commitHash"`
-	IsClosed    bool               `json:"isClosed"`
-	Deadline    timeutil.TimeStamp `json:"deadline"`
-	Assignees   []int64            `json:"assignees"`
-	CreatedUnix timeutil.TimeStamp `json:"createdUnix"`
-	UpdatedUnix timeutil.TimeStamp `json:"updatedUnix"`
-	Index       int64              `json:"index"`
-	Poster      *user_model.User   `json:"-"`
-	PinOrder	int64			   `json:"pinOrder"`
-}
-
-type ReactionList []*DiscussionReaction
-
-func (list ReactionList) GroupByType() map[string]ReactionList {
-	reactions := make(map[string]ReactionList)
-	for _, reaction := range list {
-		reactions[reaction.Type] = append(reactions[reaction.Type], reaction)
-	}
-	return reactions
-}
-
-func (list ReactionList) HasUser(userId int64) bool {
-	if userId == 0 {
-		return false
-	}
-	for _, reaction := range list {
-		if reaction.UserId == userId {
-			return true
-		}
-	}
-	return false
-}
-
-type Discussion struct {
-	Id           int64                  `json:"id"`
-	Name         string                 `json:"name"`
-	Content      string                 `json:"content"`
-	RepoId       int64                  `json:"repoId"`
-	PosterId     int64                  `json:"posterId"`
-	CommitHash   string                 `json:"commitHash"`
-	Index        int64                  `json:"index"`
-	IsClosed     bool                   `json:"isClosed"`
-	CreatedUnix  timeutil.TimeStamp     `json:"createdUnix"` // required, but didn't exist before
-	ClosedUnix   timeutil.TimeStamp     `json:"closedUnix"`  // required, but didn't exist before
-	DeadlineUnix timeutil.TimeStamp     `json:"deadlineUnix"`
-	NumComments  int                    `json:"-"` // it can be computed
-	Repo         *repo_model.Repository `json:"-"` // it can be computed via d.LoadRepo()
-	Poster       *user_model.User       `json:"-"` // it can be computed via d.LoadPoster()
-}
-
-type DiscussionListResponse struct {
-	TotalCount  int64         `json:"totalCount"`
-	Discussions []*Discussion `json:"discussions"`
-}
-
-type ModifyDiscussionCommentRequest struct {
-	DiscussionId        int64            `json:"discussionId"`
-	DiscussionCommentId int64            `json:"discussionCommentId"`
-	CodeId              *int64           `json:"codeId"`
-	PosterId            int64            `json:"posterId"`
-	Scope               CommentScopeEnum `json:"scope"`
-	StartLine           *int32           `json:"startLine"`
-	EndLine             *int32           `json:"endLine"`
-	Content             string           `json:"content"`
-}
-
-type MoveDiscussionPinRequest struct {
-	DiscussionId		int64			`json:"id"`
-	Position			int64			`json:"position"`
-}
-
-type DiscussionCountResponse struct {
-	OpenCount  int `json:"openCount"`
-	CloseCount int `json:"closeCount"`
-}
-
-type ExtractedLine struct {
-	LineNumber int    `json:"lineNumber"`
-	Content    string `json:"content"`
-}
-type CodeBlock struct {
-	CodeId   int64                       `json:"codeId"`
-	Lines    []ExtractedLine             `json:"lines"`
-	Comments []DiscussionCommentResponse `json:"comments"`
-}
-type FileContent struct {
-	FilePath   string      `json:"filePath"`
-	CodeBlocks []CodeBlock `json:"codeBlocks"`
-}
-
-type DiscussionCommentResponse struct {
-	Id           int64                 `json:"id"`
-	FilePath     string                `json:"filePath"`
-	GroupId      int64                 `json:"groupId"`
-	DiscussionId int64                 `json:"discussionId"`
-	PosterId     int64                 `json:"posterId"`
-	CodeId       int64                 `json:"codeId"`
-	Scope        string                `json:"scope"`
-	StartLine    int64                 `json:"startLine"`
-	EndLine      int64                 `json:"endLine"`
-	Content      string                `json:"content"`
-	CreatedUnix  timeutil.TimeStamp    `json:"createdUnix"`
-	Reactions    []*DiscussionReaction `json:"reactions"`
-}
-
-type ReactionTypeEnum = string
-
-const (
-	PLUS_ONE  ReactionTypeEnum = "+1"
-	MINUS_ONE ReactionTypeEnum = "-1"
-	LAUGH     ReactionTypeEnum = "laugh"
-	HOORAY    ReactionTypeEnum = "hooray"
-	CONFUSED  ReactionTypeEnum = "confused"
-	HEART     ReactionTypeEnum = "heart"
-	ROCKET    ReactionTypeEnum = "rocket"
-	EYES      ReactionTypeEnum = "eyes"
-)
-
-type DiscussionReaction struct {
-	Id           int64            `json:"id"`
-	Type         ReactionTypeEnum `json:"type"`
-	DiscussionId int64            `json:"discussionId"`
-	CommentId    int64            `json:"commentId"`
-	UserId       int64            `json:"userId"`
-}
-type DiscussionContentResponse struct {
-	DiscussionId    int64                       `json:"discussionId"`
-	Contents        []FileContent               `json:"contents"`
-	GlobalComments  []DiscussionCommentResponse `json:"globalComments"`
-	GlobalReactions []DiscussionReaction        `json:"discussionReaction"`
-}
-
-type DiscussionDeadline struct {
-	Deadline *time.Time `json:"due_date"`
-}
-
-type UpdateAssigneeRequest struct {
-	DiscussionId int64 `json:"discussionId"`
-	AssigneeId   int64 `json:"assigneeId"`
-}
-
-type DiscussionErrorResponse struct {
-	TimeStamp timeutil.TimeStamp `json:"timestamp"`
-	Status    int                `json:"status"`
-	Error     string             `json:"error"`
-	message   string
-}
-
 func validateResponse(resp *resty.Response) error {
 	if resp.IsError() {
-		var errResp DiscussionErrorResponse
+		var errResp model.DiscussionErrorResponse
 		if err := json.Unmarshal(resp.Body(), &errResp); err != nil {
 			log.Error("Failed to parse error response: %v", err)
 			return fmt.Errorf("unexpected error: %s", resp.Status())
 		}
-		log.Error("API Error %d: %s", errResp.Status, errResp.message)
-		return fmt.Errorf("api error %d: %s", errResp.Status, errResp.message)
+		log.Error("API Error %d: %s", errResp.Status, errResp.Message)
+		return fmt.Errorf("api error %d: %s", errResp.Status, errResp.Message)
 	}
 	return nil
 }
 
-type DiscussionReactionRequest struct {
-	Type         ReactionTypeEnum `json:"type"`
-	DiscussionId int64            `json:"discussionId"`
-	CommentId    int64            `json:"commentId"`
-	UserId       int64            `json:"userId"`
-}
-
-func PostDiscussion(request *PostDiscussionRequest) (int, error) {
+func PostDiscussion(request *model.PostDiscussionRequest) (int, error) {
 	resp, err := client.Request().
 		SetBody(request).
 		Post("/discussion")
@@ -264,7 +44,7 @@ func PostDiscussion(request *PostDiscussionRequest) (int, error) {
 	return result, nil
 }
 
-func GetDiscussion(repoId int64) (*DiscussionResponse, error) {
+func GetDiscussion(repoId int64) (*model.DiscussionResponse, error) {
 	resp, err := client.Request().
 		Get(fmt.Sprintf("/discussion/%d", repoId))
 	if err != nil {
@@ -275,7 +55,7 @@ func GetDiscussion(repoId int64) (*DiscussionResponse, error) {
 		return nil, err
 	}
 
-	var result DiscussionResponse
+	var result model.DiscussionResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
@@ -283,7 +63,7 @@ func GetDiscussion(repoId int64) (*DiscussionResponse, error) {
 	return &result, nil
 }
 
-func GetDiscussionCount(repoId int64) (*DiscussionCountResponse, error) {
+func GetDiscussionCount(repoId int64) (*model.DiscussionCountResponse, error) {
 	resp, err := client.Request().
 		Get(fmt.Sprintf("/discussion/%d/count", repoId))
 	if err != nil {
@@ -294,7 +74,7 @@ func GetDiscussionCount(repoId int64) (*DiscussionCountResponse, error) {
 		return nil, err
 	}
 
-	var result DiscussionCountResponse
+	var result model.DiscussionCountResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
@@ -302,7 +82,7 @@ func GetDiscussionCount(repoId int64) (*DiscussionCountResponse, error) {
 	return &result, nil
 }
 
-func GetDiscussionList(repoId int64, isClosed bool, page int, sort string) (*DiscussionListResponse, error) {
+func GetDiscussionList(repoId int64, isClosed bool, page int, sort string) (*model.DiscussionListResponse, error) {
 	isClosedAsString := strconv.FormatBool(isClosed)
 	pageAsString := strconv.Itoa(page)
 	resp, err := client.Request().
@@ -318,7 +98,7 @@ func GetDiscussionList(repoId int64, isClosed bool, page int, sort string) (*Dis
 		return nil, err
 	}
 
-	var result DiscussionListResponse
+	var result model.DiscussionListResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
@@ -326,7 +106,7 @@ func GetDiscussionList(repoId int64, isClosed bool, page int, sort string) (*Dis
 	return &result, nil
 }
 
-func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error) {
+func GetDiscussionContent(discussionId int64) (*model.DiscussionContentResponse, error) {
 	resp, err := client.Request().
 		Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
 	if err != nil {
@@ -337,7 +117,7 @@ func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error
 		return nil, err
 	}
 
-	var result DiscussionContentResponse
+	var result model.DiscussionContentResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
@@ -345,7 +125,7 @@ func GetDiscussionContent(discussionId int64) (*DiscussionContentResponse, error
 	return &result, nil
 }
 
-func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse, error) {
+func GetDiscussionComment(discussionCommentId int64) (*model.DiscussionCommentResponse, error) {
 
 	resp, err := client.Request().
 		SetQueryParam("id", strconv.FormatInt(discussionCommentId, 10)).
@@ -359,7 +139,7 @@ func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse
 		return nil, err
 	}
 
-	var result DiscussionCommentResponse
+	var result model.DiscussionCommentResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
@@ -367,10 +147,10 @@ func GetDiscussionComment(discussionCommentId int64) (*DiscussionCommentResponse
 	return &result, nil
 }
 
-func GetDiscussionCommentsByCodeId(codeId int64) ([]*DiscussionCommentResponse, error) {
+func GetDiscussionCommentsByCodeId(codeId int64) ([]*model.DiscussionCommentResponse, error) {
 	resp, err := client.Request().Get(fmt.Sprintf("/discussion/comments/%d", codeId))
 
-	result := make([]*DiscussionCommentResponse, 0)
+	result := make([]*model.DiscussionCommentResponse, 0)
 
 	if err = json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
@@ -394,7 +174,7 @@ func HandleDiscussionAvailable() (*resty.Response, error) {
 	return resp, nil
 }
 
-func PostComment(request *PostCommentRequest) (*int64, error) {
+func PostComment(request *model.PostCommentRequest) (*int64, error) {
 	resp, err := client.Request().
 		SetBody(request).
 		Post("/discussion/comment")
@@ -415,7 +195,7 @@ func PostComment(request *PostCommentRequest) (*int64, error) {
 	return &id, nil
 }
 
-func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error) {
+func ModifyDiscussion(request *model.ModifyDiscussionRequest) (*resty.Response, error) {
 	resp, err := client.Request().
 		SetBody(request).
 		Put("/discussion")
@@ -431,7 +211,7 @@ func ModifyDiscussion(request *ModifyDiscussionRequest) (*resty.Response, error)
 }
 
 func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
-	request := &DeleteDiscussionCommentRequest{
+	request := &model.DeleteDiscussionCommentRequest{
 		DiscussionCommentId: discussionCommentId,
 		PosterId:            posterId,
 	}
@@ -450,61 +230,12 @@ func DeleteDiscussionComment(discussionCommentId int64, posterId int64) error {
 	return nil
 }
 
-/**
- * discussion methods
- * the `discussion` struct could be moved to a separate file later
- */
-func (d *Discussion) IsExpired() bool {
-	return d.DeadlineUnix < timeutil.TimeStamp(time.Now().Unix())
-}
-
-func (d *Discussion) GetLastEventTimestamp() timeutil.TimeStamp {
-	if d.IsClosed {
-		return d.ClosedUnix
-	}
-	return d.CreatedUnix
-}
-
-func (d *Discussion) GetLastEventLabel() string {
-	if d.IsClosed {
-		return "repo.discussion.closed_by"
-	}
-	return "repo.discussion.opened_by"
-}
-
-func (d *Discussion) GetLastEventLabelFake() string {
-	if d.IsClosed {
-		return "repo.discussion.closed_by_fake"
-	}
-	return "repo.discussion.opened_by_fake"
-}
-
-func (d *Discussion) LoadPoster(ctx *context.Context) (err error) {
-	if d.Poster == nil && d.PosterId != 0 {
-		d.Poster, err = user_model.GetPossibleUserByID(ctx, d.PosterId)
-		if err != nil {
-			d.PosterId = user_model.GhostUserID
-			d.Poster = user_model.NewGhostUser()
-			if !user_model.IsErrUserNotExist(err) {
-				return fmt.Errorf("getUserById.(poster) [%d]: %w", d.PosterId, err)
-			}
-			return nil
-		}
-	}
-	return err
-}
-
-func (d *Discussion) LoadRepo(ctx *context.Context) (err error) {
-	d.Repo = ctx.Repo.Repository
-	return nil
-}
-
-func GetDiscussionContents(discussionId int64) (*DiscussionContentResponse, error) {
+func GetDiscussionContents(discussionId int64) (*model.DiscussionContentResponse, error) {
 	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/contents", discussionId))
 	if err != nil {
 		return nil, err
 	}
-	result := &DiscussionContentResponse{}
+	result := &model.DiscussionContentResponse{}
 
 	if err := json.Unmarshal(resp.Body(), result); err != nil {
 		return nil, err
@@ -543,11 +274,7 @@ func SetDiscussionDeadline(discussionId int64, deadline int64) error {
 	return nil
 }
 
-func (dr DiscussionResponse) IsPoster(id int64) bool {
-	return dr.PosterId == id
-}
-
-func UpdateDiscussionAssignee(request *UpdateAssigneeRequest) error {
+func UpdateDiscussionAssignee(request *model.UpdateAssigneeRequest) error {
 	resp, err := client.Request().SetBody(request).Put("/discussion/assignees")
 	if err != nil {
 		return err
@@ -558,7 +285,7 @@ func UpdateDiscussionAssignee(request *UpdateAssigneeRequest) error {
 	return nil
 }
 
-func ModifyDiscussionComment(request *ModifyDiscussionCommentRequest) error {
+func ModifyDiscussionComment(request *model.ModifyDiscussionCommentRequest) error {
 	resp, err := client.Request().SetBody(request).Put("/discussion/comment")
 	if err != nil {
 		return err
@@ -582,7 +309,7 @@ func ClearDiscussionAssignee(discussionId int64) error {
 	return nil
 }
 
-func GiveReaction(request DiscussionReactionRequest) (int64, error) {
+func GiveReaction(request model.DiscussionReactionRequest) (int64, error) {
 	var result int64 = -1
 	resp, err := client.Request().SetBody(request).Post("/discussion/reaction")
 	if err != nil {
@@ -597,7 +324,7 @@ func GiveReaction(request DiscussionReactionRequest) (int64, error) {
 	return result, err
 }
 
-func RemoveReaction(request DiscussionReactionRequest) error {
+func RemoveReaction(request model.DiscussionReactionRequest) error {
 	resp, err := client.Request().SetBody(request).Delete("/discussion/reaction")
 	if err != nil {
 		return err
@@ -608,6 +335,19 @@ func RemoveReaction(request DiscussionReactionRequest) error {
 	return err
 }
 
+func GetDiscussionCommentReaction(commentId int64) (*model.ReactionList, error) {
+	resp, err := client.Request().SetQueryParam("commentId", strconv.FormatInt(commentId, 10)).
+		Get("/discussion/reaction")
+	if err != nil {
+		log.Error("Failed to make GET /discussion/reaction request: %v", err)
+		return nil, fmt.Errorf("failed to make GET /discussion/reaction request: %w", err)
+	}
+	var result model.ReactionList
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+	return &result, err
+}
 
 func IsNewPinAllowed(repoId int64) (bool, error) {
 	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/max-pin", repoId))
@@ -654,7 +394,7 @@ func UnpinDiscussion(discussionId int64) error {
 	return nil
 }
 
-func GetPinnedDiscussions(repoId int64) (*DiscussionListResponse, error) {
+func GetPinnedDiscussions(repoId int64) (*model.DiscussionListResponse, error) {
 	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/pin", repoId))
 	if err != nil {
 		return nil, err
@@ -663,16 +403,14 @@ func GetPinnedDiscussions(repoId int64) (*DiscussionListResponse, error) {
 	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
-
-	var result DiscussionListResponse
+	var result model.DiscussionListResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-
 	return &result, nil
 }
 
-func MoveDiscussionPin(request *MoveDiscussionPinRequest) error {
+func MoveDiscussionPin(request *model.MoveDiscussionPinRequest) error {
 	resp, err := client.Request().
 		SetBody(request).
 		Post("discussion/move-pin")
@@ -682,6 +420,6 @@ func MoveDiscussionPin(request *MoveDiscussionPinRequest) error {
 	if err := validateResponse(resp); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
