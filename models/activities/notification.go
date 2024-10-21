@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"code.gitea.io/gitea/client/discussion/model"
 	"code.gitea.io/gitea/models/db"
 	issues_model "code.gitea.io/gitea/models/issues"
 	"code.gitea.io/gitea/models/organization"
@@ -46,8 +45,6 @@ const (
 	NotificationSourceCommit
 	// NotificationSourceRepository is a notification for a repository
 	NotificationSourceRepository
-	// NotificationSourceDiscussion is a notification for a discussion
-	NotificationSourceDiscussion
 )
 
 // Notification represents a notification
@@ -59,18 +56,16 @@ type Notification struct {
 	Status NotificationStatus `xorm:"SMALLINT INDEX NOT NULL"`
 	Source NotificationSource `xorm:"SMALLINT INDEX NOT NULL"`
 
-	IssueID      int64  `xorm:"INDEX NOT NULL"`
-	DiscussionID int64  `xorm:"INDEX NOT NULL"`
-	CommitID     string `xorm:"INDEX"`
-	CommentID    int64
+	IssueID   int64  `xorm:"INDEX NOT NULL"`
+	CommitID  string `xorm:"INDEX"`
+	CommentID int64
 
 	UpdatedBy int64 `xorm:"INDEX NOT NULL"`
 
-	Issue      *issues_model.Issue       `xorm:"-"`
-	Repository *repo_model.Repository    `xorm:"-"`
-	Comment    *issues_model.Comment     `xorm:"-"`
-	User       *user_model.User          `xorm:"-"`
-	Discussion *model.DiscussionResponse `xorm:"-"`
+	Issue      *issues_model.Issue    `xorm:"-"`
+	Repository *repo_model.Repository `xorm:"-"`
+	Comment    *issues_model.Comment  `xorm:"-"`
+	User       *user_model.User       `xorm:"-"`
 
 	CreatedUnix timeutil.TimeStamp `xorm:"created INDEX NOT NULL"`
 	UpdatedUnix timeutil.TimeStamp `xorm:"updated INDEX NOT NULL"`
@@ -160,16 +155,6 @@ func GetIssueNotification(ctx context.Context, userID, issueID int64) (*Notifica
 	_, err := db.GetEngine(ctx).
 		Where("user_id = ?", userID).
 		And("issue_id = ?", issueID).
-		Get(notification)
-	return notification, err
-}
-
-// GetDiscussionNotification return the notification about an issue
-func GetDiscussionNotification(ctx context.Context, userID, discussionID int64) (*Notification, error) {
-	notification := new(Notification)
-	_, err := db.GetEngine(ctx).
-		Where("user_id = ?", userID).
-		And("discussion_id = ?", discussionID).
 		Get(notification)
 	return notification, err
 }
@@ -388,50 +373,5 @@ func UpdateNotificationStatuses(ctx context.Context, user *user_model.User, curr
 		Where("user_id = ? AND status = ?", user.ID, currentStatus).
 		Cols("status", "updated_by", "updated_unix").
 		Update(n)
-	return err
-}
-
-func createDiscussionNotification(ctx context.Context, userID int64, discussionResp *model.DiscussionResponse, commentID, updatedByID int64) error {
-	notification := &Notification{
-		UserID:       userID,
-		RepoID:       discussionResp.RepoId,
-		Status:       NotificationStatusUnread,
-		IssueID:      0,
-		DiscussionID: discussionResp.Id,
-		CommentID:    commentID,
-		UpdatedBy:    updatedByID,
-		Source:       NotificationSourceDiscussion,
-	}
-	return db.Insert(ctx, notification)
-}
-
-func DiscussionNotificationExists(notifications []*Notification, discussionId, userId int64) bool {
-	for _, notification := range notifications {
-		if notification.DiscussionID == discussionId && notification.UserID == userId {
-			return true
-		}
-	}
-	return false
-}
-
-func updateDiscussionNotification(ctx context.Context, userID, discussionID, commentID, updatedByID int64) error {
-	notification, err := GetDiscussionNotification(ctx, userID, discussionID)
-	if err != nil {
-		return err
-	}
-
-	// NOTICE: Only update comment id when the before notification on this issue is read, otherwise you may miss some old comments.
-	// But we need update update_by so that the notification will be reorder
-	var cols []string
-	if notification.Status == NotificationStatusRead {
-		notification.Status = NotificationStatusUnread
-		notification.CommentID = commentID
-		cols = []string{"status", "update_by", "comment_id"}
-	} else {
-		notification.UpdatedBy = updatedByID
-		cols = []string{"update_by"}
-	}
-
-	_, err = db.GetEngine(ctx).ID(notification.ID).Cols(cols...).Update(notification)
 	return err
 }

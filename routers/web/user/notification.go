@@ -150,10 +150,6 @@ func getNotifications(ctx *context.Context) {
 		return
 	}
 
-	// FIXME: current LoadDiscussion does not fit with legacy implemenations..
-	// later it must be fitted with other Loadxxx
-	notifications.LoadDiscussion(ctx)
-
 	notifications = notifications.Without(failures)
 	failCount += len(failures)
 

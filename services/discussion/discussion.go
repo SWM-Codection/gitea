@@ -10,13 +10,11 @@ import (
 	"code.gitea.io/gitea/services/context"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
-	"code.gitea.io/gitea/client/discussion/model"
 	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/models/user"
 	user_model "code.gitea.io/gitea/models/user"
 )
 
-func NewDiscussion(ctx *context.Context, repo *repo_model.Repository, req *model.PostDiscussionRequest) (int, error) {
+func NewDiscussion(ctx *context.Context, repo *repo_model.Repository, req *discussion_client.PostDiscussionRequest) (int, error) {
 	// TODO: check poster permissions
 	if user_model.IsUserBlockedBy(ctx, req.Poster, repo.OwnerID) {
 		return -1, user_model.ErrBlockedUser
@@ -26,7 +24,7 @@ func NewDiscussion(ctx *context.Context, repo *repo_model.Repository, req *model
 	return result, err
 }
 
-func GetDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, error) {
+func GetDiscussionList(ctx *context.Context) (*discussion_client.DiscussionListResponse, error) {
 	repo := ctx.Repo.Repository
 	repoId := repo.ID
 	isClosed := ctx.FormString("state") == "closed"
@@ -45,14 +43,13 @@ func GetDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, err
 	}
 	// post process discussions
 	for _, d := range discussionListResponse.Discussions {
-		d.Repo = ctx.Repo.Repository
-		poster, _ := user.GetUserByID(ctx, d.PosterId)
-		d.Poster = poster
+		d.LoadRepo(ctx)
+		d.LoadPoster(ctx)
 	}
 	return discussionListResponse, nil
 }
 
-func GetDiscussionContent(discussionID int64) (*model.DiscussionContentResponse, error) {
+func GetDiscussionContent(discussionID int64) (*discussion_client.DiscussionContentResponse, error) {
 	contents, err := discussion_client.GetDiscussionContents(discussionID)
 	if err != nil {
 		return nil, err
@@ -61,7 +58,7 @@ func GetDiscussionContent(discussionID int64) (*model.DiscussionContentResponse,
 	return contents, nil
 }
 
-func GetDiscussionContentWithHighlights(discussionID int64) (*model.DiscussionContentResponse, error) {
+func GetDiscussionContentWithHighlights(discussionID int64) (*discussion_client.DiscussionContentResponse, error) {
 	contents, err := discussion_client.GetDiscussionContents(discussionID)
 	if err != nil {
 		return nil, err
@@ -77,7 +74,7 @@ func GetDiscussionContentWithHighlights(discussionID int64) (*model.DiscussionCo
 
 }
 
-func highlightContents(contents *model.DiscussionContentResponse) error {
+func highlightContents(contents *discussion_client.DiscussionContentResponse) error {
 	for i := range contents.Contents {
 		if err := highlightContent(&contents.Contents[i]); err != nil {
 			return err
@@ -86,7 +83,7 @@ func highlightContents(contents *model.DiscussionContentResponse) error {
 	return nil
 }
 
-func highlightContent(content *model.FileContent) error {
+func highlightContent(content *discussion_client.FileContent) error {
 	for i, block := range content.CodeBlocks {
 		for j, line := range block.Lines {
 			html, _, err := highlight.File(content.FilePath, "", []byte(line.Content))

@@ -208,7 +208,3 @@ func (*NullNotifier) PackageDelete(ctx context.Context, doer *user_model.User, p
 // ChangeDefaultBranch places a place holder function
 func (*NullNotifier) ChangeDefaultBranch(ctx context.Context, repo *repo_model.Repository) {
 }
-
-// NewDiscussion places a place holder function
-func (*NullNotifier) NewDiscussion(ctx context.Context, doer *user_model.User, repo *repo_model.Repository, discussionId int) {
-}
