@@ -34,6 +34,7 @@ import (
 	"code.gitea.io/gitea/services/context"
 	discussion_service "code.gitea.io/gitea/services/discussion"
 	"code.gitea.io/gitea/services/forms"
+	notify_service "code.gitea.io/gitea/services/notify"
 )
 
 const (
@@ -77,7 +78,7 @@ func NewDiscussionPost(ctx *context.Context) {
 		ctx.ServerError("NewDiscussion", err)
 		return
 	}
-	// notify_service.NewDiscussion(ctx, ctx.Doer, repo, discussionId)
+	notify_service.NewDiscussion(ctx, ctx.Doer, repo, discussionId)
 	ctx.JSON(http.StatusOK, map[string]interface{}{
 		"discussionId": discussionId,
 	})

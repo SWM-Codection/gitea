@@ -12,6 +12,7 @@ import (
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	"code.gitea.io/gitea/client/discussion/model"
 	repo_model "code.gitea.io/gitea/models/repo"
+	"code.gitea.io/gitea/models/user"
 	user_model "code.gitea.io/gitea/models/user"
 )
 
@@ -44,8 +45,9 @@ func GetDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, err
 	}
 	// post process discussions
 	for _, d := range discussionListResponse.Discussions {
-		d.LoadRepo(ctx)
-		d.LoadPoster(ctx)
+		d.Repo = ctx.Repo.Repository
+		poster, _ := user.GetUserByID(ctx, d.PosterId)
+		d.Poster = poster
 	}
 	return discussionListResponse, nil
 }
@@ -120,8 +122,9 @@ func GetPinnedDiscussionList(ctx *context.Context) (*model.DiscussionListRespons
 	}
 	// post process discussions
 	for _, d := range discussionListResponse.Discussions {
-		d.LoadRepo(ctx)
-		d.LoadPoster(ctx)
+		d.Repo = repo
+		poster, _ := user_model.GetUserByID(ctx, d.PosterId)
+		d.Poster = poster
 	}
 	return discussionListResponse, nil
 }
