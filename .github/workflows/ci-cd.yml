@@ -11,7 +11,7 @@ env:
   ECS_CONTAINER_NAME: codectionEcsServer
   ECS_CLUSTER_NAME: codectionEcsCluster
   ECS_SERVICE_NAME: codectionEcsServer
-  ECS_TASK_DEFINITION: codectionEcsFamily"
+  ECS_TASK_DEFINITION: codectionEcsFamily
 
 jobs:
   build:
