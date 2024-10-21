@@ -128,9 +128,8 @@ export async function fetchCommentForm(requestURL) {
 export async function fetchCommentReplyForm(requestURL) {
 
   try {
-    const response = await GET(requestURL.toString());
+    const response = await GET(requestURL);
     if (!response.ok) {
-      
       return;
     }
     const body = await response.text();
@@ -167,10 +166,8 @@ export async function renderReplyCommentForm(event) {
       endLine: endLine,
     };
 
-    const requestURL = new URL(`${pageData.RepoLink}/discussions/comment`);
-    Object.entries(queryParams).forEach(([key, value]) => {
-      requestURL.searchParams.set(key, value);
-    });
+    const queries = Object.entries(queryParams).map(([key, value]) => `${key}=${value}`).join('&');
+    const requestURL = `${pageData.RepoLink}/discussions/comment?${queries}` 
 
     const commentForm = await fetchCommentReplyForm(requestURL);
     initDiscussionFileCommentForm(commentForm);
