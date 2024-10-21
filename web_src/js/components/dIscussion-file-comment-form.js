@@ -105,7 +105,7 @@ export function convertTextToHTML(text) {
 export async function fetchCommentForm(requestURL) {
 
   try {
-    const response = await GET(requestURL.toString());
+    const response = await GET(requestURL);
     if (!response.ok) {
       
       return;
