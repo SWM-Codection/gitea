@@ -13,8 +13,23 @@
 					</span>
 			</div>
 			<div class="comment-header-right actions tw-flex tw-items-center">
-				{{template "repo/issue/view_content/add_reaction" dict "ActionURL" (printf "%s/comments/%d/reactions" $.root.RepoLink .ID)}}
+				<div class="item action ui dropdown jump pointing top right select-reaction" data-action-url="/chlwodud0123/asdfqq/comments/25/reactions" role="menu" aria-haspopup="" aria-controls="_aria_auto_id_28" aria-expanded="false" tabindex="0">
+					<a class="muted">
+						{{svg "octicon-smiley"}}
+					</a>
+					<div class="menu discussion-comment-reactions" role="" tabindex="-1">
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="+1"  data-reaction-content="+1" id="_aria_auto_id_29" role="menuitem" tabindex="-1">👍</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="-1" data-reaction-content="-1" id="_aria_auto_id_30" role="menuitem" tabindex="-1">👎</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="laugh" data-reaction-content="laugh" id="_aria_auto_id_31" role="menuitem" tabindex="-1">😆</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="hooray" data-reaction-content="hooray" id="_aria_auto_id_32" role="menuitem" tabindex="-1">🎉</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="confused" data-reaction-content="confused" id="_aria_auto_id_33" role="menuitem" tabindex="-1">😕</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="heart" data-reaction-content="heart" id="_aria_auto_id_34" role="menuitem" tabindex="-1">❤️</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="rocket" data-reaction-content="rocket" id="_aria_auto_id_35" role="menuitem" tabindex="-1">🚀</a>
+						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="eyes" data-reaction-content="eyes" id="_aria_auto_id_36" role="menuitem" tabindex="-1">👀</a>
+					</div>
+				</div>
 				{{template "repo/discussion/context_menu" dict "ctxData" $.root "item" . "delete" true "issue" false "diff" false "IsCommentPoster" (and $.root.IsSigned (eq $.root.SignedUserID .Poster.ID))}}
+
 
 			</div>
 		</div>
@@ -30,10 +45,13 @@
 			<!-- 수정 버튼 들어가는 부분 -->
 			 {{template "repo/discussion/file_edit_comment_form" dict "root" $.root "item" .}}
 		</div>
-		{{$reactions := .Reactions.GroupByType}}
-		{{if $reactions}}
-			{{template "repo/issue/view_content/reactions" dict "ActionURL" (printf "%s/comments/%d/reactions" $.root.RepoLink .ID) "Reactions" $reactions}}
-
+		{{$comment := .}}
+		{{if .Reactions}}
+			{{$reactions := .Reactions.GroupByType}}
+			{{$actionUrl := printf "%s/discussions/%d/comment/%d/reactions" $.root.RepoLink $comment.DiscussionId $comment.ID}}
+			{{template "repo/discussion/reactions" dict "Reactions" $reactions "ActionURL" $actionUrl}}
+		{{else}}
+			<div class="bottom-reactions"></div>
 		{{end}}
 	</div>
 </div>

@@ -111,3 +111,20 @@ func DeleteDiscussionComment(ctx *context.Context, discussionId int64, posterId 
 
 	return nil
 }
+
+func GetPinnedDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, error) {
+	repo := ctx.Repo.Repository
+	repoId := repo.ID
+	discussionListResponse, err := discussion_client.GetPinnedDiscussions(repoId)
+	if err != nil {
+		log.Error("discussionClient.getPinnedDiscussions failed")
+		return nil, err
+	}
+	// post process discussions
+	for _, d := range discussionListResponse.Discussions {
+		d.Repo = repo
+		poster, _ := user_model.GetUserByID(ctx, d.PosterId)
+		d.Poster = poster
+	}
+	return discussionListResponse, nil
+}

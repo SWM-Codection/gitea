@@ -196,18 +196,31 @@ export function initDiscussionCommentReaction() {
       const reacted = $el.getAttribute('data-has-reacted');
       const reactUrl = `${dataUrl}/${reacted ? 'unreact' : 'react'}`;
 
-      const resp = await POST(reactUrl, {data: {'Content': reactionType}}); 
+      try {
+        const resp = await POST(reactUrl, {data: {'Content': reactionType}}); 
 
-      const data = await resp.json();
-      const html = data.html; 
-      if (!html) return; 
+        if (!resp.ok) {
+          throw Error('리액션 추가에 실패');
+        }
 
-      // handle reaction add 
-      const $commentContainer = $el.closest('.comment-container');
-      const $bottomReactions = $commentContainer.querySelector('.bottom-reactions');
-      $bottomReactions?.remove(); 
-      $commentContainer.insertAdjacentHTML('beforeend', html);
-      initDiscussionCommentReaction();
+        const data = await resp.json();
+        const html = data.html; 
+        if (!html) return; 
+  
+        // handle reaction add 
+        const $commentContainer = $el.closest('.comment-container');
+        const $bottomReactions = $commentContainer.querySelector('.bottom-reactions');
+        $bottomReactions?.remove(); 
+        $commentContainer.insertAdjacentHTML('beforeend', html);
+        initDiscussionCommentReaction();
+      }
+
+      catch (error) {
+        alert(error.message);
+      }
+
+
+
     };
   });
 }

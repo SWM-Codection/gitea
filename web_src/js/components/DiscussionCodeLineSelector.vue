@@ -31,6 +31,7 @@ import DiscussionFileCodeLine from "./DiscussionFileCodeLine.vue";
 import {initDiscussionCommentsEventHandler} from "../features/discussion-file-comment.js";
 import { convertTextToHTML, createCommentPlaceHolder, fetchCommentForm, initDiscussionFileCommentForm} from "./dIscussion-file-comment-form.js";
 import { initAiSampleCodeModal } from "../features/repo-ai-samplecode.js";
+import { initDiscussionCommentReaction } from "../features/discussion-general-comment.js";
 
 const { pageData } = window.config;
 
@@ -59,6 +60,7 @@ export default {
   async mounted() {
     await this.fetchDiscussionComments();
     initAiSampleCodeModal() 
+    initDiscussionCommentReaction()
   },
 
   methods: {

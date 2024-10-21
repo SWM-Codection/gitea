@@ -19,6 +19,7 @@ type DiscussionResponse struct {
 	UpdatedUnix timeutil.TimeStamp `json:"updatedUnix"`
 	Index       int64              `json:"index"`
 	Poster      *user.User         `json:"-"`
+	PinOrder    int64              `json:"pinOrder"`
 }
 
 func (dr DiscussionResponse) IsPoster(id int64) bool {

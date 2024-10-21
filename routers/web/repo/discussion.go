@@ -114,9 +114,15 @@ func Discussions(ctx *context.Context) {
 	if isClosed {
 		state = "closed"
 	}
+	pinned, err := discussion_service.GetPinnedDiscussionList(ctx)
+	if err != nil {
+		ctx.ServerError("Discussions:GetPinnedDiscussions", err)
+	}
 
 	log.Info("discussions : %v", listResp.Discussions)
 	// prepare data for tamplete
+	ctx.Data["IsRepoAdmin"] = ctx.IsSigned && (ctx.Repo.IsAdmin() || ctx.Doer.IsAdmin)
+	ctx.Data["PinnedDiscussions"] = pinned.Discussions
 	ctx.Data["Title"] = ctx.Tr("repo.discussion.list")
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Discussions"] = listResp.Discussions
@@ -175,7 +181,15 @@ func ViewDiscussion(ctx *context.Context) {
 		return
 	}
 
+	var pinAllowed bool
+	pinAllowed, err = discussion_client.IsNewPinAllowed(discussionResponse.RepoId)
+	if err != nil {
+		ctx.ServerError("IsNewPinAllowed", err)
+		return
+	}
+
 	participants[0] = poster
+	ctx.Data["IsRepoAdmin"] = ctx.IsSigned && (ctx.Repo.IsAdmin() || ctx.Doer.IsAdmin)
 	ctx.Data["DiscussionContent"] = discussionContentResponse
 	ctx.Data["PageIsDiscussionList"] = true
 	ctx.Data["Repository"] = ctx.Repo.Repository
@@ -186,6 +200,7 @@ func ViewDiscussion(ctx *context.Context) {
 	ctx.Data["Participants"] = participants
 	ctx.Data["NumParticipants"] = len(participants)
 	ctx.Data["Assignees"] = MakeSelfOnTop(ctx.Doer, assigneeUsers)
+	ctx.Data["NewPinAllowed"] = pinAllowed
 	ctx.HTML(http.StatusOK, tplDiscussionView)
 }
 
@@ -400,7 +415,7 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 		sort.Slice(groupComments, func(i, j int) bool {
 			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
 		})
-
+		ctx.Data["RepoLink"] = ctx.Repo.RepoLink
 		ctx.Data["comments"] = groupComments
 		ctx.Data["DiscussionId"] = groupComments[0].DiscussionId
 		html, err := ctx.RenderToHTML(tplDiscussionFileComments, ctx.Data)
@@ -659,26 +674,23 @@ func ChangeDiscussionCommentReaction(ctx *context.Context) {
 		_, err := discussion_client.GiveReaction(req)
 		if err != nil {
 			ctx.ServerError("Failed to Give Reaction", err)
+			return
 		}
 		log.Info("react on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
 	case "unreact":
 		err := discussion_client.RemoveReaction(req)
 		if err != nil {
 			ctx.ServerError("Failed to Remove Reaction", err)
+			return
 		}
 		log.Info("unreact on discussion %v's comment %v with content %v", discussionId, commentId, form.Content)
 	}
 
 	// FIXME: I know this job is clumsy, but because of current backend implementation. without rewriting backend code this is the lesser of two evil..
-	d, err := discussion_client.GetDiscussionContent(discussionId)
+	reactions, err := discussion_client.GetDiscussionCommentReaction(commentId)
 	if err != nil {
 		ctx.ServerError("Failed to Get Discussion Content", err)
-	}
-	var reactions model.ReactionList
-	for _, gc := range d.GlobalComments {
-		if gc.Id == commentId {
-			reactions = gc.Reactions
-		}
+		return
 	}
 
 	// i can't ensure null safety ;0
@@ -837,4 +849,22 @@ func UpdateDiscussionAssignee(ctx *context.Context) {
 			ctx.ServerError("error on discussion response: err = %v", err)
 		}
 	}
+}
+
+func DiscussionPinOrUnpin(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64("discussionId")
+	discussion_client.ConvertDiscussionPinStatus(discussionId)
+
+	trimmedLink := strings.TrimSuffix(ctx.Link, "/pin")
+	ctx.JSONRedirect(trimmedLink)
+}
+
+func DiscussionUnpin(ctx *context.Context) {
+	discussionId := ctx.ParamsInt64("discussionId")
+	discussion_client.UnpinDiscussion(discussionId)
+}
+
+func DiscussionMovePin(ctx *context.Context) {
+	form := web.GetForm(ctx).(*model.MoveDiscussionPinRequest)
+	discussion_client.MoveDiscussionPin(form)
 }

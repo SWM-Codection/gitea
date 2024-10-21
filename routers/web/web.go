@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"code.gitea.io/gitea/client/discussion/model"
 	auth_model "code.gitea.io/gitea/models/auth"
 	"code.gitea.io/gitea/models/db"
 	"code.gitea.io/gitea/models/perm"
@@ -1203,6 +1204,9 @@ func registerRoutes(m *web.Route) {
 			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
 			m.Post("/status", repo.UpdateDiscussionStatus)
 			m.Post("/assignee", repo.UpdateDiscussionAssignee)
+			m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
+			m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
+			m.Post("/move_pin", web.Bind(model.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
 		})
 	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
 
