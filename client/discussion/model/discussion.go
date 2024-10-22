@@ -1,11 +1,8 @@
 package model
 
 import (
-	"log"
 	"time"
-	"code.gitea.io/gitea/services/context"
 
-	"code.gitea.io/gitea/models/repo"
 	repo_model "code.gitea.io/gitea/models/repo"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/timeutil"
@@ -55,25 +52,4 @@ func (d *Discussion) GetLastEventLabelFake() string {
 		return "repo.discussion.closed_by_fake"
 	}
 	return "repo.discussion.opened_by_fake"
-}
-
-func (d *Discussion) LoadRepo(ctx *context.Context) error {
-
-	repo, err := repo.GetRepositoryByID(*ctx, d.RepoId)
-	if err != nil {
-		log.Printf("Error getting repo by id: %v", d.RepoId)
-		return err
-	}
-	d.Repo = repo
-	return nil
-}
-
-func (d *Discussion) LoadPoster(ctx *context.Context) error {
-	poster, err := user_model.GetUserByID(*ctx, d.PosterId)
-	if err != nil {
-		log.Printf("Error getting repo by id: %v", d.PosterId)
-		return err
-	}
-	d.Poster = poster
-	return nil
 }

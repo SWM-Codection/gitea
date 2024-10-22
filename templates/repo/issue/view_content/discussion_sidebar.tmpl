@@ -134,7 +134,6 @@
 		</div>
     </div>
 
-
     <div class="divider"></div>
     <div class="ui equal width compact grid">
         {{$issueReferenceLink := printf "%s/%s#%d" .Repository.OwnerName .Repository.Name .Discussion.Index}}
@@ -144,77 +143,44 @@
         </div>
     </div>
 
-    {{if and .IsRepoAdmin (not .Repository.IsArchived)}}
-        <div class="divider"></div>
+    <div class="divider"></div>
 
-        {{if or .PinEnabled .Issue.IsPinned}}
-            <form class="tw-mt-1 form-fetch-action single-button-form" method="post" {{if $.NewPinAllowed}}action="{{.Issue.Link}}/pin"{{else}}data-tooltip-content="{{ctx.Locale.Tr "repo.issues.max_pinned"}}"{{end}}>
-                {{$.CsrfTokenHtml}}
-                <button class="fluid ui button {{if not $.NewPinAllowed}}disabled{{end}}">
-                    {{if not .Issue.IsPinned}}
-                        {{svg "octicon-pin" 16 "tw-mr-2"}}
-                        {{ctx.Locale.Tr "pin"}}
-                    {{else}}
-                        {{svg "octicon-pin-slash" 16 "tw-mr-2"}}
-                        {{ctx.Locale.Tr "unpin"}}
-                    {{end}}
-                </button>
-            </form>
-        {{end}}
-                    <div class="text right actions">
-                        <button class="ui cancel button">{{ctx.Locale.Tr "settings.cancel"}}</button>
-                        <button class="ui red button">
-                            {{if .Issue.IsLocked}}
-                                {{ctx.Locale.Tr "repo.issues.unlock_confirm"}}
-                            {{else}}
-                                {{ctx.Locale.Tr "repo.issues.lock_confirm"}}
-                            {{end}}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <button class="tw-mt-1 fluid ui show-modal button" data-modal="#sidebar-delete-issue">
-            {{svg "octicon-trash"}}
-            {{ctx.Locale.Tr "repo.issues.delete"}}
+    <form class="tw-mt-1 form-fetch-action single-button-form" method="post" {{if or $.NewPinAllowed (gt .Discussion.PinOrder 0)}}action="{{.Discussion.Id}}/pin"{{else}}data-tooltip-content="{{ctx.Locale.Tr "repo.issues.max_pinned"}}"{{end}}>
+        {{$.CsrfTokenHtml}}
+        <button class="fluid ui button {{if and (not $.NewPinAllowed) (eq .Discussion.PinOrder 0)}}disabled{{end}}">
+            {{if eq .Discussion.PinOrder 0}}
+                {{svg "octicon-pin" 16 "tw-mr-2"}}
+                {{ctx.Locale.Tr "pin"}}
+            {{else}}
+                {{svg "octicon-pin-slash" 16 "tw-mr-2"}}
+                {{ctx.Locale.Tr "unpin"}}
+            {{end}}
         </button>
-        <div class="ui g-modal-confirm modal" id="sidebar-delete-issue">
-            <div class="header">
-                {{if .Issue.IsPull}}
-                    {{ctx.Locale.Tr "repo.pulls.delete.title"}}
-                {{else}}
-                    {{ctx.Locale.Tr "repo.issues.delete.title"}}
-                {{end}}
-            </div>
-            <div class="content">
-                <p>
-                    {{if .Issue.IsPull}}
-                        {{ctx.Locale.Tr "repo.pulls.delete.text"}}
-                    {{else}}
-                        {{ctx.Locale.Tr "repo.issues.delete.text"}}
-                    {{end}}
-                </p>
-            </div>
-            <form action="{{.Issue.Link}}/delete" method="post">
-                {{.CsrfTokenHtml}}
-                {{template "base/modal_actions_confirm" .}}
-            </form>
+    </form>
+    <button class="tw-mt-1 fluid ui show-modal button" data-modal="#sidebar-delete-issue">
+        {{svg "octicon-trash"}}
+        {{ctx.Locale.Tr "repo.issues.delete"}}
+    </button>
+    <div class="ui g-modal-confirm modal" id="sidebar-delete-issue">
+        <div class="header">
+            {{if .Issue.IsPull}}
+                {{ctx.Locale.Tr "repo.pulls.delete.title"}}
+            {{else}}
+                {{ctx.Locale.Tr "repo.issues.delete.title"}}
+            {{end}}
         </div>
-    {{end}}
-
-    {{if and .Issue.IsPull .IsIssuePoster (not .Issue.IsClosed) .Issue.PullRequest.HeadRepo}}
-        <!-- {{if and (not (eq .Issue.PullRequest.HeadRepo.FullName .Issue.PullRequest.BaseRepo.FullName)) .CanWriteToHeadRepo}} -->
-            <div class="divider"></div>
-            <div class="inline field">
-                <div class="ui checkbox loading-icon-2px" id="allow-edits-from-maintainers"
-                        data-url="{{.Issue.Link}}"
-                        data-tooltip-content="{{ctx.Locale.Tr "repo.pulls.allow_edits_from_maintainers_desc"}}"
-                        data-prompt-error="{{ctx.Locale.Tr "repo.pulls.allow_edits_from_maintainers_err"}}"
-                    >
-                    <label><strong>{{ctx.Locale.Tr "repo.pulls.allow_edits_from_maintainers"}}</strong></label>
-                    <input type="checkbox" {{if .Issue.PullRequest.AllowMaintainerEdit}}checked{{end}}>
-                </div>
-            </div>
-        <!-- {{end}} -->
-    {{end}}
+        <div class="content">
+            <p>
+                {{if .Issue.IsPull}}
+                    {{ctx.Locale.Tr "repo.pulls.delete.text"}}
+                {{else}}
+                    {{ctx.Locale.Tr "repo.issues.delete.text"}}
+                {{end}}
+            </p>
+        </div>
+        <form action="{{.Issue.Link}}/delete" method="post">
+            {{.CsrfTokenHtml}}
+            {{template "base/modal_actions_confirm" .}}
+        </form>
+    </div>
 </div>

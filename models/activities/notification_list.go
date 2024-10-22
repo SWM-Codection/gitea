@@ -6,6 +6,7 @@ package activities
 import (
 	"context"
 
+	discussion_client "code.gitea.io/gitea/client/discussion"
 	"code.gitea.io/gitea/models/db"
 	issues_model "code.gitea.io/gitea/models/issues"
 	access_model "code.gitea.io/gitea/models/perm/access"
@@ -25,6 +26,7 @@ type FindNotificationOptions struct {
 	UserID            int64
 	RepoID            int64
 	IssueID           int64
+	discussionID      int64
 	Status            []NotificationStatus
 	Source            []NotificationSource
 	UpdatedAfterUnix  int64
@@ -327,6 +329,20 @@ func (nl NotificationList) LoadIssues(ctx context.Context) ([]int, error) {
 	return failures, nil
 }
 
+func (nl NotificationList) LoadDiscussion(ctx context.Context) {
+	for _, notification := range nl {
+		if notification.Discussion == nil {
+			if notification.DiscussionID != 0 {
+				discussion, err := discussion_client.GetDiscussion(notification.DiscussionID)
+				if err != nil {
+					continue
+				}
+				notification.Discussion = discussion
+			}
+		}
+	}
+}
+
 // Without returns the notification list without the failures
 func (nl NotificationList) Without(failures []int) NotificationList {
 	if len(failures) == 0 {
@@ -495,5 +511,72 @@ func (nl NotificationList) LoadIssuePullRequests(ctx context.Context) error {
 		}
 	}
 
+	return nil
+}
+
+func CreateOrUpdateDiscussionNotifications(ctx context.Context, discussionID, commentID, notificationAuthorID, receiverID int64) error {
+	ctx, committer, err := db.TxContext(ctx)
+	if err != nil {
+		return err
+	}
+	defer committer.Close()
+
+	if err := createOrUpdateDiscussionNotifications(ctx, discussionID, commentID, notificationAuthorID, receiverID); err != nil {
+		return err
+	}
+	return committer.Commit()
+}
+
+func createOrUpdateDiscussionNotifications(ctx context.Context, discussionID, commentID, notificationAuthorID, receiverID int64) error {
+	var toNotify container.Set[int64]
+
+	notifications, err := db.Find[Notification](ctx, FindNotificationOptions{
+		discussionID: discussionID,
+	})
+	if err != nil {
+		return err
+	}
+
+	discussionResp, err := discussion_client.GetDiscussion(discussionID)
+	if err != nil {
+		return err
+	}
+
+	if receiverID > 0 {
+		toNotify = make(container.Set[int64], 1)
+		toNotify.Add(receiverID)
+	} else {
+		toNotify = make(container.Set[int64], 32)
+		repoWatches, err := repo_model.GetRepoWatchersIDs(ctx, discussionResp.RepoId)
+		if err != nil {
+			return err
+		}
+		toNotify.AddMultiple(repoWatches...)
+
+		// for now participants logic is not implemented well, so we will just add all comment author ;(
+		discussionContents, _ := discussion_client.GetDiscussionContents(discussionID)
+		for _, comment := range discussionContents.GlobalComments {
+			toNotify.Add(comment.PosterId)
+		}
+		toNotify.Remove(discussionResp.PosterId)
+		// TODO: remove unwatchers
+	}
+
+	for userId := range toNotify {
+		_, err := user_model.GetUserByID(ctx, userId)
+		if err != nil {
+			continue
+		}
+		// TODO: check user is bot
+		if DiscussionNotificationExists(notifications, discussionID, userId) {
+			if err = updateDiscussionNotification(ctx, userId, discussionResp.Id, commentID, notificationAuthorID); err != nil {
+				return err
+			}
+		} else {
+			if err = createDiscussionNotification(ctx, userId, discussionResp, commentID, notificationAuthorID); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

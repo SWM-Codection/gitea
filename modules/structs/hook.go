@@ -365,6 +365,22 @@ func (p *IssuePayload) JSONPayload() ([]byte, error) {
 	return json.MarshalIndent(p, "", "  ")
 }
 
+type DiscussionPayload struct {
+	Repository *Repository `json:"repository"`
+	Sender     *User       `json:"sender"`
+
+	// FIXME: For now because of cyclic reference, I separated each required fields one by one
+	// But after refactoring this field must be abstracted by one Discussion struct
+	DiscussionIndex           int64  `json:"discussion_index"`
+	DiscussionTitle           string `json:"discussion_title"`
+	DiscussionCreateTimestamp int64  `json:"discussion_create_timestamp"`
+	DiscussionLink            string `json:"discussion_link"`
+}
+
+func (p *DiscussionPayload) JSONPayload() ([]byte, error) {
+	return json.MarshalIndent(p, "", " ")
+}
+
 // ChangesFromPayload FIXME
 type ChangesFromPayload struct {
 	From string `json:"from"`

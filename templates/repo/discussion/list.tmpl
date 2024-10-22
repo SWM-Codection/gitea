@@ -4,11 +4,11 @@
 	<div class="ui container">
 	{{template "base/alert" .}}
 
-	{{if .PinnedIssues}}
+	{{if .PinnedDiscussions}}
 		<div id="issue-pins" {{if .IsRepoAdmin}}data-is-repo-admin{{end}}>
-			{{range .PinnedIssues}}
-				<div class="issue-card gt-word-break {{if $.IsRepoAdmin}}tw-cursor-grab{{end}}" data-move-url="{{$.Link}}/move_pin" data-issue-id="{{.ID}}">
-					{{template "repo/issue/card" (dict "Issue" . "Page" $ "isPinnedIssueCard" true)}}
+			{{range .PinnedDiscussions}}
+				<div class="issue-card gt-word-break {{if $.IsRepoAdmin}}tw-cursor-grab{{end}}" data-move-url="{{$.Link}}/move_pin" data-issue-id="{{.Id}}">
+					{{template "repo/discussion/card" (dict "Discussion" . "Page" $ "isPinnedIssueCard" true "RepoLink" $.RepoLink)}}
 				</div>
 			{{end}}
 		</div>

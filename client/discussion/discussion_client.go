@@ -358,18 +358,87 @@ func GetDiscussionCommentReaction(commentId int64) (*model.ReactionList, error) 
 	resp, err := client.Request().SetQueryParam("commentId", strconv.FormatInt(commentId, 10)).
 		Get("/discussion/reaction")
 	if err != nil {
-		return nil, fmt.Errorf("failed to make GET /discussion/reaction request: %w", err)
 		log.Error("Failed to make GET /discussion/reaction request: %v", err)
+		return nil, fmt.Errorf("failed to make GET /discussion/reaction request: %w", err)
+	}
+	var result model.ReactionList
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response body: %w", err)
+	}
+	return &result, err
+}
+
+func IsNewPinAllowed(repoId int64) (bool, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/max-pin", repoId))
+	if err != nil {
+		return false, err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return false, err
+	}
+	bodyStr := string(resp.Body())
+
+	isAllowed, err := strconv.ParseBool(string(bodyStr))
+	if err != nil {
+		return false, fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	return isAllowed, nil
+}
+
+func ConvertDiscussionPinStatus(discussionId int64) error {
+	resp, err := client.Request().Post(fmt.Sprintf("discussion/%d/pin", discussionId))
+	if err != nil {
+		return err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return fmt.Errorf("failed to convert discussion pin state, got %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+func UnpinDiscussion(discussionId int64) error {
+	resp, err := client.Request().Delete(fmt.Sprintf("discussion/%d/unpin", discussionId))
+	if err != nil {
+		return err
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return fmt.Errorf("failed to unpin discussion, got %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+func GetPinnedDiscussions(repoId int64) (*model.DiscussionListResponse, error) {
+	resp, err := client.Request().Get(fmt.Sprintf("/discussion/%d/pin", repoId))
+	if err != nil {
+		return nil, err
 	}
 
 	if err := validateResponse(resp); err != nil {
 		return nil, err
 	}
-
-	var result model.ReactionList
+	var result model.DiscussionListResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w", err)
 	}
-
 	return &result, nil
+}
+
+func MoveDiscussionPin(request *model.MoveDiscussionPinRequest) error {
+	resp, err := client.Request().
+		SetBody(request).
+		Post("discussion/move-pin")
+	if err != nil {
+		return fmt.Errorf("failed to make POST /discussion request: %w", err)
+	}
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+
+	return nil
 }
