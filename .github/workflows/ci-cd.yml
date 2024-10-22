@@ -41,8 +41,8 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: codection-gitea
         run: |
-          docker buildx create --name mpbuilder --bootstrap --use
-          docker buildx build ./ --file ./Dockerfile --platform linux/arm64 --tag $REGISTRY/$REPOSITORY:latest --push
+          sudo docker buildx create --name mpbuilder --bootstrap --use
+          sudo docker buildx build ./ --file ./Dockerfile --platform linux/arm64 --tag $REGISTRY/$REPOSITORY:latest --push
           echo "image=$REGISTRY/$REPOSITORY:latest" >> $GITHUB_OUTPUT
 
       # task definition 다운로드
