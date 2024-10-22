@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: dev-runner
     steps:
 
       - name: checkout
