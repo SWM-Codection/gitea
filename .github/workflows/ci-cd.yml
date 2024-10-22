@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
 
       - name: checkout
@@ -42,7 +42,7 @@ jobs:
           REPOSITORY: codection-gitea
         run: |
           docker buildx create --name mpbuilder --bootstrap --use
-          docker buildx build ./ --file ./Dockerfile --platform linux/arm64,linux/amd64 --tag $REGISTRY/$REPOSITORY:latest --push
+          docker buildx build ./ --file ./Dockerfile --platform linux/arm64 --tag $REGISTRY/$REPOSITORY:latest --push
           echo "image=$REGISTRY/$REPOSITORY:latest" >> $GITHUB_OUTPUT
 
       # task definition 다운로드
