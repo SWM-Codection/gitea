@@ -3,6 +3,7 @@ package discussion
 import (
 	"context"
 	"fmt"
+	"google.golang.org/appengine/log"
 
 	"code.gitea.io/gitea/modules/timeutil"
 
@@ -39,6 +40,11 @@ type CreateDiscussionAiCommentOpt struct {
 	DiscussionId int64
 	Type         string
 	Content      *string
+}
+
+type UpdateDiscussionAiCommentOpt struct {
+	Id      int64
+	Content *string
 }
 
 type DeleteDiscussionAiCommentOpt struct {
@@ -144,4 +150,30 @@ func GetAiSampleCodeById(ctx context.Context, id int64) (*AiSampleCode, error) {
 	}
 
 	return sampleCode, nil
+}
+
+func UpdateAiSampleCode(ctx context.Context, opts *UpdateDiscussionAiCommentOpt) error {
+	ctx, committer, err := db.TxContext(ctx)
+
+	if err != nil {
+		log.Errorf(ctx, "failed to update AI sample code: %v", err)
+		return err
+	}
+
+	defer committer.Close()
+
+	e := db.GetEngine(ctx)
+
+	aiSampleCode := &AiSampleCode{
+		Content: *opts.Content,
+	}
+
+	_, err = e.Table("ai_sample_code").Where("id=?", opts.Id).Update(aiSampleCode)
+
+	if err != nil {
+		log.Errorf(ctx, "failed to update AI sample code: %v", err)
+		return err
+	}
+
+	return committer.Commit()
 }
