@@ -44,19 +44,7 @@ func fetchCodeCommentsByReview(ctx context.Context, issue *Issue, currentUser *u
 		}
 		pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], comment)
 
-		//aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
-		//if err != nil {
-		//	return nil, err
-		//}
-		//
-		//if aiSampleCode != nil {
-		//	aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//
-		//	pathToLineToComment[comment.TreePath][comment.Line] = append(pathToLineToComment[comment.TreePath][comment.Line], aiComment)
-		//}
+	
 	}
 
 	return pathToLineToComment, nil
@@ -158,19 +146,6 @@ func FetchCodeCommentsByLine(ctx context.Context, issue *Issue, currentUser *use
 	for _, comment := range codeComments {
 		allComments = append(allComments, comment)
 
-		//aiSampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, comment.ID, "pull")
-		//if err != nil {
-		//    return nil, err
-		//}
-
-		//if aiSampleCode != nil {
-		//    //aiComment, err := convertAiSampleCodeToComment(ctx, aiSampleCode, issue, comment)
-		//    if err != nil {
-		//        return nil, err
-		//    }
-		//
-		//    allComments = append(allComments, aiComment)
-		//}
 	}
 
 	return allComments, nil
@@ -294,42 +269,3 @@ func MergeAIComments(allComments, aiComments CodeComments) {
 		}
 	}
 }
-
-//
-//func convertAiSampleCodeToComment(ctx context.Context, aiSampleCode *discussion_model.AiSampleCode, issue *Issue, target_comment *Comment) (*Comment, error) {
-//	comment := &Comment{
-//		ID:          -target_comment.ID,
-//		PosterID:    -3,
-//		IssueID:     aiSampleCode.TargetCommentId,
-//		Content:     aiSampleCode.Content,
-//		CreatedUnix: target_comment.CreatedUnix+1,
-//		UpdatedUnix: target_comment.UpdatedUnix+1,
-//		CommitSHA:   target_comment.CommitSHA,
-//		Line:        target_comment.Line,
-//	}
-//
-//	if err := comment.LoadPoster(ctx); err != nil {
-//		return nil, err
-//	}
-//
-//	if err := comment.LoadAttachments(ctx); err != nil {
-//		return nil, err
-//	}
-//
-//	if err := comment.LoadReactions(ctx, issue.Repo); err != nil {
-//		return nil, err
-//	}
-//
-//	var err error
-//	if comment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
-//		Ctx: ctx,
-//		Links: markup.Links{
-//			Base: issue.Repo.Link(),
-//		},
-//		Metas: issue.Repo.ComposeMetas(ctx),
-//	}, aiSampleCode.Content); err != nil {
-//		return nil, err
-//	}
-//
-//	return comment, nil
-//}

@@ -3232,17 +3232,7 @@ func DeleteComment(ctx *context.Context) {
 	targetId := ctx.ParamsInt64(":id")
 
 	if targetId < 0 {
-		// sampleComment, err := discussion_model.GetAiSampleCodesByCodeId(ctx, -targetId, "pull")
-		// if err != nil {
-		// 	ctx.NotFoundOrServerError("GetCommentByID", issues_model.IsErrCommentNotExist, err)
-		// 	return
-		// }
-		// err = discussion_model.DeleteAiSampleCodeByID(ctx, sampleComment.I)
-		// if err != nil {
-		// 	ctx.ServerError("DeleteComment", err)
-		// 	return
-		// }
-		// ctx.Status(http.StatusOK)
+
 		return
 	} else if targetId == 0 {
 		dataPath := ctx.Req.URL.Query().Get("path")
