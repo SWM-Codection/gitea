@@ -80,12 +80,9 @@ export default {
         endLine: this.endLine,
       };
 
-      const requestURL = new URL(`${this.repoLink}/discussions/comment`);
-      Object.entries(queryParams).forEach(([key, value]) => {
-        requestURL.searchParams.set(key, value);
-      });
-
-      const commentForm = await fetchCommentForm(requestURL);
+      const queries = Object.entries(queryParams).map(([key, value]) => `${key}=${value}`).join('&'); 
+      const requestURL = `${this.repoLink}/discussions/comment?${queries}`;
+      const commentForm = await fetchCommentForm(requestURL)  
 
       initDiscussionFileCommentForm(commentForm);
 
@@ -103,11 +100,8 @@ export default {
         endLine: this.endLine,
       };
 
-      const requestURL = new URL('/ai/discussion/form', window.location.origin);
-      Object.entries(queryParams).forEach(([key, value]) => {
-        requestURL.searchParams.set(key, value);
-      });
-
+      const queries = Object.entries(queryParams).map(([key, value]) => `${key}=${value}`).join('&'); 
+      const requestURL = `${this.repoLink}/discussions/comment?${queries}`;
       const commentForm = await fetchCommentForm(requestURL);
 
       const modalShowBtn = commentForm.querySelector('.show-ai-code-modal')
