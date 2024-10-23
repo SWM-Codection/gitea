@@ -379,7 +379,7 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 	for _, groupComments := range commentGroups {
 
 		sort.Slice(groupComments, func(i, j int) bool {
-			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
+			return groupComments[i].CreatedUnix < groupComments[j].CreatedUnix
 		})
 		ctx.Data["RepoLink"] = ctx.Repo.RepoLink
 		ctx.Data["comments"] = groupComments

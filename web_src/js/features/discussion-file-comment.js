@@ -114,7 +114,7 @@ function initDiscussionCommentUpdate(comment) {
     updateForm.querySelector(".combo-markdown-editor"),
   );
 
-  updateButton.addEventListener("click", (event) => {
+  updateButton?.addEventListener("click", (event) => {
     event.preventDefault();
 
     showElem(updateForm);
@@ -130,14 +130,14 @@ function initDiscussionCommentUpdate(comment) {
     comboMarkdownEditor.focus();
   });
 
-  cancelButton.addEventListener("click", (event) => {
+  cancelButton?.addEventListener("click", (event) => {
     event.preventDefault();
 
     showElem(renderContent);
     hideElem(updateForm);
   });
 
-  updateForm.addEventListener("submit", async (event) => {
+  updateForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const updateForm = event.target;
 

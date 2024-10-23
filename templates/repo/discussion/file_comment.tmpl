@@ -28,8 +28,11 @@
 						<a class="item emoji discussion-comment-reaction-button" data-url="{{$.root.RepoLink}}/discussions/{{.DiscussionId}}/comment/{{.ID}}/reactions" data-tooltip-content="eyes" data-reaction-content="eyes" id="_aria_auto_id_36" role="menuitem" tabindex="-1">👀</a>
 					</div>
 				</div>
+				{{if .Poster.ID < 0 }}
 				{{template "repo/discussion/context_menu" dict "ctxData" $.root "item" . "delete" true "issue" false "diff" false "IsCommentPoster" (and $.root.IsSigned (eq $.root.SignedUserID .Poster.ID))}}
-
+				{{else}}
+				{{template "repo/discussion/context_menu" dict "ctxData" $.root "item" . "delete" true "issue" false "diff" false "IsCommentPoster" (and $.root.IsSigned (eq $.root.SignedUserID .Poster.ID))}}
+				{{end}}
 
 			</div>
 		</div>
