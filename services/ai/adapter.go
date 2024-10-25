@@ -20,7 +20,7 @@ var _ SampleCodeDbAdapter = &SampleCodeDbAdapterImpl{}
 
 func (is *SampleCodeDbAdapterImpl) GetAiSampleCodesByCommentID(ctx *context.Context, commentID int64, sampleType string) (*api.AiSampleCodeResponse, error) {
 
-	sampleCode, err := discussion_model.GetAiSampleCodeByCommentID(ctx, commentID, sampleType)
+	sampleCodes, err := discussion_model.GetAiSampleCodesByCodeId(ctx, commentID, sampleType)
 
 	if err != nil {
 		return nil, err
@@ -30,16 +30,19 @@ func (is *SampleCodeDbAdapterImpl) GetAiSampleCodesByCommentID(ctx *context.Cont
 		CommentID: cast.ToString(commentID),
 	}
 
-	if sampleCode != nil {
-		response.SampleCodeContent = &api.AiSampleCodeContent{
-			ID:      cast.ToString(sampleCode.Id),
-			Content: &sampleCode.Content,
+	for _, sampleCode := range sampleCodes {
+
+		if sampleCode != nil {
+			response.SampleCodeContent = &api.AiSampleCodeContent{
+				ID:      cast.ToString(sampleCode.Id),
+				Content: &sampleCode.Content,
+			}
 		}
+
 	}
 
 	return &response, nil
 }
-
 
 func (is *SampleCodeDbAdapterImpl) InsertAiSampleCode(ctx *context.Context, opts *discussion_model.CreateDiscussionAiCommentOpt) (*discussion_model.AiSampleCode, error) {
 	return discussion_model.CreateAiSampleCode(ctx, opts)

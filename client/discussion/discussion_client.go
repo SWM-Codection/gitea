@@ -147,6 +147,25 @@ func GetDiscussionComment(discussionCommentId int64) (*model.DiscussionCommentRe
 	return &result, nil
 }
 
+func GetFilePathByCodeId(codeId int64) (*string, error) {
+
+	resp, err := client.Request().
+		SetQueryParam("codeId", strconv.FormatInt(codeId, 10)).
+		Get("/discussion/code")
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to make GET /discussion/code request: %w", err)
+	}
+
+	if err := validateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	result := string(resp.Body())
+
+	return &result, nil
+}
+
 func GetDiscussionCommentsByCodeId(codeId int64) ([]*model.DiscussionCommentResponse, error) {
 	resp, err := client.Request().Get(fmt.Sprintf("/discussion/comments/%d", codeId))
 

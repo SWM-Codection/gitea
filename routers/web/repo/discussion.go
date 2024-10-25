@@ -13,8 +13,6 @@ import (
 
 	stdCtx "context"
 
-	api "code.gitea.io/gitea/modules/structs"
-
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	"code.gitea.io/gitea/client/discussion/model"
 	issues_model "code.gitea.io/gitea/models/issues"
@@ -28,7 +26,7 @@ import (
 	"code.gitea.io/gitea/modules/markup/markdown"
 	"code.gitea.io/gitea/modules/setting"
 	"code.gitea.io/gitea/modules/structs"
-	"code.gitea.io/gitea/modules/timeutil"
+	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/util"
 	"code.gitea.io/gitea/modules/web"
 	"code.gitea.io/gitea/services/context"
@@ -46,7 +44,26 @@ const (
 	tplNewDiscussionFileComment base.TplName = "repo/discussion/new_file_comment"
 	tplDiscussionFileComment    base.TplName = "repo/discussion/file_comment_holder"
 	tplDiscussionReactions      base.TplName = "repo/discussion/reactions"
+	tplAiCommentForm            base.TplName = "repo/discussion/new_ai_comment"
 )
+
+func GetAiDiscussionForm(ctx *context.Context) {
+
+	queryParams := ctx.Req.URL.Query()
+
+	discussionId := queryParams.Get("discussionId")
+	codeId := queryParams.Get("codeId")
+	startLine := queryParams.Get("startLine")
+	endLine := queryParams.Get("endLine")
+
+	ctx.Data["DiscussionId"] = discussionId
+	ctx.Data["CodeId"] = codeId
+	ctx.Data["StartLine"] = startLine
+	ctx.Data["EndLine"] = endLine
+	ctx.PageData["RepoLink"] = ctx.Repo.RepoLink
+	ctx.Data["Repository"] = ctx.Repo.Repository
+	ctx.HTML(http.StatusOK, tplAiCommentForm)
+}
 
 func NewDiscussion(ctx *context.Context) {
 	ctx.Data["Title"] = ctx.Tr("repo.discussion.new")
@@ -267,24 +284,6 @@ func NewDiscussionCommentPost(ctx *context.Context) {
 
 }
 
-type DiscussionComment struct {
-	ID              int64
-	DiscussionId    int64
-	Poster          *user_model.User
-	GroupId         int64
-	Content         string
-	StartLine       int64
-	CodeId          int64
-	EndLine         int64
-	Reactions       model.ReactionList
-	RenderedContent template.HTML
-	CreatedUnix     timeutil.TimeStamp
-}
-
-func (c *DiscussionComment) HashTag() string {
-	return fmt.Sprintf("discussioncomment-%d", c.ID)
-}
-
 // TODO: 추후 NewDiscussionPost 메소드와 통합할지 고려해보기
 func RenderNewDiscussionComment(ctx *context.Context) {
 
@@ -304,9 +303,9 @@ func RenderNewDiscussionComment(ctx *context.Context) {
 	}
 
 	// TODO: 답글 기능 고려해서 넣기
-	comments := make([]*DiscussionComment, 0, 1)
+	comments := make([]*discussion_service.DiscussionComment, 0, 1)
 
-	newComment := &DiscussionComment{
+	newComment := &discussion_service.DiscussionComment{
 		ID:           comment.Id,
 		StartLine:    comment.StartLine,
 		DiscussionId: comment.DiscussionId,
@@ -346,67 +345,31 @@ type DiscussionFileCommentsResponse struct {
 
 func groupDiscussionFileCommentsByGroupId(
 	ctx *context.Context,
-	commentsResp []*model.DiscussionCommentResponse) (map[int64][]*DiscussionComment, error) {
+	commentsResp []*discussion_service.DiscussionComment) (map[int64][]*discussion_service.DiscussionComment, error) {
 
-	comments := make(map[int64][]*DiscussionComment)
+	comments := make(map[int64][]*discussion_service.DiscussionComment)
 
 	for _, comment := range commentsResp {
-		poster, err := user_model.GetUserByID(ctx, comment.PosterId)
-
-		if err != nil {
-			return nil, err
-		}
-
-		discussionComment := DiscussionComment{
-			ID:           comment.Id,
-			StartLine:    comment.StartLine,
-			DiscussionId: comment.DiscussionId,
-			CodeId:       comment.CodeId,
-			GroupId:      comment.GroupId,
-			EndLine:      comment.EndLine,
-			CreatedUnix:  comment.CreatedUnix,
-			Reactions:    comment.Reactions,
-			Poster:       poster,
-			Content:      comment.Content,
-		}
-
-		discussionComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
+		var err error
+		comment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
 			Ctx: ctx,
 			Links: markup.Links{
 				Base: ctx.Repo.RepoLink,
 			},
-		}, discussionComment.Content)
+		}, comment.Content)
 
 		if err != nil {
 			return nil, err
 		}
 
-		comments[discussionComment.GroupId] = append(comments[discussionComment.GroupId], &discussionComment)
+		comments[comment.GroupId] = append(comments[comment.GroupId], comment)
 
-		sampleCode, err := discussion.GetAiSampleCodeByCommentID(ctx, comment.Id, "discussion")
-		if err != nil {
-			return nil, err
-		}
-		if sampleCode == nil {
-			continue
-		}
-
-		aiComment, err := convertAiSampleCodeToDiscussionComment(ctx, sampleCode, comment)
-
-		aiComment.RenderedContent, err = markdown.RenderString(&markup.RenderContext{
-			Ctx: ctx,
-			Links: markup.Links{
-				Base: ctx.Repo.RepoLink,
-			},
-		}, aiComment.Content)
-
-		comments[aiComment.GroupId] = append(comments[aiComment.GroupId], aiComment)
 	}
 
 	return comments, nil
 }
 
-func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64][]*DiscussionComment) ([]*DiscussionFileCommentsResponse, error) {
+func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64][]*discussion_service.DiscussionComment) ([]*DiscussionFileCommentsResponse, error) {
 
 	resp := make([]*DiscussionFileCommentsResponse, 0, len(commentGroups))
 
@@ -440,13 +403,13 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 func DiscussionComments(ctx *context.Context) {
 	codeId := ctx.ParamsInt64("codeId")
 
-	commentsResp, err := discussion_client.GetDiscussionCommentsByCodeId(codeId)
+	comments, err := discussion_service.GetDiscussionCommentsByCodeId(ctx, codeId)
 
 	if err != nil {
 		ctx.JSONError(err)
 	}
 
-	commentGroups, err := groupDiscussionFileCommentsByGroupId(ctx, commentsResp)
+	commentGroups, err := groupDiscussionFileCommentsByGroupId(ctx, comments)
 
 	if err != nil {
 		ctx.JSONError(err)
@@ -462,8 +425,8 @@ func DiscussionComments(ctx *context.Context) {
 
 }
 
-// RenderNewCodeCommentForm will render the form for creating a new review comment
 func RenderNewDiscussionFileCommentForm(ctx *context.Context) {
+	// RenderNewCodeCommentForm will render the form for creating a new review comment
 
 	queryParams := ctx.Req.URL.Query()
 
@@ -579,11 +542,20 @@ func DeleteDiscussionFileComment(ctx *context.Context) {
 
 	discussionCommentId := ctx.ParamsInt64(":discussionId")
 
-	err := discussion_service.DeleteDiscussionComment(ctx, discussionCommentId, posterId)
+	if discussionCommentId < 0 {
+		err := discussion.DeleteAiSampleCodeByID(ctx, -discussionCommentId)
 
-	if err != nil {
-		log.Error(err.Error())
-		ctx.JSONError(err.Error())
+		if err != nil {
+			ctx.JSONError(err.Error())
+			return
+		}
+	} else {
+		err := discussion_service.DeleteDiscussionComment(ctx, discussionCommentId, posterId)
+
+		if err != nil {
+			ctx.JSONError(err.Error())
+			return
+		}
 	}
 
 	ctx.JSONOK()
@@ -753,18 +725,16 @@ func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
 
 	form := web.GetForm(ctx).(*structs.CreateAiSampleCodesForm)
 
-	commentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
-	if err != nil {
-		ctx.ServerError("잘못된 CommentId 형식", err)
-	}
-
 	aiSampleCode, err := discussion.CreateAiSampleCode(
 		ctx,
 		&discussion.CreateDiscussionAiCommentOpt{
-			Type:            form.Type,
-			TargetCommentId: commentId,
-			Content:         &form.SampleCodeContent,
-			GenearaterId:    ctx.Doer.ID,
+			Type:         form.Type,
+			DiscussionId: form.DiscussionId,
+			StartLine:    form.StartLine,
+			EndLine:      form.EndLine,
+			CodeId:       form.CodeId,
+			Content:      &form.SampleCodeContent,
+			GenearaterId: ctx.Doer.ID,
 		})
 
 	if err != nil {
@@ -772,16 +742,10 @@ func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
 		return
 	}
 
-	comments := make([]*DiscussionComment, 0, 1)
+	comments := make([]*discussion_service.DiscussionComment, 0, 1)
 	// TODO converAiSampleCodeToDiscussionCommentFormat
-	comment, err := discussion_client.GetDiscussionComment(aiSampleCode.TargetCommentId)
 
-	if err != nil {
-		ctx.ServerError("디스커션 코멘트 가져오기 실패: %v", err)
-		return
-	}
-
-	newComment, err := convertAiSampleCodeToDiscussionComment(ctx, aiSampleCode, comment)
+	newComment, err := discussion_service.ConvertAiSampleCodeToDiscussionComment(ctx, aiSampleCode)
 	if err != nil {
 		ctx.ServerError(" ai 샘플코드를 디스커션 코멘트로 전환하는 과정에서 문제가 발생", err)
 		return
@@ -802,30 +766,6 @@ func CreateAiSampleCodeForDiscussion(ctx *context.Context) {
 	ctx.Data["DiscussionId"] = newComment.DiscussionId
 	ctx.Data["comments"] = comments
 	ctx.HTML(http.StatusOK, tplDiscussionFileComment)
-}
-
-func convertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode, comment *model.DiscussionCommentResponse) (*DiscussionComment, error) {
-
-	poster, err := user_model.GetPossibleUserByID(ctx, -3)
-
-	if err != nil {
-		return nil, err
-	}
-
-	newComment := &DiscussionComment{
-		ID:           -comment.Id,
-		StartLine:    comment.StartLine,
-		DiscussionId: comment.DiscussionId,
-		GroupId:      comment.GroupId,
-		EndLine:      comment.EndLine,
-		CodeId:       comment.CodeId,
-		CreatedUnix:  comment.CreatedUnix - 1,
-		Reactions:    nil, // TODO: 뱃지 형식으로 변경하기
-		Poster:       poster,
-		Content:      sampleCode.Content,
-	}
-
-	return newComment, err
 }
 
 func UpdateDiscussionAssignee(ctx *context.Context) {
