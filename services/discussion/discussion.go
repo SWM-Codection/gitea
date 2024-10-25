@@ -199,7 +199,7 @@ func ModifyDiscussionComment(ctx *context.Context, form *forms.ModifyDiscussionC
 
 func ConvertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode) (*DiscussionComment, error) {
 
-	aiPoster, err := user_model.GetPossibleUserByID(ctx, -3)
+	aiPoster, err := user_model.GetPossibleUserByID(ctx, user.CodectionUserId)
 
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (c *DiscussionComment) HashTag() string {
 }
 
 func (c *DiscussionComment) IsAiSampleCode() bool {
-	return c.Poster.ID == -3
+	return c.Poster.ID == user.CodectionUserId
 }
 
 func GetPinnedDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, error) {
