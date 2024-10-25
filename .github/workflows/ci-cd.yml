@@ -41,6 +41,7 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: codection-gitea
         run: |
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $REGISTRY/$REPOSITORY
           sudo docker buildx build ./ --file ./Dockerfile --platform linux/arm64 --tag $REGISTRY/$REPOSITORY:latest --push
           echo "image=$REGISTRY/$REPOSITORY:latest" >> $GITHUB_OUTPUT
 
@@ -66,3 +67,4 @@ jobs:
           service: ${{ env.ECS_SERVICE_NAME }}
           cluster: ${{ env.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
+
