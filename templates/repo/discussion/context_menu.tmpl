@@ -3,8 +3,8 @@
 		{{svg "octicon-kebab-horizontal"}}
 	</a>
 	<div class="menu">
-        {{$referenceUrl := ""}}
-		<div class="item context js-aria-clickable" data-clipboard-text-type="url" data-clipboard-text="{{$referenceUrl}}">{{ctx.Locale.Tr "repo.issues.context.copy_link"}}</div>
+        {{$referenceUrl := (printf "%s/discussions/%d/files#%s" $.ctxData.RepoLink .item.DiscussionId .item.HashTag) }}
+		<div class="item context discussion-quote-comment js-aria-clickable" data-clipboard-text-type="url" data-clipboard-text="{{$referenceUrl}}">{{ctx.Locale.Tr "repo.issues.context.copy_link"}}</div>
 		{{if .ctxData.IsSigned}}
 			{{$needDivider := false}}
 			{{if not .ctxData.Repository.IsArchived}}
@@ -17,7 +17,6 @@
 					{{if .delete}}
 						<div class="item context js-aria-clickable discussion-delete-comment" data-comment-id={{.item.HashTag}} data-url="{{.ctxData.RepoLink}}/discussions/{{.item.ID}}/comment" data-locale="{{ctx.Locale.Tr "repo.issues.delete_comment_confirm"}}">{{ctx.Locale.Tr "repo.issues.context.delete"}}</div>
 					{{end}}
-					<div class="item context js-aria-clickable show-ai-code-modal" data-comment-id="{{ .item.HashTag }}">{{ctx.Locale.Tr "repo.issues.context.sample"}}</div>
 				{{end}}
 			{{end}}
 			<!-- $canUserBlock := call .ctxData.CanBlockUser .ctxData.SignedUser .item.Poster -->

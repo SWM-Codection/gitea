@@ -38,7 +38,7 @@ import {
 import { initAiSampleCodeModal } from "../features/repo-ai-samplecode.js";
 import { initDiscussionCommentReaction } from "../features/discussion-general-comment.js";
 import DiscussionFileCommentOption from "./DiscussionFileCommentOption.vue";
-import { createApp, h } from 'vue';
+import { createApp, h } from "vue";
 const { pageData } = window.config;
 
 export default {
@@ -341,8 +341,6 @@ export default {
         repoLink: this.repoLink,
       }).mount(instanceRoot);
     },
-  
-
 
     async fetchDiscussionComments() {
       try {

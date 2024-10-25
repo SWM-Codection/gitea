@@ -199,7 +199,7 @@ func ModifyDiscussionComment(ctx *context.Context, form *forms.ModifyDiscussionC
 
 func ConvertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode) (*DiscussionComment, error) {
 
-	poster, err := user_model.GetPossibleUserByID(ctx, -3)
+	aiPoster, err := user_model.GetPossibleUserByID(ctx, -3)
 
 	if err != nil {
 		return nil, err
@@ -214,8 +214,9 @@ func ConvertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *di
 		CodeId:       sampleCode.CodeId,
 		CreatedUnix:  sampleCode.CreatedUnix,
 		Reactions:    nil, // TODO: 뱃지 형식으로 변경하기
-		Poster:       poster,
+		Poster:       aiPoster,
 		Content:      sampleCode.Content,
+		PosterId:     sampleCode.GenearaterId,
 	}
 
 	return newComment, err
@@ -238,6 +239,10 @@ type DiscussionComment struct {
 
 func (c *DiscussionComment) HashTag() string {
 	return fmt.Sprintf("discussioncomment-%d", c.ID)
+}
+
+func (c *DiscussionComment) IsAiSampleCode() bool {
+	return c.Poster.ID == -3
 }
 
 func GetPinnedDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, error) {

@@ -211,11 +211,6 @@ func (is *SampleCodeServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int
 
 func UpdateAiSampleCode(ctx *context.Context, form *forms.ModifyDiscussionCommentForm) error {
 
-	if checkAuth(ctx, form.DiscussionCommentId) {
-		log.Errorf(ctx, "Update discussion comment fail: user not authorized")
-		return fmt.Errorf("User not authorized")
-	}
-
 	err := discussion_model.UpdateAiSampleCode(ctx, &discussion_model.UpdateDiscussionAiCommentOpt{
 		Id:      -form.DiscussionCommentId,
 		Content: &form.Content,
@@ -227,20 +222,4 @@ func UpdateAiSampleCode(ctx *context.Context, form *forms.ModifyDiscussionCommen
 	}
 
 	return nil
-}
-
-func checkAuth(ctx *context.Context, sampleCodeId int64) bool {
-
-	aiSampleCode, err := discussion_model.GetAiSampleCodeById(ctx, sampleCodeId)
-
-	if err != nil {
-		return false
-	}
-
-	if aiSampleCode.GenearaterId != ctx.Doer.ID {
-		return false
-	}
-
-	return true
-
 }

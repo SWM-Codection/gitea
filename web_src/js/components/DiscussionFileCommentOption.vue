@@ -4,8 +4,10 @@
     class="content comment-container"
     style="
       border: 1px solid #d0d7de;
+      width: 100px;
       height: 100px;
       border-radius: 6px;
+      position: absolute;
       display: flex;
       flex-direction: column;
       justify-content: space-around;
