@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/appengine/log"
+
 	"code.gitea.io/gitea/client/discussion"
 	discussion_model "code.gitea.io/gitea/models/discussion"
 	issues_model "code.gitea.io/gitea/models/issues"
@@ -14,6 +16,7 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
+	"code.gitea.io/gitea/services/forms"
 )
 
 type SampleCodeService interface {
@@ -204,4 +207,19 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 func (is *SampleCodeServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64) error {
 
 	return AiSampleCodeDbAdapter.DeleteAiSampleCodeByID(ctx, id)
+}
+
+func UpdateAiSampleCode(ctx *context.Context, form *forms.ModifyDiscussionCommentForm) error {
+
+	err := discussion_model.UpdateAiSampleCode(ctx, &discussion_model.UpdateDiscussionAiCommentOpt{
+		Id:      -form.DiscussionCommentId,
+		Content: &form.Content,
+	})
+
+	if err != nil {
+		log.Errorf(ctx, "Update discussion comment fail: %v", err)
+		return err
+	}
+
+	return nil
 }

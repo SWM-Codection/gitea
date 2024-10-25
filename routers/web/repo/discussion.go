@@ -9,7 +9,10 @@ import (
 	"strings"
 	"time"
 
+	ai_service "code.gitea.io/gitea/services/ai"
+
 	"code.gitea.io/gitea/models/discussion"
+	"gitea.com/go-chi/binding"
 
 	stdCtx "context"
 
@@ -376,7 +379,7 @@ func renderDiscussionFileComments(ctx *context.Context, commentGroups map[int64]
 	for _, groupComments := range commentGroups {
 
 		sort.Slice(groupComments, func(i, j int) bool {
-			return groupComments[i].CreatedUnix > groupComments[j].CreatedUnix
+			return groupComments[i].CreatedUnix < groupComments[j].CreatedUnix
 		})
 		ctx.Data["RepoLink"] = ctx.Repo.RepoLink
 		ctx.Data["comments"] = groupComments
@@ -566,28 +569,22 @@ func ModifyDiscussionFileComment(ctx *context.Context) {
 
 	form := web.GetForm(ctx).(*forms.ModifyDiscussionCommentForm)
 
-	commentScope := util.Iif(
-		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
-		model.CommentScopeLocal,
-		model.CommentScopeGlobal,
-	)
+	formErr := form.Validate(ctx.Req, binding.Errors{})
 
-	posterId := ctx.Doer.ID
-
-	discussionId := ctx.ParamsInt64(":discussionId")
-
-	request := &model.ModifyDiscussionCommentRequest{
-		DiscussionId:        discussionId,             // discussionId 변수는 이미 전달된 것으로 가정
-		DiscussionCommentId: form.DiscussionCommentId, // form에서 넘어온 DiscussionCommentId
-		CodeId:              form.CodeId,              // form에서 넘어온 CodeId (포인터)
-		PosterId:            posterId,                 // posterId는 전달된 값 (별도의 변수로 가정)
-		Scope:               commentScope,             // scope는 전달된 값 (별도의 변수로 가정, CommentScopeEnum 타입)
-		StartLine:           form.StartLine,           // form에서 넘어온 StartLine (포인터)
-		EndLine:             form.EndLine,             // form에서 넘어온 EndLine (포인터)
-		Content:             form.Content,             // form에서 넘어온 Content
+	if formErr.Len() > 0 {
+		log.Error("ModifyDiscussionFileComment: %v", formErr)
+		ctx.JSONErrorf("ModifyDiscussionFileComment: %v", formErr)
 	}
 
-	err := discussion_client.ModifyDiscussionComment(request)
+	var err error
+
+	if form.DiscussionCommentId < 0 {
+		err = ai_service.UpdateAiSampleCode(ctx, form)
+
+	} else {
+		err = discussion_service.ModifyDiscussionComment(ctx, form)
+
+	}
 
 	if err != nil {
 		ctx.ServerError("modify request failed %v", err)
@@ -595,13 +592,13 @@ func ModifyDiscussionFileComment(ctx *context.Context) {
 	}
 
 	var renderedContent template.HTML
-	if request.Content != "" {
+	if form.Content != "" {
 		renderedContent, err = markdown.RenderString(&markup.RenderContext{
 			Ctx: ctx,
 			Links: markup.Links{
 				Base: ctx.Repo.RepoLink,
 			},
-		}, request.Content)
+		}, form.Content)
 		if err != nil {
 			ctx.ServerError("RenderString", err)
 			return

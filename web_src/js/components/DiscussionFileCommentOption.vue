@@ -4,8 +4,10 @@
     class="content comment-container"
     style="
       border: 1px solid #d0d7de;
+      width: 100px;
       height: 100px;
       border-radius: 6px;
+      position: absolute;
       display: flex;
       flex-direction: column;
       justify-content: space-around;
@@ -101,7 +103,7 @@ export default {
       };
 
       const queries = Object.entries(queryParams).map(([key, value]) => `${key}=${value}`).join('&'); 
-      const requestURL = `${this.repoLink}/discussions/comment?${queries}`;
+      const requestURL = `${window.location.origin}/ai/discussion/form`;
       const commentForm = await fetchCommentForm(requestURL);
 
       const modalShowBtn = commentForm.querySelector('.show-ai-code-modal')

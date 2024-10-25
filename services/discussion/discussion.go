@@ -9,9 +9,11 @@ import (
 
 	"code.gitea.io/gitea/modules/highlight"
 	"code.gitea.io/gitea/modules/timeutil"
+	"code.gitea.io/gitea/modules/util"
 
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/services/context"
+	"code.gitea.io/gitea/services/forms"
 
 	discussion_client "code.gitea.io/gitea/client/discussion"
 	"code.gitea.io/gitea/client/discussion/model"
@@ -109,8 +111,6 @@ func highlightContent(content *model.FileContent) error {
 
 func DeleteDiscussionComment(ctx *context.Context, discussionId int64, posterId int64) error {
 
-	
-
 	if err := discussion_client.DeleteDiscussionComment(discussionId, posterId); err != nil {
 		return err
 	}
@@ -165,9 +165,41 @@ func GetDiscussionCommentsByCodeId(ctx *context.Context, codeId int64) ([]*Discu
 	return comments, nil
 }
 
+func ModifyDiscussionComment(ctx *context.Context, form *forms.ModifyDiscussionCommentForm) error {
+
+	commentScope := util.Iif(
+		form.CodeId != nil && form.StartLine != nil && form.EndLine != nil,
+		model.CommentScopeLocal,
+		model.CommentScopeGlobal,
+	)
+
+	posterId := ctx.Doer.ID
+
+	discussionId := ctx.ParamsInt64(":discussionId")
+
+	request := &model.ModifyDiscussionCommentRequest{
+		DiscussionId:        discussionId,
+		DiscussionCommentId: form.DiscussionCommentId,
+		CodeId:              form.CodeId,
+		PosterId:            posterId,
+		Scope:               commentScope,
+		StartLine:           form.StartLine,
+		EndLine:             form.EndLine,
+		Content:             form.Content,
+	}
+
+	err := discussion_client.ModifyDiscussionComment(request)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func ConvertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *discussion.AiSampleCode) (*DiscussionComment, error) {
 
-	poster, err := user_model.GetPossibleUserByID(ctx, -3)
+	aiPoster, err := user_model.GetPossibleUserByID(ctx, user.CodectionUserId)
 
 	if err != nil {
 		return nil, err
@@ -182,8 +214,9 @@ func ConvertAiSampleCodeToDiscussionComment(ctx *context.Context, sampleCode *di
 		CodeId:       sampleCode.CodeId,
 		CreatedUnix:  sampleCode.CreatedUnix,
 		Reactions:    nil, // TODO: 뱃지 형식으로 변경하기
-		Poster:       poster,
+		Poster:       aiPoster,
 		Content:      sampleCode.Content,
+		PosterId:     sampleCode.GenearaterId,
 	}
 
 	return newComment, err
@@ -206,6 +239,10 @@ type DiscussionComment struct {
 
 func (c *DiscussionComment) HashTag() string {
 	return fmt.Sprintf("discussioncomment-%d", c.ID)
+}
+
+func (c *DiscussionComment) IsAiSampleCode() bool {
+	return c.Poster.ID == user.CodectionUserId
 }
 
 func GetPinnedDiscussionList(ctx *context.Context) (*model.DiscussionListResponse, error) {

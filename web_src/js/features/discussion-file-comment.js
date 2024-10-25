@@ -6,6 +6,9 @@ import {
   getComboMarkdownEditor,
   initComboMarkdownEditor,
 } from "./comp/ComboMarkdownEditor.js";
+import { toAbsoluteUrl } from "../utils.js";
+import { showTemporaryTooltip } from "../modules/tippy.js";
+import { clippie } from "clippie";
 
 export function initDiscussionCommentsEventHandler(commentsHolder) {
 
@@ -65,8 +68,39 @@ function initDiscussionFileCommentSelectHighlight(commentHolder) {
 export async function initDiscussionCommentEventHandler(comment) {
   initDiscussionCommentDropDown(comment);
   initReactionDropdown(comment);
+  initQuoteComment(comment);
   initDiscussionCommentDelete(comment);
   initDiscussionCommentUpdate(comment);
+}
+
+async function initQuoteComment(comment) {
+  const {copy_success, copy_error} = window.config.i18n;
+  const QuoteButton = comment.querySelector(".discussion-quote-comment");
+
+  if (!QuoteButton) return;
+
+  QuoteButton.addEventListener("click", async (e) => {
+
+    const target = e.target.closest('[data-clipboard-text], [data-clipboard-target]');
+    if (!target) return;
+  
+    e.preventDefault();
+  
+    let text = target.getAttribute('data-clipboard-text');
+    if (!text) {
+      text = document.querySelector(target.getAttribute('data-clipboard-target'))?.value;
+    }
+  
+    if (text && target.getAttribute('data-clipboard-text-type') === 'url') {
+      text = toAbsoluteUrl(text);
+    }
+  
+    if (text) {
+      const success = await clippie(text);
+      showTemporaryTooltip(target, success ? copy_success : copy_error);
+    }
+  });
+
 }
 
 function initDiscussionCommentDelete(comment) {
@@ -114,7 +148,7 @@ function initDiscussionCommentUpdate(comment) {
     updateForm.querySelector(".combo-markdown-editor"),
   );
 
-  updateButton.addEventListener("click", (event) => {
+  updateButton?.addEventListener("click", (event) => {
     event.preventDefault();
 
     showElem(updateForm);
@@ -130,14 +164,14 @@ function initDiscussionCommentUpdate(comment) {
     comboMarkdownEditor.focus();
   });
 
-  cancelButton.addEventListener("click", (event) => {
+  cancelButton?.addEventListener("click", (event) => {
     event.preventDefault();
 
     showElem(renderContent);
     hideElem(updateForm);
   });
 
-  updateForm.addEventListener("submit", async (event) => {
+  updateForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const updateForm = event.target;
 

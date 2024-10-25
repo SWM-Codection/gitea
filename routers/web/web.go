@@ -864,7 +864,10 @@ func registerRoutes(m *web.Route) {
 		//m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
 		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
 		m.Get("/discussion/form", repo.GetAiDiscussionForm)
-	}, ignSignIn)
+	}, reqSignIn, 
+	// context.RepoAssignment, context.RepoMustNotBeArchived(), reqRepoCodeWriter,
+	)
+
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
@@ -1198,17 +1201,20 @@ func registerRoutes(m *web.Route) {
 				m.Group("/files", func() {
 					m.Get("", repo.ViewDiscussionFiles)
 				})
-			})
-			m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
-			m.Patch("/state/{discussionId}", repo.SetDiscussionClosedState)
-			m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
-			m.Post("/status", repo.UpdateDiscussionStatus)
-			m.Post("/assignee", repo.UpdateDiscussionAssignee)
-			m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
-			m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
-			m.Post("/move_pin", web.Bind(model.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
+			}, ignSignIn)
+
+			m.Group("", func() {
+				m.Get("/comment", repo.RenderNewDiscussionFileCommentForm)
+				m.Patch("/state/{discussionId}", repo.SetDiscussionClosedState)
+				m.Patch("/{discussionId}/deadline", web.Bind(structs.EditDeadlineOption{}), repo.SetDiscussionDeadline)
+				m.Post("/status", repo.UpdateDiscussionStatus)
+				m.Post("/assignee", repo.UpdateDiscussionAssignee)
+				m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
+				m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
+				m.Post("/move_pin", web.Bind(model.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
+			}, reqSignIn, reqRepoCodeWriter)
 		})
-	}, ignSignIn, context.RepoAssignment, context.RequireRepoReaderOr(unit.TypeIssues, unit.TypePullRequests, unit.TypeExternalTracker))
+	}, context.RepoAssignment)
 
 	m.Group("/{username}/{reponame}", func() {
 		m.Group("/{type:issues|pulls}", func() {
@@ -1234,17 +1240,17 @@ func registerRoutes(m *web.Route) {
 			m.Group("/new", func() {
 				m.Combo("").Get(context.RepoRef(), repo.NewDiscussion).
 					Post(web.Bind(forms.CreateDiscussionForm{}), repo.NewDiscussionPost)
-			})
+			}, reqRepoCodeWriter)
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
 				m.Delete("/comment", repo.DeleteDiscussionFileComment)
 				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
 
 				m.Post("/comment/{commentId}/reactions/{action}", web.Bind(forms.ReactionForm{}), repo.ChangeDiscussionCommentReaction)
-			})
+			}, reqRepoCodeWriter)
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
 			m.Get("/comments/{codeId}", repo.DiscussionComments)
-		}, context.RepoMustNotBeArchived(), reqRepoIssueReader)
+		}, reqRepoCodeReader)
 
 		// FIXME: should use different URLs but mostly same logic for comments of issue and pull request.
 		// So they can apply their own enable/disable logic on routers.
