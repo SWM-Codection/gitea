@@ -2,9 +2,10 @@ package ai
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
+
+	"google.golang.org/appengine/log"
 
 	"code.gitea.io/gitea/client/discussion"
 	discussion_model "code.gitea.io/gitea/models/discussion"
@@ -15,7 +16,7 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/services/context"
-	"github.com/spf13/cast"
+	"code.gitea.io/gitea/services/forms"
 )
 
 type SampleCodeService interface {
@@ -44,13 +45,14 @@ func (is *SampleCodeServiceImpl) GetAiSampleCodeByCommentID(ctx *context.Context
 }
 
 func (is *SampleCodeServiceImpl) CreateAiSampleCode(ctx *context.Context, form *api.CreateAiSampleCodesForm) (*discussion_model.AiSampleCode, error) {
-	// TODOC Discussion Comment 무결성 검사
 
 	aiSampleCode, err := AiSampleCodeDbAdapter.InsertAiSampleCode(ctx, &discussion_model.CreateDiscussionAiCommentOpt{
-		TargetCommentId: cast.ToInt64(form.TargetCommentId),
-		GenearaterId:    ctx.Doer.ID,
-		Type:            form.Type,
-		Content:         &form.SampleCodeContent,
+		StartLine:    form.StartLine,
+		EndLine:      form.EndLine,
+		CodeId:       form.CodeId,
+		GenearaterId: ctx.Doer.ID,
+		Type:         form.Type,
+		Content:      &form.SampleCodeContent,
 	})
 
 	if err != nil {
@@ -116,60 +118,39 @@ func getContentForFull(ctx *context.Context, targetCommentId int64, form *api.Ge
 	return &codeContent, &comment.Content, nil
 }
 
-func getContentForDiscussion(ctx *context.Context, targetCommentId int64, form *api.GenerateAiSampleCodesForm) (*string, *string, error) {
-	comment, err := discussion.GetDiscussionComment(targetCommentId)
+func getContentForDiscussion(ctx *context.Context, form *api.GenerateAiSampleCodesForm) (*string, error) {
+	filePath, err := discussion.GetFilePathByCodeId(form.CodeId)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("Comment found error: %v", err)
+		return nil, fmt.Errorf("codeId found error: %v", err)
 	}
 
-	discussion, err := discussion.GetDiscussion(comment.DiscussionId)
+	discussion, err := discussion.GetDiscussion(form.DiscussionId)
+
 	if err != nil {
-		return nil, nil, fmt.Errorf("Discussion found error: %v", err)
+		return nil, fmt.Errorf("Discussion found error: %v", err)
 	}
+
 	repo, err := repo_model.GetRepositoryByID(ctx, discussion.RepoId)
 	if err != nil {
-		return nil, nil, fmt.Errorf("repo found error: %v", err)
+		return nil, fmt.Errorf("repo found error: %v", err)
 	}
 
-	fileContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), discussion.CommitHash, comment.FilePath)
+	fileContent, err := GetFileContentFromCommit(ctx, repo.RepoPath(), discussion.CommitHash, *filePath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to get file content from commit: %v", err)
+		return nil, fmt.Errorf("Failed to get file content from commit: %v", err)
 	}
 
 	lines := strings.Split(fileContent, "\n")
 
-	if comment.StartLine < 1 || comment.StartLine > comment.EndLine {
-		return nil, nil, fmt.Errorf("Invalid start or end line")
-	}
+	codeContent := strings.Join(lines[form.StartLine-1:form.EndLine], "\n")
 
-	codeContent := strings.Join(lines[comment.StartLine-1:comment.EndLine], "\n")
-
-	return &codeContent, &comment.Content, nil
+	return &codeContent, nil
 }
 
 func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, form *api.GenerateAiSampleCodesForm) ([]*GenerateSampleCodeResponse, error) {
-	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid TargetCommentId: %v", err)
-	}
 
-	response, err := AiSampleCodeDbAdapter.GetAiSampleCodesByCommentID(ctx, targetCommentId, form.Type)
-
-	if err != nil || response.SampleCodeContent != nil {
-		return nil, fmt.Errorf("already Ai comment: %v", err)
-	}
-
-	var codeContent, commentContent *string
-
-	if form.Type == "pull" {
-		codeContent, commentContent, err = getContentForFull(ctx, targetCommentId, form)
-
-	} else if form.Type == "discussion" {
-
-		codeContent, commentContent, err = getContentForDiscussion(ctx, targetCommentId, form)
-
-	}
+	codeContent, err := getContentForDiscussion(ctx, form)
 
 	if err != nil {
 		return nil, err
@@ -209,7 +190,7 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 			result.SampleCode = string(highlightedCode)
 
 			resultQueue <- result
-		}(*codeContent, *commentContent)
+		}(*codeContent, form.Content)
 	}
 
 	wg.Wait()
@@ -226,4 +207,19 @@ func (is *SampleCodeServiceImpl) GenerateAiSampleCodes(ctx *context.Context, for
 func (is *SampleCodeServiceImpl) DeleteAiSampleCode(ctx *context.Context, id int64) error {
 
 	return AiSampleCodeDbAdapter.DeleteAiSampleCodeByID(ctx, id)
+}
+
+func UpdateAiSampleCode(ctx *context.Context, form *forms.ModifyDiscussionCommentForm) error {
+
+	err := discussion_model.UpdateAiSampleCode(ctx, &discussion_model.UpdateDiscussionAiCommentOpt{
+		Id:      -form.DiscussionCommentId,
+		Content: &form.Content,
+	})
+
+	if err != nil {
+		log.Errorf(ctx, "Update discussion comment fail: %v", err)
+		return err
+	}
+
+	return nil
 }

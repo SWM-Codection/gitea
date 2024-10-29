@@ -6,6 +6,9 @@ import {
   getComboMarkdownEditor,
   initComboMarkdownEditor,
 } from "./comp/ComboMarkdownEditor.js";
+import { toAbsoluteUrl } from "../utils.js";
+import { showTemporaryTooltip } from "../modules/tippy.js";
+import { clippie } from "clippie";
 
 export function initDiscussionCommentsEventHandler(commentsHolder) {
 
@@ -13,7 +16,7 @@ export function initDiscussionCommentsEventHandler(commentsHolder) {
   const isReply = () => {
     return comments.length == 0
   }
-  
+
   if (isReply()) {
     initDiscussionCommentEventHandler(commentsHolder)
     return
@@ -30,19 +33,19 @@ export function initDiscussionCommentsEventHandler(commentsHolder) {
 
 
 function initDiscussionFileCommentSelectHighlight(commentHolder) {
-  
+
   commentHolder.addEventListener("click", (event) => {
-    event.stopPropagation(); 
+    event.stopPropagation();
 
     removeSelectedLines();
-    
+
     const startLine = parseInt(event.currentTarget.querySelector("input[name='startLine']").value, 10);
     const endLine = parseInt(event.currentTarget.querySelector("input[name='endLine']").value, 10);
     const codeId = event.currentTarget.querySelector("input[name='codeId']").value;
 
     for (let lineNumber = startLine; lineNumber <= endLine; lineNumber++) {
       const lineElement = document.querySelector(`#line-${codeId}-${lineNumber}`);
-      
+
       if (lineElement) {
         lineElement.classList.add("selected-line");
       }
@@ -64,9 +67,40 @@ function initDiscussionFileCommentSelectHighlight(commentHolder) {
 
 export async function initDiscussionCommentEventHandler(comment) {
   initDiscussionCommentDropDown(comment);
-  initReactionDropdown(comment)
+  initReactionDropdown(comment);
+  initQuoteComment(comment);
   initDiscussionCommentDelete(comment);
   initDiscussionCommentUpdate(comment);
+}
+
+async function initQuoteComment(comment) {
+  const {copy_success, copy_error} = window.config.i18n;
+  const QuoteButton = comment.querySelector(".discussion-quote-comment");
+
+  if (!QuoteButton) return;
+
+  QuoteButton.addEventListener("click", async (e) => {
+
+    const target = e.target.closest('[data-clipboard-text], [data-clipboard-target]');
+    if (!target) return;
+  
+    e.preventDefault();
+  
+    let text = target.getAttribute('data-clipboard-text');
+    if (!text) {
+      text = document.querySelector(target.getAttribute('data-clipboard-target'))?.value;
+    }
+  
+    if (text && target.getAttribute('data-clipboard-text-type') === 'url') {
+      text = toAbsoluteUrl(text);
+    }
+  
+    if (text) {
+      const success = await clippie(text);
+      showTemporaryTooltip(target, success ? copy_success : copy_error);
+    }
+  });
+
 }
 
 function initDiscussionCommentDelete(comment) {
@@ -114,7 +148,7 @@ function initDiscussionCommentUpdate(comment) {
     updateForm.querySelector(".combo-markdown-editor"),
   );
 
-  updateButton.addEventListener("click", (event) => {
+  updateButton?.addEventListener("click", (event) => {
     event.preventDefault();
 
     showElem(updateForm);
@@ -130,14 +164,14 @@ function initDiscussionCommentUpdate(comment) {
     comboMarkdownEditor.focus();
   });
 
-  cancelButton.addEventListener("click", (event) => {
+  cancelButton?.addEventListener("click", (event) => {
     event.preventDefault();
 
     showElem(renderContent);
     hideElem(updateForm);
   });
 
-  updateForm.addEventListener("submit", async (event) => {
+  updateForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const updateForm = event.target;
 
@@ -154,7 +188,7 @@ function initDiscussionCommentUpdate(comment) {
         throw Error()
       }
       const data = await response.json();
-  
+
       if (!data.content) {
         renderContent.innerHTML = document.getElementById("no-content").innerHTML;
         rawContent.textContent = "";
@@ -167,7 +201,7 @@ function initDiscussionCommentUpdate(comment) {
         // TODO: 다국어 에러 메세지 지원
       alert("코멘트 수정에 실패했습니다.")
       console.error(e)
-    } 
+    }
 
 
     showElem(renderContent);
@@ -221,7 +255,7 @@ function initDiscussionCommentDropDown(comment) {
 function initDiscussionCommentReply(commentHolder) {
   const replyButton = commentHolder.querySelector(".discussion-file-comment-form-reply")
   if (!replyButton) return;
-  replyButton.addEventListener("click", renderReplyCommentForm) 
+  replyButton.addEventListener("click", renderReplyCommentForm)
 
 }
 

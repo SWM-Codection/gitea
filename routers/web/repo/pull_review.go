@@ -4,11 +4,6 @@
 package repo
 
 import (
-	"errors"
-	"fmt"
-	"net/http"
-	"strconv"
-
 	issues_model "code.gitea.io/gitea/models/issues"
 	pull_model "code.gitea.io/gitea/models/pull"
 	"code.gitea.io/gitea/models/repo"
@@ -18,14 +13,15 @@ import (
 	"code.gitea.io/gitea/modules/json"
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/setting"
-	api "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/gitea/modules/web"
-	ai_service "code.gitea.io/gitea/services/ai"
 	"code.gitea.io/gitea/services/context"
 	"code.gitea.io/gitea/services/context/upload"
 	"code.gitea.io/gitea/services/forms"
 	pull_service "code.gitea.io/gitea/services/pull"
 	user_service "code.gitea.io/gitea/services/user"
+	"errors"
+	"fmt"
+	"net/http"
 )
 
 const (
@@ -170,46 +166,6 @@ func UpdateResolveConversation(ctx *context.Context) {
 	renderConversation(ctx, comment, origin)
 }
 
-func CreateAiSampleCode(ctx *context.Context) {
-	// TODOC swagger 추가
-	// TODOC 공격 우려가 있어서 Create할 비대칭키 방식 암호화가 필요해보임.
-	form := web.GetForm(ctx).(*api.CreateAiSampleCodesForm)
-
-	targetCommentId, err := strconv.ParseInt(form.TargetCommentId, 10, 64)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]any{
-			"message": "Invalid TargetCommentId format",
-		})
-		return
-	}
-
-	_, err = ai_service.AiSampleCodeService.CreateAiSampleCode(ctx, form)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]any{
-			"message": err.Error(),
-		})
-		return
-	}
-
-	targetComment, err := issues_model.GetCommentByID(ctx, targetCommentId)
-	if err != nil {
-		ctx.ServerError("GetIssueByID", err)
-		return
-	}
-
-	if err = targetComment.LoadIssue(ctx); err != nil {
-		ctx.ServerError("comment.LoadIssue", err)
-		return
-	}
-
-	if err = targetComment.Issue.LoadRepo(ctx); err != nil {
-		ctx.ServerError("Issue.LoadRepo", err)
-		return
-	}
-
-	initializeRepo(ctx, targetComment.Issue.Repo.OwnerName, targetComment.Issue.Repo.Name)
-	renderConversation(ctx, targetComment, form.OriginData)
-}
 
 // 체크 코멘트가 만들어졌을 때 렌더링 되는 곳
 func renderConversation(ctx *context.Context, comment *issues_model.Comment, origin string) {

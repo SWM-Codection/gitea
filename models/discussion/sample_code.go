@@ -1,9 +1,11 @@
 package discussion
 
 import (
-	"code.gitea.io/gitea/modules/timeutil"
 	"context"
 	"fmt"
+	"google.golang.org/appengine/log"
+
+	"code.gitea.io/gitea/modules/timeutil"
 
 	"code.gitea.io/gitea/models/db"
 )
@@ -15,9 +17,13 @@ func init() {
 // TODOC 재시도 횟수 저장
 
 type AiSampleCode struct {
-	Id              int64 `xorm:"'id' pk autoincr"`
-	TargetCommentId int64 `xorm:"'target_comment_id' INDEX NOT NULL"`
-	GenearaterId    int64
+	TargetCommentId int64              `xorm:"'target_comment_id'"`
+	Id              int64              `xorm:"'id' pk autoincr"`
+	CodeId          int64              `xorm:"'code_id'"`
+	StartLine       int64              `xorm:"'start_line'"`
+	EndLine         int64              `xorm:"'end_line'"`
+	DiscussionId    int64              `xorm:"'discussion_id'"`
+	GenearaterId    int64              `xorm:"'genearater_id'"`
 	CommentType     string             `xorm:"'comment_type'"`
 	Content         string             `xorm:"'content' text"`
 	CreatedUnix     timeutil.TimeStamp `xorm:"INDEX created"`
@@ -27,10 +33,17 @@ type AiSampleCode struct {
 }
 
 type CreateDiscussionAiCommentOpt struct {
-	TargetCommentId int64
-	GenearaterId    int64
-	Type            string
+	CodeId       int64
+	StartLine    int64
+	EndLine      int64
+	GenearaterId int64
+	DiscussionId int64
+	Type         string
+	Content      *string
+}
 
+type UpdateDiscussionAiCommentOpt struct {
+	Id      int64
 	Content *string
 }
 
@@ -50,10 +63,13 @@ func CreateAiSampleCode(ctx context.Context, opts *CreateDiscussionAiCommentOpt)
 	defer committer.Close()
 
 	DiscussionAiComment := &AiSampleCode{
-		GenearaterId:    opts.GenearaterId,
-		TargetCommentId: opts.TargetCommentId,
-		CommentType:     opts.Type,
-		Content:         *opts.Content,
+		GenearaterId: opts.GenearaterId,
+		CodeId:       opts.CodeId,
+		DiscussionId: opts.DiscussionId,
+		StartLine:    opts.StartLine,
+		EndLine:      opts.EndLine,
+		CommentType:  opts.Type,
+		Content:      *opts.Content,
 	}
 
 	e := db.GetEngine(ctx)
@@ -93,7 +109,7 @@ func DeleteAiSampleCodeByID(ctx context.Context, id int64) error {
 
 }
 
-func GetAiSampleCodeByCommentID(ctx context.Context, id int64, sampleType string) (*AiSampleCode, error) {
+func GetAiSampleCodesByCodeId(ctx context.Context, id int64, sampleType string) ([]*AiSampleCode, error) {
 
 	ctx, committer, err := db.TxContext(ctx)
 
@@ -105,17 +121,59 @@ func GetAiSampleCodeByCommentID(ctx context.Context, id int64, sampleType string
 
 	e := db.GetEngine(ctx)
 
-	sampleCode := new(AiSampleCode)
+	var sampleCode []*AiSampleCode
 
-	has, err := e.Table("ai_sample_code").Where("target_comment_id=? AND comment_type = ?", id, sampleType).Get(sampleCode)
+	err = e.Table("ai_sample_code").Where("code_id=?", id).Find(&sampleCode)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AI sample code: %w", err)
+		return nil, fmt.Errorf("failed to get AI sample code: %v", err)
 	}
+
+	return sampleCode, nil
+}
+
+func GetAiSampleCodeById(ctx context.Context, id int64) (*AiSampleCode, error) {
+
+	ctx, committer, err := db.TxContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer committer.Close()
+
+	var sampleCode *AiSampleCode
+
+	e := db.GetEngine(ctx)
+	has, err := e.Table("ai_sample_code").Where("codeId=?", id).Get(sampleCode)
 
 	if !has {
 		return nil, nil
 	}
 
 	return sampleCode, nil
+}
+
+func UpdateAiSampleCode(ctx context.Context, opts *UpdateDiscussionAiCommentOpt) error {
+	ctx, committer, err := db.TxContext(ctx)
+
+	if err != nil {
+		log.Errorf(ctx, "failed to update AI sample code: %v", err)
+		return err
+	}
+
+	defer committer.Close()
+
+	e := db.GetEngine(ctx)
+
+	aiSampleCode := &AiSampleCode{
+		Content: *opts.Content,
+	}
+
+	_, err = e.Table("ai_sample_code").Where("id=?", opts.Id).Update(aiSampleCode)
+
+	if err != nil {
+		log.Errorf(ctx, "failed to update AI sample code: %v", err)
+		return err
+	}
+
+	return committer.Commit()
 }
