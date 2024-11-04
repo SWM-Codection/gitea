@@ -202,7 +202,7 @@ onDomReady(() => {
   initScopedAccessTokenCategories();
   initColorPickers();
   initDiscussionForm();
-  initHomeMarquee();
+  // initHomeMarquee();
   initAiSampleCodeModal();
   initDiscussionFileView();
   initDiscussionCommentDelete();
