@@ -156,6 +156,9 @@
 					<!-- discussions -->
 					<a class="{{if .PageIsDiscussionList}}active {{end}}item" href="{{.RepoLink}}/discussions" >
 						{{ svg "octicon-comment-discussion" }} {{ctx.Locale.Tr "repo.discussions"}}
+						{{if .Repository.NumOpenPulls}}
+							<span class="ui small label">{{CountFmt .Repository.NumOpenPulls}}</span>
+						{{end}}
 					</a>
 
 					{{if and .Repository.CanEnablePulls (.Permission.CanRead ctx.Consts.RepoUnitTypePullRequests)}}
