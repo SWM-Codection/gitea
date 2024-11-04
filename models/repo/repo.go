@@ -144,9 +144,12 @@ type Repository struct {
 	NumIssues           int
 	NumClosedIssues     int
 	NumOpenIssues       int `xorm:"-"`
-	NumPulls            int
-	NumClosedPulls      int
+	NumPulls            int `xorm:"NOT NULL DEFAULT 0"`
+	NumClosedPulls      int `xorm:"NOT NULL DEFAULT 0"`
 	NumOpenPulls        int `xorm:"-"`
+	NumDiscussions		int
+	NumClosedDiscussions	int
+	NumOpenDiscussions	int `xorm:"-"`
 	NumMilestones       int `xorm:"NOT NULL DEFAULT 0"`
 	NumClosedMilestones int `xorm:"NOT NULL DEFAULT 0"`
 	NumOpenMilestones   int `xorm:"-"`
@@ -283,6 +286,7 @@ func (repo *Repository) MarkAsBrokenEmpty() {
 func (repo *Repository) AfterLoad() {
 	repo.NumOpenIssues = repo.NumIssues - repo.NumClosedIssues
 	repo.NumOpenPulls = repo.NumPulls - repo.NumClosedPulls
+	repo.NumOpenDiscussions = repo.NumDiscussions - repo.NumClosedDiscussions
 	repo.NumOpenMilestones = repo.NumMilestones - repo.NumClosedMilestones
 	repo.NumOpenProjects = repo.NumProjects - repo.NumClosedProjects
 	repo.NumOpenActionRuns = repo.NumActionRuns - repo.NumClosedActionRuns
@@ -893,12 +897,32 @@ func UpdateRepoIssueNumbers(ctx context.Context, repoID int64, isPull, isClosed 
 	} else {
 		field += "issues"
 	}
+	println("called");
 
 	subQuery := builder.Select("count(*)").
 		From("issue").Where(builder.Eq{
 		"repo_id": repoID,
 		"is_pull": isPull,
 	}.And(builder.If(isClosed, builder.Eq{"is_closed": isClosed})))
+
+	// builder.Update(cond) will generate SQL like UPDATE ... SET cond
+	query := builder.Update(builder.Eq{field: subQuery}).
+		From("repository").
+		Where(builder.Eq{"id": repoID})
+	_, err := db.Exec(ctx, query)
+	return err
+}
+
+func UpdateRepoDiscussionNumbers(ctx context.Context, repoID int64, isClosed bool) error {
+	field := "num_"
+	if isClosed {
+		field += "closed_"
+	}
+	field += "discussions"
+
+	subQuery := builder.Select("count(*)").
+		From("discussion").
+		Where(builder.Eq{"repo_id": repoID}.And(builder.If(isClosed, builder.Eq{"is_closed": isClosed})))
 
 	// builder.Update(cond) will generate SQL like UPDATE ... SET cond
 	query := builder.Update(builder.Eq{field: subQuery}).
