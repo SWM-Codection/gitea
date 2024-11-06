@@ -461,6 +461,7 @@ func DiscussionContent(ctx *context.Context) {
 }
 
 func SetDiscussionClosedState(ctx *context.Context) {
+	repo := ctx.Repo.Repository
 	discussionId := ctx.ParamsInt64(":discussionId")
 	queryParams := ctx.Req.URL.Query()
 	isClosedStr := queryParams.Get("isClosed")
@@ -474,6 +475,12 @@ func SetDiscussionClosedState(ctx *context.Context) {
 	err = discussion_client.SetDiscussionClosedState(discussionId, isClosed)
 	if err != nil {
 		ctx.ServerError(fmt.Sprintf("Failed to set review state for discussion %d", discussionId), err)
+		return
+	}
+
+	// update close discussion numbers
+	if err := repo_model.UpdateRepoDiscussionNumbers(ctx, repo.ID, true); err != nil {
+		ctx.ServerError("Failed to update review state for close discussion", err)
 		return
 	}
 
@@ -519,6 +526,7 @@ func getActionDiscussionIds(ctx *context.Context) []int64 {
 
 func UpdateDiscussionStatus(ctx *context.Context) {
 	discussionIds := getActionDiscussionIds(ctx)
+	repo := ctx.Repo.Repository
 
 	var isClosed bool
 	switch action := ctx.FormString("action"); action {
@@ -537,6 +545,13 @@ func UpdateDiscussionStatus(ctx *context.Context) {
 			return
 		}
 	}
+
+	// update close discussion numbers
+	if err := repo_model.UpdateRepoDiscussionNumbers(ctx, repo.ID, true); err != nil {
+		ctx.ServerError("Failed to update review state for close discussion", err)
+		return
+	}
+
 	ctx.JSONOK()
 }
 

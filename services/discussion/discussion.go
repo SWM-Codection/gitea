@@ -28,6 +28,8 @@ func NewDiscussion(ctx *context.Context, repo *repo_model.Repository, req *model
 		return -1, user_model.ErrBlockedUser
 	}
 	result, err := discussion_client.PostDiscussion(req)
+
+	repo_model.UpdateRepoDiscussionNumbers(ctx, req.RepoId, false)
 	// TODO: send notification
 	return result, err
 }
