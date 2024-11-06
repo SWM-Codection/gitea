@@ -897,7 +897,6 @@ func UpdateRepoIssueNumbers(ctx context.Context, repoID int64, isPull, isClosed 
 	} else {
 		field += "issues"
 	}
-	println("called");
 
 	subQuery := builder.Select("count(*)").
 		From("issue").Where(builder.Eq{
