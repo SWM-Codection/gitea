@@ -128,6 +128,14 @@ func repoStatsCorrectNumClosedPulls(ctx context.Context, id int64) error {
 	return repo_model.UpdateRepoIssueNumbers(ctx, id, true, true)
 }
 
+func repoStatsCorrectNumDiscussions(ctx context.Context, id int64) error {
+	return repo_model.UpdateRepoDiscussionNumbers(ctx, id, false)
+}
+
+func repoStatsCorrectNumClosedDiscussions(ctx context.Context, id int64) error {
+	return repo_model.UpdateRepoDiscussionNumbers(ctx, id, true)
+}
+
 func statsQuery(args ...any) func(context.Context) ([]map[string][]byte, error) {
 	return func(ctx context.Context) ([]map[string][]byte, error) {
 		return db.GetEngine(ctx).Query(args...)
@@ -174,6 +182,18 @@ func CheckRepoStats(ctx context.Context) error {
 			statsQuery("SELECT repo.id FROM `repository` repo WHERE repo.num_closed_pulls!=(SELECT COUNT(*) FROM `issue` WHERE repo_id=repo.id AND is_closed=? AND is_pull=?)", true, true),
 			repoStatsCorrectNumClosedPulls,
 			"repository count 'num_closed_pulls'",
+		},
+		// Repository.NumDiscussions
+		{
+			statsQuery("SELECT repo.id FROM `repository` repo WHERE repo.num_discussions != (SELECT COUNT(*) FROM `discussion` WHERE repo_id = repo.id)"),
+			repoStatsCorrectNumDiscussions,
+			"repository count 'num_discussions'",
+		},
+		// Repository.NumClosedDiscussions
+		{
+			statsQuery("SELECT repo.id FROM `repository` repo WHERE repo.num_closed_discussions != (SELECT COUNT(*) FROM `discussion` WHERE repo_id = repo.id AND is_closed = true)"),
+			repoStatsCorrectNumClosedDiscussions,
+			"repository count 'num_closed_discussions'",
 		},
 		// Label.NumIssues
 		{
@@ -265,6 +285,9 @@ func UpdateRepoStats(ctx context.Context, id int64) error {
 		repoStatsCorrectNumPulls,
 		repoStatsCorrectNumClosedIssues,
 		repoStatsCorrectNumClosedPulls,
+		repoStatsCorrectNumDiscussions,
+		repoStatsCorrectNumClosedDiscussions,
+		repoStatsCorrectNumClosedDiscussions,
 		labelStatsCorrectNumIssuesRepo,
 		labelStatsCorrectNumClosedIssuesRepo,
 		milestoneStatsCorrectNumIssuesRepo,
