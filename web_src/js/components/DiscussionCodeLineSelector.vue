@@ -1,7 +1,7 @@
 <template>
   <div
     class="file-header ui top attached header tw-items-center tw-justify-between tw-flex-wrap"
-    style="position: sticky; top: 0; z-index: 999"
+    style="position: sticky; top: 0; z-index: 10"
   >
     <div class="file-info tw-font-mono">
       <div :id="`discussion-${content.NameHash}`" class="file-info-entry">
