@@ -10,11 +10,18 @@
 			{{ctx.Locale.Tr "repo.issues.action_close"}}
 		</button>
 		{{end}}
-		{{if $.IsRepoAdmin}}
-			<button class="ui red button issue-action"
-				data-action="delete" data-url="{{$.RepoLink}}/issues/delete"
-				data-action-delete-confirm="{{ctx.Locale.Tr "confirm_delete_selected"}}"
-			>{{ctx.Locale.Tr "repo.issues.delete"}}</button>
+		{{if $.IsRepoAdmin }}
+			{{ if .PageIsDiscussionList}}
+				<button class="ui red button issue-action"
+					data-action="delete" data-url="{{$.RepoLink}}/discussions/delete"
+					data-action-delete-confirm="{{ctx.Locale.Tr "confirm_delete_selected"}}"
+				>{{ctx.Locale.Tr "repo.issues.delete"}}</button>
+			{{else}}
+				<button class="ui red button issue-action"
+					data-action="delete" data-url="{{$.RepoLink}}/issues/delete"
+					data-action-delete-confirm="{{ctx.Locale.Tr "confirm_delete_selected"}}"
+				>{{ctx.Locale.Tr "repo.issues.delete"}}</button>
+			{{end}}
 		{{end}}
 	<!-- Labels -->
 		<div class="ui {{if not .Labels}}disabled{{end}} dropdown jump item">

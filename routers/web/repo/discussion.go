@@ -820,3 +820,25 @@ func DiscussionMovePin(ctx *context.Context) {
 	form := web.GetForm(ctx).(*model.MoveDiscussionPinRequest)
 	discussion_client.MoveDiscussionPin(form)
 }
+
+func DeleteDiscussion(ctx *context.Context) {
+	commaSeparatedDiscussionIDs := ctx.FormString("issue_ids")
+	if len(commaSeparatedDiscussionIDs) == 0 {
+		return 
+	}
+	discussionIDs := make([]int64, 0, 10)
+	for _, stringIssueID := range strings.Split(commaSeparatedDiscussionIDs, ",") {
+		issueID, err := strconv.ParseInt(stringIssueID, 10, 64)
+		if err != nil {
+			ctx.ServerError("ParseInt", err)
+			return 
+		}
+		discussionIDs = append(discussionIDs, issueID)
+	}
+
+	request := &model.DeleteDiscussionRequest{
+		Ids: discussionIDs,
+	}
+
+	discussion_client.DeleteDiscussion(request)
+}

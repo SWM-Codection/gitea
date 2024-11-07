@@ -1211,6 +1211,7 @@ func registerRoutes(m *web.Route) {
 				m.Post("/assignee", repo.UpdateDiscussionAssignee)
 				m.Post("/{discussionId}/pin", repo.DiscussionPinOrUnpin)
 				m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
+				m.Post("/delete", repo.DeleteDiscussion)
 				m.Post("/move_pin", web.Bind(model.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
 			}, reqSignIn, reqRepoCodeWriter)
 		})
