@@ -27,6 +27,7 @@ import (
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/markup"
 	"code.gitea.io/gitea/modules/markup/markdown"
+	"code.gitea.io/gitea/modules/optional"
 	"code.gitea.io/gitea/modules/setting"
 	"code.gitea.io/gitea/modules/structs"
 	api "code.gitea.io/gitea/modules/structs"
@@ -138,6 +139,19 @@ func Discussions(ctx *context.Context) {
 	if err != nil {
 		ctx.ServerError("Discussions:GetPinnedDiscussions", err)
 	}
+	var isShowClosed optional.Option[bool]
+	switch ctx.FormString("state") {
+	case "closed":
+		isShowClosed = optional.Some(true)
+	case "all":
+		isShowClosed = optional.None[bool]()
+	default:
+		isShowClosed = optional.Some(false)
+	}
+	// if there are closed discussions and no open discussionss, default to showing all discusisons
+	if len(ctx.FormString("state")) == 0 && listResp.TotalCount == 0 {
+		isShowClosed = optional.None[bool]()
+	}
 
 	log.Info("discussions : %v", listResp.Discussions)
 	// prepare data for tamplete
@@ -154,7 +168,15 @@ func Discussions(ctx *context.Context) {
 	ctx.Data["AllStatesLink"] = fmt.Sprintf("%s/discussions?state=%s&page=1", ctx.Repo.RepoLink, state)
 	ctx.Data["OpenLink"] = fmt.Sprintf("%s/discussions?state=open&page=1", ctx.Repo.RepoLink)
 	ctx.Data["ClosedLink"] = fmt.Sprintf("%s/discussions?state=closed&page=1", ctx.Repo.RepoLink)
-
+	ctx.Data["IsShowClosed"] = isShowClosed
+	switch {
+	case isShowClosed.Value():
+		ctx.Data["State"] = "closed"
+	case !isShowClosed.Has():
+		ctx.Data["State"] = "all"
+	default:
+		ctx.Data["State"] = "open"
+	}
 	ctx.HTML(http.StatusOK, tplDiscussions)
 }
 
@@ -819,4 +841,26 @@ func DiscussionUnpin(ctx *context.Context) {
 func DiscussionMovePin(ctx *context.Context) {
 	form := web.GetForm(ctx).(*model.MoveDiscussionPinRequest)
 	discussion_client.MoveDiscussionPin(form)
+}
+
+func DeleteDiscussion(ctx *context.Context) {
+	commaSeparatedDiscussionIDs := ctx.FormString("issue_ids")
+	if len(commaSeparatedDiscussionIDs) == 0 {
+		return 
+	}
+	discussionIDs := make([]int64, 0, 10)
+	for _, stringIssueID := range strings.Split(commaSeparatedDiscussionIDs, ",") {
+		issueID, err := strconv.ParseInt(stringIssueID, 10, 64)
+		if err != nil {
+			ctx.ServerError("ParseInt", err)
+			return 
+		}
+		discussionIDs = append(discussionIDs, issueID)
+	}
+
+	request := &model.DeleteDiscussionRequest{
+		Ids: discussionIDs,
+	}
+
+	discussion_client.DeleteDiscussion(request)
 }

@@ -442,3 +442,15 @@ func MoveDiscussionPin(request *model.MoveDiscussionPinRequest) error {
 
 	return nil
 }
+
+func DeleteDiscussion(request *model.DeleteDiscussionRequest) error {
+	resp, err := client.Request().SetBody(request).Delete("/discussion")
+	if err != nil {
+		return err
+	}
+	if err := validateResponse(resp); err != nil {
+		return err
+	}
+
+	return err
+}
