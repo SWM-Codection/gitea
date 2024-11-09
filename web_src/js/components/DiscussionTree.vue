@@ -2,11 +2,10 @@
 import DiscussionTreeItem from './DiscussionTreeItem.vue';
 import {discussionTreeStore} from '../modules/stores.js';
 import {setFileFolding} from '../features/file-fold.js';
-import {SvgIcon} from '../svg.js';
 import {debounce} from 'lodash'; 
 
 export default {
-  components: {DiscussionTreeItem, SvgIcon},
+  components: {DiscussionTreeItem},
   data: () => {
     return {
       localSearchInput: '', 
