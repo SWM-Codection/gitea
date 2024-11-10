@@ -117,6 +117,7 @@ export function discussionTreeStore() {
       selectedItem: null, 
       contents: [], 
       checkedItems: [], 
+      searchInput: ''
     });
     window.config.pageData.discussionTreeInfo = discussionTreeStoreReactive;
   }
