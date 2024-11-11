@@ -22,6 +22,7 @@ export default {
         dragLast: undefined, 
         dragEnd: undefined, 
         collapseMenu: false, 
+        selectedPreview: undefined, 
     }),
     async mounted() {
         await this.fetchBranches();
@@ -130,17 +131,19 @@ export default {
                 file: this.filename, 
                 start: this.dragStart, 
                 end: this.dragEnd,
+                codes: Array.from({length: this.dragEnd - this.dragStart + 1}, (_, i) => 1 + i)
+                            .map(i => this.$refs.codeTable.querySelector(`td[data-line-no="${i + this.dragStart - 1}"] ~ td.lines-code`).outerHTML)
             }
 
             // XXX idk why, but Array.prototype.includes does not working 
-            const hsaItem = this.store.checkedItems.filter(item => (
+            const hasItem = this.store.checkedItems.filter(item => (
                 item.tag === currentItem.tag && 
                 item.file === currentItem.file && 
                 item.start === currentItem.start && 
                 item.end === currentItem.end 
             )).length > 0;
 
-            if (!hsaItem) {
+            if (!hasItem) {
                 this.store.checkedItems = [...this.store.checkedItems, currentItem]; 
             }
             this.dragStart = null; 
@@ -271,6 +274,23 @@ export default {
             </div>
 
             <div id="write-tab-content" v-show="activeMenu === 'write'">
+                <div class="code-preview tw-flex tw-max-h-[250px] tw-w-full tw-my-3" >
+                    <div class="tw-flex tw-flex-col tw-overflow-auto" >
+                        <span class="tw-flex tw-align-center tw-p-1" v-for="item in store.checkedItems" @click="selectedPreview = item"
+                            :title="`${item.file}:${item.start}-${item.end}`"
+                            :style="[selectedPreview == item && 'background-color: #eff0f2;' ]">
+                            <SvgIcon name="octicon-file"/>
+                            <div>{{ item.file }}:{{ item.start }}-{{  item.end }}</div>
+                        </span>
+                    </div> 
+
+                    <div class="code-segment chroma tw-overflow-auto tw-grow tw-shrink-0 tw-bg-[#fbfdff] tw-px-2">
+                        <tr v-for="(td, i) in selectedPreview?.codes">
+                            <td class="tw-px-2" style="color: grey;">{{ selectedPreview?.start + i }}</td>
+                            <td class="tw-px-2 tw-whitespace-pre" v-html="td"></td>
+                        </tr>
+                    </div>
+                </div>
                 <textarea class="EasyMDEContainer" ref="mde"></textarea>
             </div>
 
@@ -324,22 +344,19 @@ export default {
         </span>
         <div v-else>
             <div v-for="item in store.checkedItems" 
-                class="checked-item"
+                class="checked-item tw-relative"
+                :title="`${item.file}:${item.start}-${item.end}`"
                 :data-checked-item-tag="item.tag"
                 :data-checked-item-file="item.file"
                 :data-checked-item-start="item.start"
                 :data-checked-item-end="item.end"
                 @click="handleGotoCheckedFileRange"
                 style="border: 1px solid #dcdde1; padding: 6px; margin: 3px; border-radius: 5px; cursor: pointer;">
-
-                <span style="display: flex; justify-content: space-between;">
-                    <div>
-                        <SvgIcon name="octicon-file"/>{{ item.file }}:{{ item.start }}-{{  item.end }}
-                    </div>
-                    <div>
-                        <SvgIcon name="octicon-x" @click.prevent.stop="handleRemoveCheckedItem"/>
-                    </div>  
+                <SvgIcon name="octicon-file" class="tw-absolute tw-top-[8px] tw-left-[2px]"/>
+                <span class="tw-inline-block tw-overflow-hidden tw-whitespace-nowrap tw-text-ellipsis tw-shrink tw-px-[16px] tw-max-w-[220px]">
+                    {{ item.file }}:{{ item.start }}-{{  item.end }}
                 </span>
+                <SvgIcon name="octicon-x" class="tw-absolute tw-top-[8px] tw-right-[2px]" @click.prevent.stop="handleRemoveCheckedItem"/>
             </div>
         </div>
     </div>
