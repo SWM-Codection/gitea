@@ -289,7 +289,7 @@ export default {
     :style="[
         collapseMenu 
             ? 'position: absolute; right: 0; height: 100px; '
-            : 'padding: 12px; max-height: 24px; margin-left: 18px; max-height: 990px; border: 1px solid #d0d7de; border-radius: 4px; '
+            : 'padding: 16px; max-height: 24px; margin-left: 18px; max-height: 990px; border: 1px solid #d0d7de; border-radius: 4px; '
     ]">
     <div aria-label="collapsable-menu" class="tw-flex tw-align-center tw-justify-end">
         <button @click.prevent="collapseMenu=!collapseMenu" class="tw-p-2" :style="[
