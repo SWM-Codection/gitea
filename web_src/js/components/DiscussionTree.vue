@@ -134,6 +134,9 @@ export default {
   width: 100%; 
   padding: 5px; 
   margin-bottom: 6px; 
+
+  position: sticky;
+  top: 0;
 }
 
 .search-input::placeholder {
