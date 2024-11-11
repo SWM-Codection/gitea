@@ -107,7 +107,7 @@ export default {
   watch: {
     localSearchInput: debounce(function (value) {
       this.store.searchInput = value; 
-    }, 33);
+    }, 33),
   }
 };
 </script>
