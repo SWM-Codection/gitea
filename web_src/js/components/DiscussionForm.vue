@@ -21,6 +21,7 @@ export default {
         dragStart: undefined, 
         dragLast: undefined, 
         dragEnd: undefined, 
+        collapseMenu: false, 
     }),
     async mounted() {
         await this.fetchBranches();
@@ -283,44 +284,63 @@ export default {
     </div>
 </div>
 
-<div class="discussion-content-right" style="flex-shrink: 0; width: 320px; margin-left: 18px; border: 1px solid #d0d7de; border-radius: 4px; padding: 16px; max-height: 990px; overflow: auto;">
-    <span class="text muted flex-text-block" style="margin-bottom: 12px;">
-        <strong>브랜치 선택</strong>
-    </span>
+<div class="discussion-content-right" 
+    style="overflow: auto; flex-shrink: 0; max-width: 320px;"
+    :style="[
+        collapseMenu 
+            ? 'position: absolute; right: 0; height: 100px; '
+            : 'padding: 12px; max-height: 24px; margin-left: 18px; max-height: 990px; border: 1px solid #d0d7de; border-radius: 4px; '
+    ]">
+    <div aria-label="collapsable-menu" class="tw-flex tw-align-center tw-justify-end">
+        <button @click.prevent="collapseMenu=!collapseMenu" class="tw-p-2" :style="[
+            collapseMenu
+                ? 'background: #f1f3f5; border-radius: 12px 0 0 12px; height: 100px; width: 24px; border: 1px solid #d0d7de;'
+                : 'background: transparent;'
+        ]">
+            <SvgIcon :name="collapseMenu ? 'octicon-chevron-left' : 'octicon-x'"></SvgIcon>
+        </button>
+    </div>
 
-    <select class="tw-w-full" style="background-color: #f8f9fb; padding: 12px; border-radius: 6px; border: 1px solid #dcdde1;" v-model="selectedBranch" >
-        <option disabled value="null">브랜치를 선택해주세요</option>
-        <option :value="b" v-for="b in branches">{{b}}</option>
-    </select>
 
+    <div class="asdf" v-show="!collapseMenu">
+        <span class="text muted flex-text-block" style="margin-bottom: 12px;">
+            <SvgIcon name="octicon-git-branch"></SvgIcon>
+            <strong>선택된 브랜치</strong>
+        </span>
 
-    <div class="divider"></div>
+        <select class="tw-w-full" style="background-color: #f8f9fb; padding: 8px 12px;  border-radius: 6px; border: 1px solid #dcdde1;" v-model="selectedBranch" >
+            <option disabled value="null">브랜치를 선택해주세요</option>
+            <option :value="b" v-for="b in branches">{{b}}</option>
+        </select>
+        <div class="divider"></div>
 
-    <span class="text muted flex-text-block" style="margin-bottom: 12px;">
-        <strong>선택된 파일 목록</strong>
-    </span>
+        <span class="text muted flex-text-block" style="margin-bottom: 12px;">
+            <SvgIcon name="octicon-file"></SvgIcon>
+            <strong>선택된 파일 목록</strong>
+        </span>
 
-    <span style="color: grey;" v-if="store.checkedItems.length === 0">
-        선택된 항목이 존재하지 않습니다.
-    </span>
-    <div v-else>
-        <div v-for="item in store.checkedItems" 
-            class="checked-item"
-            :data-checked-item-tag="item.tag"
-            :data-checked-item-file="item.file"
-            :data-checked-item-start="item.start"
-            :data-checked-item-end="item.end"
-            @click="handleGotoCheckedFileRange"
-            style="border: 1px solid #dcdde1; padding: 6px; margin: 3px; border-radius: 5px; cursor: pointer;">
+        <span style="color: grey;" v-if="store.checkedItems.length === 0">
+            선택된 항목이 존재하지 않습니다.
+        </span>
+        <div v-else>
+            <div v-for="item in store.checkedItems" 
+                class="checked-item"
+                :data-checked-item-tag="item.tag"
+                :data-checked-item-file="item.file"
+                :data-checked-item-start="item.start"
+                :data-checked-item-end="item.end"
+                @click="handleGotoCheckedFileRange"
+                style="border: 1px solid #dcdde1; padding: 6px; margin: 3px; border-radius: 5px; cursor: pointer;">
 
-            <span style="display: flex; justify-content: space-between;">
-                <div>
-                    <SvgIcon name="octicon-file"/>{{ item.file }}:{{ item.start }}-{{  item.end }}
-                </div>
-                <div>
-                    <SvgIcon name="octicon-x" @click.prevent.stop="handleRemoveCheckedItem"/>
-                </div>  
-            </span>
+                <span style="display: flex; justify-content: space-between;">
+                    <div>
+                        <SvgIcon name="octicon-file"/>{{ item.file }}:{{ item.start }}-{{  item.end }}
+                    </div>
+                    <div>
+                        <SvgIcon name="octicon-x" @click.prevent.stop="handleRemoveCheckedItem"/>
+                    </div>  
+                </span>
+            </div>
         </div>
     </div>
 </div>
