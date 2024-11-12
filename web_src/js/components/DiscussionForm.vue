@@ -244,20 +244,7 @@ export default {
                                             </td>
                                             <td class="lines-code chroma" v-html="content.content"/>
                                             <button @click.stop.prevent="handleAddDiscussionCode"
-                                                    class="discussion-add-button"
-                                                    style="
-                                                        position: absolute; 
-                                                        cursor: pointer;
-                                                        color: black; 
-                                                        background-color: #f1f3f5;
-                                                        top: 16px;
-                                                        right: 4px;
-                                                        padding: 8px;
-                                                        z-index: 1;
-                                                        border-radius: 6px;
-                                                        border: 1px solid grey;
-                                                        justify-content: center;
-                                                        font-size: smaller;">
+                                                    class="discussion-add-button ui primary button tw-absolute tw-right-0 tw-bottom-0 tw-text-xs tw-opacity-50 hover:tw-opacity-100 tw-p-2">
                                                 <span>선택 영역 추가하기</span>
                                             </button>
                                         </tr>
@@ -322,7 +309,7 @@ export default {
     </div>
 
 
-    <div class="asdf" v-show="!collapseMenu">
+    <div v-show="!collapseMenu">
         <span class="text muted flex-text-block" style="margin-bottom: 12px;">
             <SvgIcon name="octicon-git-branch"></SvgIcon>
             <strong>선택된 브랜치</strong>
