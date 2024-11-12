@@ -864,10 +864,9 @@ func registerRoutes(m *web.Route) {
 		//m.Get("/discussion/sample", api_repo_router.GetAiSampleCode)
 		m.Put("/discussion/sample", bind(structs.DeleteSampleCodesForm{}), api_repo_router.DeleteAiSampleCode)
 		m.Get("/discussion/form", repo.GetAiDiscussionForm)
-	}, reqSignIn, 
+	}, reqSignIn,
 	// context.RepoAssignment, context.RepoMustNotBeArchived(), reqRepoCodeWriter,
 	)
-
 
 	m.Group("/org", func() {
 		m.Group("/{org}", func() {
@@ -1213,7 +1212,7 @@ func registerRoutes(m *web.Route) {
 				m.Delete("/unpin/{discussionId}", repo.DiscussionUnpin)
 				m.Post("/delete", repo.DeleteDiscussion)
 				m.Post("/move_pin", web.Bind(model.MoveDiscussionPinRequest{}), repo.DiscussionMovePin)
-			}, reqSignIn, reqRepoCodeWriter)
+			}, reqSignIn)
 		})
 	}, context.RepoAssignment)
 
@@ -1241,14 +1240,14 @@ func registerRoutes(m *web.Route) {
 			m.Group("/new", func() {
 				m.Combo("").Get(context.RepoRef(), repo.NewDiscussion).
 					Post(web.Bind(forms.CreateDiscussionForm{}), repo.NewDiscussionPost)
-			}, reqRepoCodeWriter)
+			}, reqRepoCodeReader)
 			m.Group("/{discussionId}", func() {
 				m.Post("/comment", web.Bind(forms.CreateDiscussionCommentForm{}), repo.NewDiscussionCommentPost)
 				m.Delete("/comment", repo.DeleteDiscussionFileComment)
 				m.Put("/comment", web.Bind(forms.ModifyDiscussionCommentForm{}), repo.ModifyDiscussionFileComment)
 
 				m.Post("/comment/{commentId}/reactions/{action}", web.Bind(forms.ReactionForm{}), repo.ChangeDiscussionCommentReaction)
-			}, reqRepoCodeWriter)
+			}, reqRepoCodeReader)
 			m.Get("/comment/{id}", repo.RenderNewDiscussionComment)
 			m.Get("/comments/{codeId}", repo.DiscussionComments)
 		}, reqRepoCodeReader)
