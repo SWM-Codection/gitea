@@ -21,6 +21,8 @@ export default {
         dragStart: undefined, 
         dragLast: undefined, 
         dragEnd: undefined, 
+        collapseMenu: false, 
+        selectedPreview: undefined, 
     }),
     async mounted() {
         await this.fetchBranches();
@@ -36,8 +38,15 @@ export default {
             inputStyle: 'contenteditable',
             nativeSpellCheck: true, 
         });
+        window.addEventListener('resize', this.handleResize); 
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
+    }, 
     methods: {
+        handleResize() {
+            if (window.innerWidth < 1060) this.collapseMenu = true; 
+        }, 
         async fetchBranches() {
             const resp = await GET(`${this.store.repoLink}/branches/list`);
             const { results } = await resp.json(); 
@@ -129,17 +138,19 @@ export default {
                 file: this.filename, 
                 start: this.dragStart, 
                 end: this.dragEnd,
+                codes: Array.from({length: this.dragEnd - this.dragStart + 1}, (_, i) => 1 + i)
+                            .map(i => this.$refs.codeTable.querySelector(`td[data-line-no="${i + this.dragStart - 1}"] ~ td.lines-code`).outerHTML)
             }
 
             // XXX idk why, but Array.prototype.includes does not working 
-            const hsaItem = this.store.checkedItems.filter(item => (
+            const hasItem = this.store.checkedItems.filter(item => (
                 item.tag === currentItem.tag && 
                 item.file === currentItem.file && 
                 item.start === currentItem.start && 
                 item.end === currentItem.end 
             )).length > 0;
 
-            if (!hsaItem) {
+            if (!hasItem) {
                 this.store.checkedItems = [...this.store.checkedItems, currentItem]; 
             }
             this.dragStart = null; 
@@ -240,20 +251,7 @@ export default {
                                             </td>
                                             <td class="lines-code chroma" v-html="content.content"/>
                                             <button @click.stop.prevent="handleAddDiscussionCode"
-                                                    class="discussion-add-button"
-                                                    style="
-                                                        position: absolute; 
-                                                        cursor: pointer;
-                                                        color: black; 
-                                                        background-color: #f1f3f5;
-                                                        top: 16px;
-                                                        right: 4px;
-                                                        padding: 8px;
-                                                        z-index: 1;
-                                                        border-radius: 6px;
-                                                        border: 1px solid grey;
-                                                        justify-content: center;
-                                                        font-size: smaller;">
+                                                    class="discussion-add-button ui primary button tw-absolute tw-right-0 tw-bottom-0 tw-text-xs tw-opacity-50 hover:tw-opacity-100 tw-p-2">
                                                 <span>선택 영역 추가하기</span>
                                             </button>
                                         </tr>
@@ -270,6 +268,23 @@ export default {
             </div>
 
             <div id="write-tab-content" v-show="activeMenu === 'write'">
+                <div class="code-preview tw-flex tw-max-h-[250px] tw-w-full tw-my-3" >
+                    <div class="tw-flex tw-flex-col tw-overflow-auto" >
+                        <span class="tw-flex tw-align-center tw-p-1" v-for="item in store.checkedItems" @click="selectedPreview = item"
+                            :title="`${item.file}:${item.start}-${item.end}`"
+                            :style="[selectedPreview == item && 'background-color: #eff0f2;' ]">
+                            <SvgIcon name="octicon-file"/>
+                            <div>{{ item.file }}:{{ item.start }}-{{  item.end }}</div>
+                        </span>
+                    </div> 
+
+                    <div class="code-segment chroma tw-overflow-auto tw-grow tw-shrink-0 tw-bg-[#fbfdff] tw-px-2">
+                        <tr v-for="(td, i) in selectedPreview?.codes">
+                            <td class="tw-px-2" style="color: grey;">{{ selectedPreview?.start + i }}</td>
+                            <td class="tw-px-2 tw-whitespace-pre" v-html="td"></td>
+                        </tr>
+                    </div>
+                </div>
                 <textarea class="EasyMDEContainer" ref="mde"></textarea>
             </div>
 
@@ -283,44 +298,60 @@ export default {
     </div>
 </div>
 
-<div class="discussion-content-right" style="flex-shrink: 0; width: 320px; margin-left: 18px; border: 1px solid #d0d7de; border-radius: 4px; padding: 16px; max-height: 990px; overflow: auto;">
-    <span class="text muted flex-text-block" style="margin-bottom: 12px;">
-        <strong>브랜치 선택</strong>
-    </span>
+<div class="discussion-content-right" 
+    style="overflow: auto; flex-shrink: 0; max-width: 320px;"
+    :style="[
+        collapseMenu 
+            ? 'position: absolute; right: 0; height: 100px; '
+            : 'padding: 16px; max-height: 24px; margin-left: 18px; max-height: 990px; border: 1px solid #d0d7de; border-radius: 4px; '
+    ]">
+    <div aria-label="collapsable-menu" class="tw-flex tw-align-center tw-justify-end">
+        <button @click.prevent="collapseMenu=!collapseMenu" class="tw-p-2" :style="[
+            collapseMenu
+                ? 'background: #f1f3f5; border-radius: 12px 0 0 12px; height: 100px; width: 24px; border: 1px solid #d0d7de;'
+                : 'background: transparent;'
+        ]">
+            <SvgIcon :name="collapseMenu ? 'octicon-chevron-left' : 'octicon-x'"></SvgIcon>
+        </button>
+    </div>
 
-    <select class="tw-w-full" style="background-color: #f8f9fb; padding: 12px; border-radius: 6px; border: 1px solid #dcdde1;" v-model="selectedBranch" >
-        <option disabled value="null">브랜치를 선택해주세요</option>
-        <option :value="b" v-for="b in branches">{{b}}</option>
-    </select>
 
+    <div v-show="!collapseMenu">
+        <span class="text muted flex-text-block" style="margin-bottom: 12px;">
+            <SvgIcon name="octicon-git-branch"></SvgIcon>
+            <strong>선택된 브랜치</strong>
+        </span>
 
-    <div class="divider"></div>
+        <select class="tw-w-full" style="background-color: #f8f9fb; padding: 8px 12px;  border-radius: 6px; border: 1px solid #dcdde1;" v-model="selectedBranch" >
+            <option disabled value="null">브랜치를 선택해주세요</option>
+            <option :value="b" v-for="b in branches">{{b}}</option>
+        </select>
+        <div class="divider"></div>
 
-    <span class="text muted flex-text-block" style="margin-bottom: 12px;">
-        <strong>선택된 파일 목록</strong>
-    </span>
+        <span class="text muted flex-text-block" style="margin-bottom: 12px;">
+            <SvgIcon name="octicon-file"></SvgIcon>
+            <strong>선택된 파일 목록</strong>
+        </span>
 
-    <span style="color: grey;" v-if="store.checkedItems.length === 0">
-        선택된 항목이 존재하지 않습니다.
-    </span>
-    <div v-else>
-        <div v-for="item in store.checkedItems" 
-            class="checked-item"
-            :data-checked-item-tag="item.tag"
-            :data-checked-item-file="item.file"
-            :data-checked-item-start="item.start"
-            :data-checked-item-end="item.end"
-            @click="handleGotoCheckedFileRange"
-            style="border: 1px solid #dcdde1; padding: 6px; margin: 3px; border-radius: 5px; cursor: pointer;">
-
-            <span style="display: flex; justify-content: space-between;">
-                <div>
-                    <SvgIcon name="octicon-file"/>{{ item.file }}:{{ item.start }}-{{  item.end }}
-                </div>
-                <div>
-                    <SvgIcon name="octicon-x" @click.prevent.stop="handleRemoveCheckedItem"/>
-                </div>  
-            </span>
+        <span style="color: grey;" v-if="store.checkedItems.length === 0">
+            선택된 항목이 존재하지 않습니다.
+        </span>
+        <div v-else>
+            <div v-for="item in store.checkedItems" 
+                class="checked-item tw-relative"
+                :title="`${item.file}:${item.start}-${item.end}`"
+                :data-checked-item-tag="item.tag"
+                :data-checked-item-file="item.file"
+                :data-checked-item-start="item.start"
+                :data-checked-item-end="item.end"
+                @click="handleGotoCheckedFileRange"
+                style="border: 1px solid #dcdde1; padding: 6px; margin: 3px; border-radius: 5px; cursor: pointer;">
+                <SvgIcon name="octicon-file" class="tw-absolute tw-top-[8px] tw-left-[2px]"/>
+                <span class="tw-inline-block tw-overflow-hidden tw-whitespace-nowrap tw-text-ellipsis tw-shrink tw-px-[16px] tw-max-w-[220px]">
+                    {{ item.file }}:{{ item.start }}-{{  item.end }}
+                </span>
+                <SvgIcon name="octicon-x" class="tw-absolute tw-top-[8px] tw-right-[2px]" @click.prevent.stop="handleRemoveCheckedItem"/>
+            </div>
         </div>
     </div>
 </div>

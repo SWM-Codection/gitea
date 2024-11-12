@@ -2,12 +2,14 @@
 import DiscussionTreeItem from './DiscussionTreeItem.vue';
 import {discussionTreeStore} from '../modules/stores.js';
 import {setFileFolding} from '../features/file-fold.js';
+import {debounce} from 'lodash'; 
 
 export default {
   components: {DiscussionTreeItem},
   data: () => {
     return {
-      store: discussionTreeStore()
+      localSearchInput: '', 
+      store: discussionTreeStore(), 
     };
   },
   computed: {
@@ -15,6 +17,9 @@ export default {
       const result = [];
       for (const file of this.store.files) {
         // Split file into directories
+        const filterEnabled = this.store.searchInput.length !== 0; 
+        
+        if (filterEnabled && !file.Name.includes(this.store.searchInput)) continue;
         const names = file.Name.split('/');
         let index = 0;
         let parent = null;
@@ -99,13 +104,19 @@ export default {
       }
     },
   },
+  watch: {
+    localSearchInput: debounce(function (value) {
+      this.store.searchInput = value; 
+    }, 33),
+  }
 };
 </script>
 <template>
 
 <div class="discussion-file-tree-items" >
   <!-- only render the tree if we're visible. in many cases this is something that doesn't change very often -->
-  <DiscussionTreeItem v-for="item in fileTree" :key="item.name" :item="item"/>
+  <input type="text" v-model="localSearchInput" placeholder="원하는 경로를 검색해보세요"  class="search-input">
+  <DiscussionTreeItem v-for="item in fileTree" :key="item.name" :item="item" />
 </div>
 
 </template>
@@ -115,5 +126,20 @@ export default {
   flex-direction: column;
   gap: 1px;
   margin-right: .5rem;
+}
+
+.search-input {
+  border: 1px solid #d0d7de; 
+  border-radius: 5px; 
+  width: 100%; 
+  padding: 5px; 
+  margin-bottom: 6px; 
+
+  position: sticky;
+  top: 0;
+}
+
+.search-input::placeholder {
+  font-size: 12px;
 }
 </style>

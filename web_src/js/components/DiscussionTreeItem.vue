@@ -29,9 +29,9 @@ export default {
   </a>
   <div v-else class="item-directory" :title="item.name" @click.stop="collapsed = !collapsed">
     <!-- directory -->
-    <SvgIcon :name="collapsed ? 'octicon-chevron-right' : 'octicon-chevron-down'"/>
     <SvgIcon class="text primary" name="octicon-file-directory-fill"/>
     <span class="gt-ellipsis">{{ item.name }}</span>
+    <SvgIcon  name='octicon-chevron-down' v-show="!collapsed"/>
   </div>
 
   <div v-if="item.children?.length" v-show="!collapsed" class="sub-items">
@@ -50,10 +50,6 @@ a, a:hover {
   gap: 1px;
   margin-left: 13px;
   border-left: 1px solid var(--color-secondary);
-}
-
-.sub-items .item-file {
-  padding-left: 18px;
 }
 
 .item-file.selected {
