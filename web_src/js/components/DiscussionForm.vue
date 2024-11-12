@@ -38,8 +38,15 @@ export default {
             inputStyle: 'contenteditable',
             nativeSpellCheck: true, 
         });
+        window.addEventListener('resize', this.handleResize); 
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
+    }, 
     methods: {
+        handleResize() {
+            if (window.innerWidth < 1060) this.collapseMenu = true; 
+        }, 
         async fetchBranches() {
             const resp = await GET(`${this.store.repoLink}/branches/list`);
             const { results } = await resp.json(); 
